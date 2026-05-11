@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { CheckCircle, ArrowRight, Zap, Crown, Users, HelpCircle } from 'lucide-react'
+import { CheckCircle, ArrowRight, Zap, Crown, Users, HelpCircle, SlidersHorizontal } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const PLANS = {
   monthly: [
@@ -135,6 +136,81 @@ const FAQS = [
   },
 ]
 
+function recommendPlan({ meetings, teamSize }) {
+  if (teamSize > 1) return 'Team'
+  if (meetings > 3) return 'Pro'
+  return 'Starter'
+}
+
+function PricingEstimator({ billing, meetings, setMeetings, teamSize, setTeamSize, recommended }) {
+  const estimatedHours = Math.max(1, Math.round(meetings * 0.75))
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: 0.2 }}
+      className="bg-white border border-gray-200 rounded-3xl p-6 mb-8 shadow-sm"
+    >
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+        <div className="max-w-sm">
+          <div className="inline-flex items-center gap-2 text-violet-700 bg-violet-50 px-3 py-1.5 rounded-full text-xs font-bold mb-4">
+            <SlidersHorizontal size={13} />
+            Find your plan
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Make pricing match your workflow</h2>
+          <p className="text-sm text-gray-500 leading-relaxed">
+            Adjust your monthly usage and team size to see which plan fits best.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-5 flex-1">
+          <label className="block">
+            <span className="flex items-center justify-between text-sm font-semibold text-gray-800 mb-3">
+              Meetings per month
+              <span className="text-violet-600">{meetings}</span>
+            </span>
+            <input
+              type="range"
+              min="1"
+              max="60"
+              value={meetings}
+              onChange={(event) => setMeetings(Number(event.target.value))}
+              className="w-full accent-violet-600"
+            />
+          </label>
+          <label className="block">
+            <span className="flex items-center justify-between text-sm font-semibold text-gray-800 mb-3">
+              Team members
+              <span className="text-violet-600">{teamSize}</span>
+            </span>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={teamSize}
+              onChange={(event) => setTeamSize(Number(event.target.value))}
+              className="w-full accent-violet-600"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="mt-6 grid sm:grid-cols-3 gap-3">
+        {[
+          ['Recommended', recommended],
+          ['Billing mode', billing === 'annual' ? 'Annual' : 'Monthly'],
+          ['Estimated time saved', `${estimatedHours}h/mo`],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</p>
+            <p className="text-lg font-bold text-gray-900 mt-1">{value}</p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
 function PlanCard({ plan, billing, index }) {
   const isPro = plan.highlight
   return (
@@ -241,6 +317,23 @@ function FaqItem({ q, a, index }) {
 
 export default function Pricing() {
   const [billing, setBilling] = useState('monthly')
+  const [meetings, setMeetings] = useState(6)
+  const [teamSize, setTeamSize] = useState(1)
+  const { isSignedIn } = useAuth()
+  const recommended = useMemo(
+    () => recommendPlan({ meetings, teamSize }),
+    [meetings, teamSize],
+  )
+  const plans = PLANS[billing].map(plan => ({
+    ...plan,
+    badge: plan.name === recommended ? 'Recommended' : plan.badge,
+    highlight: plan.name === recommended,
+    ctaTo: isSignedIn ? (plan.name === 'Starter' ? '/upload' : '/billing') : '/signup',
+    cta: isSignedIn
+      ? (plan.name === 'Starter' ? 'Continue free' : `Choose ${plan.name}`)
+      : plan.cta,
+  }))
+  const payAsYouGoTo = isSignedIn ? '/upload' : '/signup'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -296,9 +389,18 @@ export default function Pricing() {
           </motion.span>
         </motion.div>
 
+        <PricingEstimator
+          billing={billing}
+          meetings={meetings}
+          setMeetings={setMeetings}
+          teamSize={teamSize}
+          setTeamSize={setTeamSize}
+          recommended={recommended}
+        />
+
         {/* plans */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
-          {PLANS[billing].map((plan, i) => (
+          {plans.map((plan, i) => (
             <PlanCard key={plan.name} plan={plan} billing={billing} index={i} />
           ))}
         </div>
@@ -317,10 +419,10 @@ export default function Pricing() {
           <div className="flex items-center gap-4">
             <span className="text-2xl font-bold text-gray-900">£3 <span className="text-base font-normal text-gray-400">/ document</span></span>
             <Link
-              to="/upload"
+              to={payAsYouGoTo}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold transition-colors"
             >
-              Try it now <ArrowRight size={14} />
+              {isSignedIn ? 'Try it now' : 'Create account'} <ArrowRight size={14} />
             </Link>
           </div>
         </motion.div>

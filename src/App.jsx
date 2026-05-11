@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { WorkspaceProvider } from './context/WorkspaceContext'
@@ -26,6 +26,12 @@ import MeetingBots from './pages/MeetingBots'
 import MeetingBotDetail from './pages/MeetingBotDetail'
 import RecordMeetingFab from './components/RecordMeetingFab'
 
+function RequireAuth({ children }) {
+  const { isSignedIn } = useAuth()
+  if (!isSignedIn) return <Navigate to="/login" replace />
+  return children
+}
+
 function AppRoutes() {
   const { ready } = useAuth()
 
@@ -43,7 +49,7 @@ function AppRoutes() {
           <Route path="/billing" element={<Billing />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/team" element={<Team />} />
-          <Route path="/upload" element={<Upload />} />
+          <Route path="/upload" element={<RequireAuth><Upload /></RequireAuth>} />
           <Route path="/processing/:jobId" element={<Processing />} />
           <Route path="/results/:jobId" element={<Results />} />
           <Route path="/pricing" element={<Pricing />} />

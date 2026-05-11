@@ -5,6 +5,7 @@ import {
   Upload, Zap, FileText, Download, CheckCircle, ArrowRight,
   Mic, Sparkles, Clock, Users, Shield, Star
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 /* ── Reusable fade-up wrapper ── */
 function FadeUp({ children, delay = 0, className = '' }) {
@@ -119,6 +120,9 @@ const testimonials = [
 
 /* ── Main component ── */
 export default function Landing() {
+  const { isSignedIn } = useAuth()
+  const primaryCta = isSignedIn ? '/upload' : '/signup'
+
   return (
     <div className="overflow-x-hidden">
 
@@ -186,10 +190,10 @@ export default function Landing() {
             className="flex items-center justify-center gap-4 mb-14"
           >
             <Link
-              to="/upload"
+              to={primaryCta}
               className="group flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-7 py-3.5 rounded-xl font-semibold text-base shadow-lg shadow-violet-900/40 transition-all hover:shadow-violet-700/50 hover:-translate-y-0.5"
             >
-              Upload a recording
+              {isSignedIn ? 'Upload a recording' : 'Get started free'}
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
@@ -250,7 +254,7 @@ export default function Landing() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="bg-gray-50 py-24">
+      <section id="how-it-works" className="bg-gray-50 py-24 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-6">
           <FadeUp className="text-center mb-16">
             <p className="text-sm font-semibold text-violet-600 uppercase tracking-widest mb-3">How it works</p>
@@ -284,7 +288,7 @@ export default function Landing() {
       </section>
 
       {/* ── FEATURES + SAMPLE OUTPUT ── */}
-      <section className="bg-white py-24">
+      <section id="features" className="bg-white py-24 scroll-mt-24">
         <div className="max-w-5xl mx-auto px-6">
           <div className="grid grid-cols-2 gap-16 items-start">
             {/* left: feature list */}
@@ -456,10 +460,10 @@ export default function Landing() {
             Upload your first recording now and see the difference in minutes.
           </p>
           <Link
-            to="/upload"
+            to={primaryCta}
             className="group inline-flex items-center gap-2 bg-white text-violet-700 hover:bg-violet-50 px-8 py-4 rounded-xl font-bold text-base shadow-xl shadow-violet-900/30 transition-all hover:-translate-y-0.5"
           >
-            Upload a recording — it's free
+            {isSignedIn ? 'Upload a recording' : 'Create your free account'}
             <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
           </Link>
         </FadeUp>

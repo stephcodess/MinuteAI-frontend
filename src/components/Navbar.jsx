@@ -46,9 +46,12 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-6 text-sm">
-            <Link to="/upload" className={`font-medium transition-colors ${pathname === '/upload' ? 'text-violet-600' : dark ? 'text-slate-300 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
-              New meeting
-            </Link>
+            <a href="/#how-it-works" className={`font-medium transition-colors ${dark ? 'text-slate-300 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
+              How it works
+            </a>
+            <a href="/#features" className={`font-medium transition-colors ${dark ? 'text-slate-300 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
+              Features
+            </a>
             <Link to="/pricing" className={`font-medium transition-colors ${pathname === '/pricing' ? 'text-violet-600' : dark ? 'text-slate-300 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
               Pricing
             </Link>
