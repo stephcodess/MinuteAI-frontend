@@ -16,7 +16,7 @@ function authHeaders() {
 // ── Token refresh ─────────────────────────────────────────────────────────────
 // Singleton promise — prevents multiple concurrent refresh calls when several
 // requests 401 at the same time.
-let _refreshPromise = null
+let _refreshPromise: Promise<string> | null = null
 
 async function _doRefresh() {
   const rt = localStorage.getItem(REFRESH_KEY)
@@ -52,7 +52,7 @@ function refreshOnce() {
 
 // ── JSON requests ─────────────────────────────────────────────────────────────
 
-export async function apiFetch(path, options = {}) {
+export async function apiFetch(path, options: RequestInit = {}) {
   const { headers: extraHeaders, ...rest } = options
   const makeHeaders = (tok) => ({
     'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ export const api = {
 
 // ── FormData requests (auth header injected, no Content-Type override) ────────
 
-export async function formRequest(path, options = {}) {
+export async function formRequest(path, options: RequestInit = {}) {
   const { headers: extraHeaders, ...rest } = options
   const makeHeaders = (tok) => ({
     ...(tok ? { Authorization: `Bearer ${tok}` } : {}),

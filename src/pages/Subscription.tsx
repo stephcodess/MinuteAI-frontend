@@ -48,7 +48,7 @@ export default function Subscription() {
   const [loading,  setLoading]  = useState(true)
   const [invoices, setInvoices] = useState([])
   const [loadingInv, setLoadingInv] = useState(false)
-  const [portalBusy, setPortalBusy] = useState(false)
+  const [portalBusy, setPortalBusy] = useState<string | boolean>(false)
   const [error,    setError]    = useState(null)
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function Subscription() {
 
       <main className="min-w-0 flex-1 overflow-y-auto">
         {/* top bar */}
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4 flex items-center gap-3">
+        <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-100 bg-white/80 py-4 pl-16 pr-4 backdrop-blur sm:px-6 lg:px-8">
           <Link to="/billing" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
             <ArrowLeft size={17} />
           </Link>
@@ -95,7 +95,7 @@ export default function Subscription() {
           </div>
         </div>
 
-        <div className="px-8 py-8 max-w-3xl">
+        <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -103,7 +103,7 @@ export default function Subscription() {
               <p className="text-sm text-gray-400">Loading subscription…</p>
             </div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex items-center gap-3">
+            <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:p-6">
               <AlertCircle size={18} className="text-red-500 shrink-0" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
@@ -132,7 +132,7 @@ export default function Subscription() {
 function FreePlanView({ onUpgrade }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 flex flex-col items-center text-center">
+      <div className="flex flex-col items-center rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm sm:p-10">
         <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mb-4">
           <Crown size={28} className="text-violet-500" />
         </div>
@@ -142,7 +142,7 @@ function FreePlanView({ onUpgrade }) {
         </p>
         <button
           onClick={onUpgrade}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet-700 sm:w-auto"
         >
           <Zap size={14} /> View upgrade options
         </button>
@@ -164,16 +164,16 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800"
+            className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-amber-800 sm:flex-row sm:items-center sm:px-5"
           >
             <AlertCircle size={16} className="shrink-0 text-amber-500" />
-            <p className="text-sm font-medium flex-1">
+            <p className="flex-1 text-sm font-medium">
               Your subscription will end on <strong>{fmtDate(sub.cancel_at || sub.current_period_end)}</strong> — you keep access until then.
             </p>
             <button
               onClick={() => onPortal('renew')}
               disabled={!!portalBusy}
-              className="text-xs font-semibold text-amber-700 hover:text-amber-900 flex items-center gap-1 whitespace-nowrap"
+              className="flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-amber-200 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 hover:text-amber-900 sm:w-auto sm:border-0 sm:p-0 sm:hover:bg-transparent"
             >
               {portalBusy === 'renew' ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
               Renew
@@ -189,12 +189,12 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
         transition={{ duration: 0.35 }}
         className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
       >
-        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-5 flex items-center gap-4">
+        <div className="flex flex-col gap-4 bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-5 sm:flex-row sm:items-center sm:px-6">
           <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
             <Crown size={20} className="text-white" />
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
               <p className="font-bold text-white text-lg">{sub.plan_name}</p>
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${statusMeta.bg} ${statusMeta.text} ${statusMeta.border}`}>
                 {statusMeta.label}
@@ -209,18 +209,18 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
           </div>
         </div>
 
-        <div className="px-6 py-4 flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:flex-wrap sm:px-6">
           <button
             onClick={() => onPortal('manage')}
             disabled={!!portalBusy}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 hover:border-violet-300 text-gray-700 text-sm font-semibold transition-all disabled:opacity-60"
+            className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-all hover:border-violet-300 disabled:opacity-60"
           >
             {portalBusy === 'manage' ? <Loader2 size={13} className="animate-spin" /> : <ExternalLink size={13} />}
             Manage in Stripe
           </button>
           <button
             onClick={onChangePlan}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-sm font-semibold transition-all"
+            className="flex items-center justify-center gap-2 rounded-xl bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 transition-all hover:bg-violet-100"
           >
             <Zap size={13} /> Change plan
           </button>
@@ -228,17 +228,17 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
       </motion.div>
 
       {/* two-col row: payment + billing dates */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid gap-5 md:grid-cols-2">
 
         {/* payment method */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.07 }}
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col"
+          className="flex flex-col rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5"
         >
           <p className="text-sm font-bold text-gray-900 mb-4">Payment method</p>
-          <div className="flex items-center gap-3 flex-1">
+          <div className="flex flex-1 items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
               <CreditCard size={16} className="text-violet-600" />
             </div>
@@ -252,7 +252,7 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
           <button
             onClick={() => onPortal('payment')}
             disabled={!!portalBusy}
-            className="mt-4 pt-4 border-t border-gray-50 flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-700 font-semibold disabled:opacity-50 transition-colors"
+            className="mt-4 flex items-center justify-center gap-1.5 border-t border-gray-50 pt-4 text-xs font-semibold text-violet-600 transition-colors hover:text-violet-700 disabled:opacity-50 sm:justify-start"
           >
             {portalBusy === 'payment' ? <Loader2 size={11} className="animate-spin" /> : <ExternalLink size={11} />}
             Update payment method in Stripe
@@ -264,7 +264,7 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.12 }}
-          className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+          className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-5"
         >
           <p className="text-sm font-bold text-gray-900 mb-4">Billing dates</p>
           <div className="space-y-3">
@@ -293,7 +293,7 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
         transition={{ duration: 0.35, delay: 0.18 }}
         className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
       >
-        <div className="px-6 py-4 border-b border-gray-50">
+        <div className="border-b border-gray-50 px-4 py-4 sm:px-6">
           <p className="text-sm font-bold text-gray-900">Invoice history</p>
         </div>
 
@@ -314,16 +314,16 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.04 }}
-              className="flex items-center gap-4 px-6 py-3.5 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors"
+              className="flex flex-col gap-3 border-b border-gray-50 px-4 py-4 transition-colors last:border-0 hover:bg-gray-50/50 sm:flex-row sm:items-center sm:gap-4 sm:px-6 sm:py-3.5"
             >
               <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
                 <Receipt size={13} className="text-violet-600" />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1 self-stretch sm:self-auto">
                 <p className="text-sm font-semibold text-gray-900 truncate">{inv.desc}</p>
                 <p className="text-xs text-gray-400">{fmtDate(inv.date)}</p>
               </div>
-              <span className="text-sm font-bold text-gray-900">{inv.amount}</span>
+              <span className="text-sm font-bold text-gray-900 sm:ml-auto">{inv.amount}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                 inv.status === 'paid' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
               }`}>
@@ -334,7 +334,7 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
                   href={inv.pdf}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-semibold"
+                  className="flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700"
                 >
                   <FileText size={12} /> PDF
                 </a>
@@ -350,7 +350,7 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.24 }}
-          className="bg-white rounded-2xl border border-red-100 shadow-sm p-6"
+          className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm sm:p-6"
         >
           <p className="text-sm font-bold text-gray-900 mb-1">Cancel subscription</p>
           <p className="text-xs text-gray-400 mb-4">
@@ -360,7 +360,7 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
           <button
             onClick={() => onPortal('cancel')}
             disabled={!!portalBusy}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold transition-all disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition-all hover:bg-red-50 disabled:opacity-60 sm:w-auto"
           >
             {portalBusy === 'cancel'
               ? <Loader2 size={13} className="animate-spin" />

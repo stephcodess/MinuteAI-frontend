@@ -6,7 +6,7 @@ import { useGoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../context/AuthContext'
 
 // ── Floating-label input ───────────────────────────────────────────────────────
-function FloatingInput({ label, type = 'text', value, onChange, right, autoComplete }) {
+function FloatingInput({ label, type = 'text', value, onChange, right = null, autoComplete }) {
   const [focused, setFocused] = useState(false)
   const raised = focused || value.length > 0
   const id = useId()

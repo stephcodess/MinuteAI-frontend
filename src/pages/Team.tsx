@@ -48,7 +48,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage, label = 'items'
   const from = (page - 1) * pageSize + 1
   const to   = Math.min(page * pageSize, total)
   return (
-    <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-100">
+    <div className="mt-2 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-xs text-gray-400">
         <span className="font-medium text-gray-600">{from}–{to}</span> of <span className="font-medium text-gray-600">{total}</span> {label}
       </span>
@@ -75,7 +75,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage, label = 'items'
 }
 
 function fmtDate(iso) {
-  const d = new Date(iso), now = new Date(), diff = now - d
+  const d = new Date(iso), now = new Date(), diff = now.getTime() - d.getTime()
   if (diff < 86400000)  return 'Today'
   if (diff < 172800000) return 'Yesterday'
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -163,7 +163,7 @@ function MemberCard({ member, onRoleChange, onRemove, index, isMe, canManage }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+      <div className="mb-4 grid grid-cols-1 gap-2 text-center min-[380px]:grid-cols-3">
         {[
           { label: 'Last active', value: member.lastActive },
           { label: 'Status',      value: member.status === 'pending' ? 'Pending' : 'Active' },
@@ -193,7 +193,7 @@ function MemberCard({ member, onRoleChange, onRemove, index, isMe, canManage }) 
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ duration: 0.12 }}
-                className="absolute left-0 top-full mt-1 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-20 overflow-hidden"
+              className="absolute left-0 top-full z-20 mt-1 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl"
               >
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-3 pb-1.5">Change role</p>
                 {ROLES.map(r => (
@@ -402,7 +402,7 @@ export default function Team() {
   )
 
   async function handleInvite(email, name, role) {
-    const payload = { email, role: role.toLowerCase() }
+    const payload: { email: string; role: string; name?: string } = { email, role: role.toLowerCase() }
     if (name) payload.name = name
     const m = await api.post(`/workspaces/${wsId}/invite`, payload)
     setMembers(prev => [...prev, apiMemberToLocal(m, prev.length)])
@@ -450,36 +450,36 @@ export default function Team() {
 
       <main className="min-w-0 flex-1 overflow-y-auto">
         {/* top bar */}
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-gray-100 bg-white/80 py-4 pl-16 pr-4 backdrop-blur sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center">
               <Users size={15} className="text-violet-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-lg font-bold text-gray-900 leading-tight">Team</h1>
               {activeWorkspace && (
-                <p className="text-xs text-gray-400 leading-none">{activeWorkspace.name}</p>
+                <p className="truncate text-xs leading-none text-gray-400">{activeWorkspace.name}</p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center xl:justify-end">
             {activeWorkspace?.is_owner && !renaming && (
               <button
                 onClick={() => { setWsName(activeWorkspace.name); setRenaming(true) }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
               >
                 <Pencil size={12} /> Rename workspace
               </button>
             )}
             {renaming && (
-              <form onSubmit={handleRename} className="flex items-center gap-2">
+              <form onSubmit={handleRename} className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   autoFocus value={wsName}
                   onChange={e => { setWsName(e.target.value); setRenameErr(null) }}
-                  className="px-3 py-1.5 rounded-xl border-2 border-violet-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-200 w-44"
+                  className="w-full rounded-xl border-2 border-violet-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-200 sm:w-44"
                 />
-                <button type="submit" className="px-3 py-1.5 rounded-xl bg-violet-600 text-white text-xs font-semibold">Save</button>
-                <button type="button" onClick={() => setRenaming(false)} className="p-1.5 text-gray-400 hover:text-gray-600"><X size={14} /></button>
+                <button type="submit" className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white">Save</button>
+                <button type="button" onClick={() => setRenaming(false)} className="flex justify-center p-1.5 text-gray-400 hover:text-gray-600"><X size={14} /></button>
                 {renameErr && <p className="text-xs text-red-500">{renameErr}</p>}
               </form>
             )}
@@ -488,31 +488,31 @@ export default function Team() {
               <input
                 value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search members…"
-                className="pl-8 pr-4 py-2 rounded-xl border border-gray-200 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent w-48 transition-all"
+                className="w-full rounded-xl border border-gray-200 py-2 pl-8 pr-4 text-xs text-gray-700 placeholder-gray-400 transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-violet-300 sm:w-48"
               />
             </div>
           </div>
         </div>
 
         {/* ── Hero banner ── */}
-        <div className="px-8 pt-6 pb-0">
+        <div className="px-4 pt-6 pb-0 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-violet-500 to-indigo-600 p-6 mb-6"
+            className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 via-violet-500 to-indigo-600 p-4 sm:p-6"
           >
             <div className="pointer-events-none absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5" />
             <div className="pointer-events-none absolute -bottom-14 -left-6 w-56 h-56 rounded-full bg-white/5" />
 
-            <div className="relative flex items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
+            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
                   <Users size={26} className="text-white" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-white font-bold text-xl leading-tight">
                     {activeWorkspace?.name ?? 'Workspace'}
                   </h2>
-                  <div className="flex items-center gap-3 mt-1.5">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-3">
                     <span className="flex items-center gap-1.5 text-white/80 text-xs font-medium">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />{active} active
                     </span>
@@ -526,7 +526,7 @@ export default function Team() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 shrink-0">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center lg:shrink-0">
                 {members.length > 0 && (
                   <div className="flex -space-x-2.5">
                     {members.slice(0, 6).map((m, i) => (
@@ -551,7 +551,7 @@ export default function Team() {
                   <motion.button
                     whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                     onClick={() => setTab('invite')}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-violet-700 text-sm font-bold shadow-lg hover:bg-white/90 transition-all"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-violet-700 shadow-lg transition-all hover:bg-white/90"
                   >
                     <UserPlus size={14} /> Invite
                   </motion.button>
@@ -561,11 +561,11 @@ export default function Team() {
           </motion.div>
         </div>
 
-        <div className="px-8 py-6 flex gap-6 items-start">
+        <div className="flex flex-col items-stretch gap-6 px-4 py-6 sm:px-6 lg:px-8 xl:flex-row xl:items-start">
           <div className="flex-1 min-w-0">
 
             {/* tabs */}
-            <div className="flex gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit">
+            <div className="mb-5 grid w-full grid-cols-2 gap-1 rounded-xl bg-gray-100 p-1 sm:inline-grid sm:w-auto">
               {[['members', `Members (${members.length})`], ['shared', `Meetings (${meetings.length})`]].map(([key, label]) => (
                 <button key={key} onClick={() => setTab(key)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
@@ -581,7 +581,7 @@ export default function Team() {
             {tab === 'members' && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
                 {loading ? (
-                  <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                     {[0, 1, 2].map(i => (
                       <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 animate-pulse">
                         <div className="flex items-start gap-3 mb-4">
@@ -600,7 +600,7 @@ export default function Team() {
                   </div>
                 ) : filtered.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
                       {paginatedMembers.map((m, i) => (
                         <MemberCard
                           key={m.id} member={m} index={i}
@@ -637,7 +637,7 @@ export default function Team() {
                     />
                   </>
                 ) : (
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+                  <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm sm:p-16">
                     <Users size={32} className="text-gray-300 mx-auto mb-3" />
                     <p className="font-semibold text-gray-900 mb-1">No members match "{search}"</p>
                     <p className="text-sm text-gray-400">Try a different search term.</p>
@@ -662,23 +662,23 @@ export default function Team() {
                     <div className="divide-y divide-gray-50">
                       {paginatedMeetings.map((m, i) => (
                         <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.04 }}
-                          className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50/60 transition-colors"
+                          className="flex flex-col gap-3 px-4 py-4 transition-colors hover:bg-gray-50/60 sm:flex-row sm:items-center sm:gap-4 sm:px-5"
                         >
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${m.status === 'done' ? 'bg-green-50' : m.status === 'processing' ? 'bg-blue-50' : 'bg-red-50'}`}>
                             {m.status === 'done' ? <CheckCircle2 size={16} className="text-green-500" />
                               : m.status === 'processing' ? <FileText size={16} className="text-blue-500" />
                               : <AlertCircle size={16} className="text-red-400" />}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="min-w-0 flex-1 self-stretch sm:self-auto">
                             <p className="text-sm font-semibold text-gray-900 truncate">{m.title || 'Untitled meeting'}</p>
-                            <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
+                            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-gray-400">
                               <span className="flex items-center gap-1"><Calendar size={10} />{fmtDate(m.date)}</span>
                               {m.duration && <span>{m.duration}</span>}
                             </div>
                           </div>
                           {m.status === 'done' && (
                             <Link to={`/results/${m.id}`}
-                              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold transition-colors"
+                              className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100"
                             >
                               <Eye size={12} /> View
                             </Link>
@@ -706,7 +706,7 @@ export default function Team() {
             {/* ── Invite tab ── */}
             {tab === 'invite' && canManage && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+                className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6"
               >
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-sm font-bold text-gray-900">Invite a teammate</h3>
@@ -718,7 +718,7 @@ export default function Team() {
           </div>
 
           {/* ── Right panel ── */}
-          <div className="w-80 shrink-0 space-y-4">
+          <div className="w-full shrink-0 space-y-4 xl:w-80">
 
             {canManage && (
               <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}

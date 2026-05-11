@@ -9,6 +9,10 @@ import { useWorkspace } from '../context/WorkspaceContext'
 const RECORDER_NAME = 'MinuteAI Recorder'
 const IS_PRODUCTION = import.meta.env.PROD
 const MEETING_BOT_ENABLED = import.meta.env.VITE_MEETING_BOT_ENABLED === 'true'
+const MODE_OPTIONS = [
+  { key: 'now', label: 'Join now', Icon: Bot },
+  { key: 'schedule', label: 'Schedule', Icon: Clock3 },
+]
 
 function SupportPill({ icon: Icon, label, tone }) {
   return (
@@ -177,10 +181,7 @@ export default function RecordMeetingModal({ open, onClose }) {
 
                   <div className="rounded-2xl border border-slate-200 bg-white p-1">
                     <div className="grid grid-cols-2 gap-1">
-                      {[
-                        ['now', 'Join now', Bot],
-                        ['schedule', 'Schedule', Clock3],
-                      ].map(([key, label, Icon]) => (
+                      {MODE_OPTIONS.map(({ key, label, Icon }) => (
                         <button
                           key={key}
                           type="button"
@@ -216,7 +217,7 @@ export default function RecordMeetingModal({ open, onClose }) {
                         </label>
                         <select
                           value={durationMinutes}
-                          onChange={(e) => setDurationMinutes(e.target.value)}
+                          onChange={(e) => setDurationMinutes(Number(e.target.value))}
                           className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 focus:border-slate-300 focus:bg-white focus:outline-none"
                         >
                           {[15, 30, 45, 60, 90, 120].map((minutes) => (

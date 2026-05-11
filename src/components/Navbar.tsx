@@ -179,7 +179,7 @@ export default function Navbar() {
                 </button>
               </div>
 
-              <nav className="flex-1 px-4 py-5">
+              <nav className="flex flex-1 flex-col px-4 py-5">
                 <div className="space-y-1">
                   {[
                     { label: 'How it works', to: '/#how-it-works' },
@@ -197,7 +197,7 @@ export default function Navbar() {
                   ))}
                 </div>
 
-                <div className="mt-6 border-t border-gray-100 pt-5">
+                <div className="mt-auto border-t border-gray-100 pt-5">
                   {isSignedIn ? (
                     <>
                       <div className="mb-3 flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-3">

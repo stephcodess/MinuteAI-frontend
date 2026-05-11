@@ -18,6 +18,11 @@ const STATUS_STYLES = {
   cancelled: 'bg-slate-200 text-slate-700',
 }
 
+const TAB_OPTIONS = [
+  { key: 'sessions', getLabel: (sessions, upcoming) => `All sessions (${sessions.length})`, Icon: Bot },
+  { key: 'upcoming', getLabel: (sessions, upcoming) => `Upcoming (${upcoming.length})`, Icon: CalendarPlus },
+]
+
 function formatDate(iso) {
   if (!iso) return 'Just now'
   return new Date(iso).toLocaleString('en-US', {
@@ -138,7 +143,7 @@ export default function MeetingBots() {
       <Sidebar active="meeting-bots" />
 
       <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/85 px-8 py-4 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/85 py-4 pl-16 pr-4 backdrop-blur sm:px-6 lg:px-8">
           <div>
             <h1 className="text-lg font-bold text-slate-950">Meeting bots</h1>
             <p className="text-xs text-slate-500">
@@ -201,10 +206,7 @@ export default function MeetingBots() {
             </div>
 
             <div className="mb-5 flex rounded-2xl border border-slate-200 bg-slate-50 p-1">
-              {[
-                ['sessions', `All sessions (${sessions.length})`, Bot],
-                ['upcoming', `Upcoming (${upcomingSessions.length})`, CalendarPlus],
-              ].map(([key, label, Icon]) => (
+              {TAB_OPTIONS.map(({ key, getLabel, Icon }) => (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
@@ -213,7 +215,7 @@ export default function MeetingBots() {
                   }`}
                 >
                   <Icon size={15} />
-                  {label}
+                  {getLabel(sessions, upcomingSessions)}
                 </button>
               ))}
             </div>

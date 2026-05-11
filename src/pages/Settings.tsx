@@ -13,7 +13,7 @@ import { api, formRequest } from '../lib/api'
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 // ── Floating label input ───────────────────────────────────────────────────────
-function Field({ label, type = 'text', value, onChange, right, disabled, hint }) {
+function Field({ label, type = 'text', value, onChange = () => {}, right = null, disabled = false, hint = null }: any) {
   const [focused, setFocused] = useState(false)
   const raised = focused || (value && value.length > 0)
   const id = useId()
@@ -72,7 +72,7 @@ function Toggle({ checked, onChange }) {
 }
 
 // ── Card section ───────────────────────────────────────────────────────────────
-function Section({ icon: Icon, title, desc, children, index, danger }) {
+function Section({ icon: Icon, title, desc, children, index, danger = false }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -80,7 +80,7 @@ function Section({ icon: Icon, title, desc, children, index, danger }) {
       transition={{ duration: 0.4, delay: index * 0.07 }}
       className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${danger ? 'border-red-200' : 'border-gray-100'}`}
     >
-      <div className={`px-6 py-4 border-b flex items-center gap-3 ${danger ? 'border-red-100' : 'border-gray-50'}`}>
+      <div className={`flex items-start gap-3 border-b px-4 py-4 sm:items-center sm:px-6 ${danger ? 'border-red-100' : 'border-gray-50'}`}>
         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-50' : 'bg-violet-50'}`}>
           <Icon size={17} className={danger ? 'text-red-500' : 'text-violet-600'} />
         </div>
@@ -89,21 +89,21 @@ function Section({ icon: Icon, title, desc, children, index, danger }) {
           {desc && <p className="text-xs text-gray-400 mt-0.5">{desc}</p>}
         </div>
       </div>
-      <div className="px-6 py-5">{children}</div>
+      <div className="px-4 py-5 sm:px-6">{children}</div>
     </motion.div>
   )
 }
 
 // ── Save button with inline confirmation ──────────────────────────────────────
-function SaveBtn({ saved, onClick, label = 'Save changes', icon: Icon = Save }) {
+function SaveBtn({ saved, onClick = undefined, label = 'Save changes', icon: Icon = Save }) {
   return (
-    <div className="flex items-center gap-3 pt-1">
+    <div className="flex flex-col items-start gap-3 pt-1 sm:flex-row sm:items-center">
       <motion.button
         type="submit"
         onClick={onClick}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
-        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet-700 sm:w-auto"
       >
         <Icon size={14} />
         {label}
@@ -251,13 +251,13 @@ export default function Settings() {
 
       <main className="min-w-0 flex-1 overflow-y-auto">
         {/* top bar */}
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4">
+        <div className="sticky top-0 z-10 border-b border-gray-100 bg-white/80 py-4 pl-16 pr-4 backdrop-blur sm:px-6 lg:px-8">
           <h1 className="text-lg font-bold text-gray-900">Account settings</h1>
           <p className="text-xs text-gray-400">Manage your profile and preferences</p>
         </div>
 
         {/* ── Two-column layout ── */}
-        <div className="px-8 py-8 flex gap-6 items-start">
+        <div className="flex flex-col items-stretch gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 xl:flex-row xl:items-start">
 
           {/* ── Left column — forms ── */}
           <div className="flex-1 min-w-0 space-y-5">
@@ -266,7 +266,7 @@ export default function Settings() {
             <Section icon={User} title="Profile" desc="Your name and contact info" index={0}>
               <form onSubmit={saveProfile} className="space-y-4">
                 {/* Avatar */}
-                <div className="flex items-center gap-4 pb-2">
+                <div className="flex flex-col gap-4 pb-2 sm:flex-row sm:items-center">
                   <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shrink-0">
                       {user?.avatar_url ? (
@@ -284,13 +284,13 @@ export default function Settings() {
                     </div>
                     <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-400">{user?.email}</p>
+                    <p className="truncate text-xs text-gray-400">{user?.email}</p>
                     <p className="text-xs text-gray-400 mt-1">JPG, PNG or WebP · max 5 MB</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Full name" value={name} onChange={e => setName(e.target.value)} />
                   <Field label="Email address" type="email" value={email} disabled hint="Email cannot be changed yet." />
                 </div>
@@ -309,7 +309,7 @@ export default function Settings() {
                   onChange={e => setCurrentPw(e.target.value)}
                   right={eyeBtn}
                 />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <Field
                     label="New password"
                     type={showPw ? 'text' : 'password'}
@@ -358,7 +358,7 @@ export default function Settings() {
             {/* Preferences */}
             <Section icon={Globe} title="Preferences" desc="Language, timezone, and appearance" index={3}>
               <form onSubmit={savePrefs} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Language</label>
                     <select
@@ -391,13 +391,13 @@ export default function Settings() {
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Theme</label>
-                  <div className="flex gap-2">
+                  <div className="grid gap-2 sm:grid-cols-3">
                     {THEME_OPTIONS.map(({ key, label, icon: Icon }) => (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setTheme(key)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                        className={`flex items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm font-medium transition-all ${
                           theme === key
                             ? 'border-violet-400 bg-violet-50 text-violet-700'
                             : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -417,14 +417,14 @@ export default function Settings() {
             {/* Danger zone */}
             <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={4} danger>
               {!showDelete ? (
-                <div className="flex items-center justify-between gap-4">
-                  <div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900">Delete account</p>
                     <p className="text-xs text-gray-400 mt-0.5">Permanently delete your account and all data. This cannot be undone.</p>
                   </div>
                   <button
                     onClick={() => setShowDelete(true)}
-                    className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 text-sm font-semibold transition-colors"
+                    className="flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-500 transition-colors hover:bg-red-50 sm:w-auto"
                   >
                     <Trash2 size={14} />
                     Delete account
@@ -441,10 +441,10 @@ export default function Settings() {
                     placeholder="delete my account"
                     className="w-full px-4 py-2.5 rounded-xl border border-red-200 text-sm text-gray-900 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-red-300 mb-3"
                   />
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <button
                       disabled={deleteConfirm !== 'delete my account'}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold transition-colors"
+                      className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Trash2 size={14} />
                       Permanently delete
@@ -462,7 +462,7 @@ export default function Settings() {
           </div>
 
           {/* ── Right column — summary panel ── */}
-          <div className="w-72 shrink-0 space-y-4">
+          <div className="w-full shrink-0 space-y-4 xl:w-72">
 
             {/* Plan widget */}
             <motion.div

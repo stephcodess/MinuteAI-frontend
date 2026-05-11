@@ -7,7 +7,7 @@ const ACCESS_KEY  = 'minuteai_access'
 const REFRESH_KEY = 'minuteai_refresh'
 const USER_KEY    = 'minuteai_user'
 
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options: RequestInit = {}) {
   const { headers: extraHeaders, ...rest } = options
   const res = await fetch(`${API}${path}`, {
     headers: { 'Content-Type': 'application/json', ...extraHeaders },

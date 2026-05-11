@@ -779,7 +779,7 @@ export default function Tasks() {
 
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden">
         {/* top bar */}
-        <div className="shrink-0 border-b border-gray-100 bg-white/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+        <div className="shrink-0 border-b border-gray-100 bg-white/80 py-4 pl-16 pr-4 backdrop-blur sm:px-6 lg:px-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-900">Tasks</h1>

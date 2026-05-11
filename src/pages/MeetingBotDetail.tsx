@@ -85,7 +85,7 @@ export default function MeetingBotDetail() {
     <div className="flex h-screen bg-[#f6f8fb] overflow-hidden">
       <Sidebar active="meeting-bots" />
       <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="px-8 py-8">
+        <div className="py-8 pl-16 pr-4 sm:px-6 lg:px-8">
           <button
             onClick={() => navigate('/meeting-bots')}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"

@@ -50,7 +50,7 @@ function OTPInput({ value, onChange, onComplete, disabled }) {
       {Array.from({ length: 6 }).map((_, i) => (
         <motion.input
           key={i}
-          ref={el => (inputs.current[i] = el)}
+          ref={el => { inputs.current[i] = el }}
           type="text"
           inputMode="numeric"
           maxLength={1}
@@ -134,7 +134,7 @@ export default function VerifyEmail() {
     return () => clearTimeout(t)
   }, [countdown])
 
-  async function handleSubmit(submittedCode) {
+  async function handleSubmit(submittedCode = code) {
     const c = submittedCode ?? code
     if (c.length < 6) {
       setError('Please enter all 6 digits.')

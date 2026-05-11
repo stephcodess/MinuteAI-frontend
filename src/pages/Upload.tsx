@@ -127,7 +127,7 @@ export default function Upload() {
       <main className="min-w-0 flex-1 overflow-y-auto">
 
         {/* ── header ── */}
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white/80 py-4 pl-16 pr-4 backdrop-blur sm:px-6 lg:px-8">
           <div>
             <h1 className="text-lg font-bold text-gray-900">New Meeting</h1>
             <p className="text-xs text-gray-400">
@@ -165,7 +165,7 @@ export default function Upload() {
             <div
               onClick={() => !file && inputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
-              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragging(false) }}
+              onDragLeave={e => { if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false) }}
               onDrop={onDrop}
               className={`
                 relative rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer

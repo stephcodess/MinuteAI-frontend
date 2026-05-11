@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, ArrowRight, Eye, EyeOff, RefreshCw } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-function FloatingInput({ label, type = 'text', value, onChange, right, autoComplete }) {
+function FloatingInput({ label, type = 'text', value, onChange, right = null, autoComplete }) {
   const [focused, setFocused] = useState(false)
   const raised = focused || value.length > 0
   const id = `fi-${label}`
@@ -54,7 +54,7 @@ function OTPInput({ value, onChange, onComplete, disabled }) {
   return (
     <div className="flex gap-3 justify-center">
       {Array.from({ length: 6 }).map((_, i) => (
-        <input key={i} ref={el => (inputs.current[i] = el)}
+        <input key={i} ref={el => { inputs.current[i] = el }}
           type="text" inputMode="numeric" maxLength={1}
           value={value[i] || ''} onChange={e => handleInput(i, e)}
           onKeyDown={e => handleKey(i, e)} onPaste={handlePaste} disabled={disabled}
@@ -147,7 +147,7 @@ export default function ForgotPassword() {
     }
   }
 
-  async function handleCode(submittedCode) {
+  async function handleCode(submittedCode = code) {
     const c = submittedCode ?? code
     if (c.length < 6) return doShake('Please enter all 6 digits.')
     setStep('password')

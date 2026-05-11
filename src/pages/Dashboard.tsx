@@ -34,27 +34,27 @@ function meetingGradient(str = '') {
 
 function buildStats(s) {
   return [
-    { label: 'Total Meetings', value: s?.total_meetings    ?? 0,     delta: `${s?.processing ?? 0} processing`,    icon: FileText, gradient: 'from-violet-500 to-indigo-600' },
-    { label: 'This Month',     value: s?.meetings_this_month ?? 0,   delta: 'meetings this month',                  icon: Calendar, gradient: 'from-sky-400 to-blue-500'      },
-    { label: 'Hours Saved',    value: `${Math.round((s?.total_meetings ?? 0) * 0.75)}h`, delta: 'vs writing manually', icon: Clock, gradient: 'from-emerald-400 to-teal-500'  },
-    { label: 'Action Items',   value: s?.total_action_items ?? 0,    delta: 'tracked across meetings',               icon: Zap,      gradient: 'from-amber-400 to-orange-500' },
+    { label: 'Total Meetings', value: s?.total_meetings ?? 0, delta: `${s?.processing ?? 0} processing`, icon: FileText, gradient: 'from-violet-500 to-indigo-600' },
+    { label: 'This Month', value: s?.meetings_this_month ?? 0, delta: 'meetings this month', icon: Calendar, gradient: 'from-sky-400 to-blue-500' },
+    { label: 'Hours Saved', value: `${Math.round((s?.total_meetings ?? 0) * 0.75)}h`, delta: 'vs writing manually', icon: Clock, gradient: 'from-emerald-400 to-teal-500' },
+    { label: 'Action Items', value: s?.total_action_items ?? 0, delta: 'tracked across meetings', icon: Zap, gradient: 'from-amber-400 to-orange-500' },
   ]
 }
 
 function fmtDate(iso) {
-  const d = new Date(iso), now = new Date(), diff = now - d
-  if (diff < 86400000)  return 'Today'
+  const d = new Date(iso), now = new Date(), diff = now.getTime() - d.getTime()
+  if (diff < 86400000) return 'Today'
   if (diff < 172800000) return 'Yesterday'
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 function fmtTimeAgo(iso) {
-  const diff = Date.now() - new Date(iso)
+  const diff = Date.now() - new Date(iso).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1)   return 'Just now'
-  if (mins < 60)  return `${mins}m ago`
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
   const hrs = Math.floor(mins / 60)
-  if (hrs < 24)   return `${hrs}h ago`
+  if (hrs < 24) return `${hrs}h ago`
   return `${Math.floor(hrs / 24)}d ago`
 }
 
@@ -85,7 +85,7 @@ function Pagination({ page, totalPages, total, pageSize, onPage }) {
   }
 
   const from = (page - 1) * pageSize + 1
-  const to   = Math.min(page * pageSize, total)
+  const to = Math.min(page * pageSize, total)
 
   return (
     <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
@@ -104,16 +104,15 @@ function Pagination({ page, totalPages, total, pageSize, onPage }) {
           p === '…'
             ? <span key={`ellipsis-${i}`} className="px-1 text-gray-400 text-xs select-none">…</span>
             : <button
-                key={p}
-                onClick={() => onPage(p)}
-                className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all ${
-                  page === p
-                    ? 'bg-violet-600 text-white shadow-sm shadow-violet-300/30'
-                    : 'text-gray-500 hover:bg-gray-100'
+              key={p}
+              onClick={() => onPage(p)}
+              className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all ${page === p
+                ? 'bg-violet-600 text-white shadow-sm shadow-violet-300/30'
+                : 'text-gray-500 hover:bg-gray-100'
                 }`}
-              >
-                {p}
-              </button>
+            >
+              {p}
+            </button>
         )}
         <button
           onClick={() => onPage(page + 1)}
@@ -196,11 +195,10 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
       </div>
 
       {/* Status */}
-      <span className={`hidden w-fit shrink-0 self-center text-[11px] font-semibold px-2.5 py-1 rounded-full sm:inline-flex sm:justify-self-center ${
-        meeting.status === 'done'       ? 'bg-emerald-50 text-emerald-700' :
-        meeting.status === 'processing' ? 'bg-blue-50 text-blue-600'       :
-                                          'bg-red-50 text-red-600'
-      }`}>
+      <span className={`hidden w-fit shrink-0 self-center text-[11px] font-semibold px-2.5 py-1 rounded-full sm:inline-flex sm:justify-self-center ${meeting.status === 'done' ? 'bg-emerald-50 text-emerald-700' :
+        meeting.status === 'processing' ? 'bg-blue-50 text-blue-600' :
+          'bg-red-50 text-red-600'
+        }`}>
         {meeting.status === 'done' ? '✓ Done' : meeting.status === 'processing' ? 'Processing' : 'Failed'}
       </span>
 
@@ -246,11 +244,10 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
       </div>
 
       <div className="col-start-2 flex items-center gap-3 pt-1 sm:hidden" onClick={e => e.stopPropagation()}>
-        <span className={`w-fit shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
-          meeting.status === 'done'       ? 'bg-emerald-50 text-emerald-700' :
-          meeting.status === 'processing' ? 'bg-blue-50 text-blue-600'       :
-                                            'bg-red-50 text-red-600'
-        }`}>
+        <span className={`w-fit shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full ${meeting.status === 'done' ? 'bg-emerald-50 text-emerald-700' :
+          meeting.status === 'processing' ? 'bg-blue-50 text-blue-600' :
+            'bg-red-50 text-red-600'
+          }`}>
           {meeting.status === 'done' ? '✓ Done' : meeting.status === 'processing' ? 'Processing' : 'Failed'}
         </span>
 
@@ -307,13 +304,13 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
 
 function ActivityFeed({ meetings }) {
   const items = meetings.slice(0, 7).map(m => ({
-    id:    m.id,
-    icon:  m.status === 'done' ? CheckCircle2 : m.status === 'processing' ? Loader2 : AlertCircle,
-    dot:   m.status === 'done' ? 'bg-emerald-400' : m.status === 'processing' ? 'bg-blue-400' : 'bg-red-400',
+    id: m.id,
+    icon: m.status === 'done' ? CheckCircle2 : m.status === 'processing' ? Loader2 : AlertCircle,
+    dot: m.status === 'done' ? 'bg-emerald-400' : m.status === 'processing' ? 'bg-blue-400' : 'bg-red-400',
     label: m.status === 'done' ? (m.title || 'Meeting') : m.title || 'Meeting',
-    sub:   m.status === 'done' ? 'Minutes ready' : m.status === 'processing' ? 'Processing…' : 'Processing failed',
-    time:  fmtTimeAgo(m.date),
-    to:    m.status === 'done' ? `/results/${m.id}` : null,
+    sub: m.status === 'done' ? 'Minutes ready' : m.status === 'processing' ? 'Processing…' : 'Processing failed',
+    time: fmtTimeAgo(m.date),
+    to: m.status === 'done' ? `/results/${m.id}` : null,
     spinning: m.status === 'processing',
   }))
 
@@ -360,15 +357,14 @@ function ActivityFeed({ meetings }) {
               className="relative flex items-start gap-3 px-4 py-3 hover:bg-gray-50/60 transition-colors"
             >
               {/* timeline dot */}
-              <div className={`relative z-10 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                item.spinning ? 'bg-blue-50' :
+              <div className={`relative z-10 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${item.spinning ? 'bg-blue-50' :
                 item.dot === 'bg-emerald-400' ? 'bg-emerald-50' : 'bg-red-50'
-              }`}>
+                }`}>
                 <item.icon
                   size={13}
                   className={
-                    item.spinning     ? 'text-blue-500 animate-spin' :
-                    item.dot === 'bg-emerald-400' ? 'text-emerald-500' : 'text-red-500'
+                    item.spinning ? 'text-blue-500 animate-spin' :
+                      item.dot === 'bg-emerald-400' ? 'text-emerald-500' : 'text-red-500'
                   }
                 />
               </div>
@@ -401,29 +397,29 @@ function TeamPreview() {
   useEffect(() => {
     api.get('/team').then(data => {
       const list = data.slice(0, 4).map((m, i) => ({
-        name:     m.name || m.invited_email?.split('@')[0] || 'Member',
+        name: m.name || m.invited_email?.split('@')[0] || 'Member',
         initials: m.initials || (m.invited_email || 'MM').slice(0, 2).toUpperCase(),
-        grad:     GRADS[(i + 1) % GRADS.length],
-        status:   m.status,
+        grad: GRADS[(i + 1) % GRADS.length],
+        status: m.status,
       }))
       if (user) {
         list.unshift({
-          name:     user.name || 'You',
+          name: user.name || 'You',
           initials: (user.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
-          grad:     GRADS[0],
-          status:   'active',
-          isMe:     true,
+          grad: GRADS[0],
+          status: 'active',
+          isMe: true,
         })
       }
       setMembers(list.slice(0, 5))
     }).catch(() => {
       if (user) {
         setMembers([{
-          name:     user.name || 'You',
+          name: user.name || 'You',
           initials: (user.name || 'U').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(),
-          grad:     GRADS[0],
-          status:   'active',
-          isMe:     true,
+          grad: GRADS[0],
+          status: 'active',
+          isMe: true,
         }])
       }
     })
@@ -627,18 +623,18 @@ function UpcomingMeetings({ sessions }) {
 }
 
 export default function Dashboard() {
-  const { user }            = useAuth()
+  const { user } = useAuth()
   const { activeWorkspace } = useWorkspace()
-  const navigate            = useNavigate()
-  const [search,    setSearch]    = useState('')
-  const [filter,    setFilter]    = useState('all')
-  const [page,      setPage]      = useState(1)
-  const [meetings,  setMeetings]  = useState([])
+  const navigate = useNavigate()
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+  const [page, setPage] = useState(1)
+  const [meetings, setMeetings] = useState([])
   const [statsData, setStatsData] = useState(null)
-  const [usage,     setUsage]     = useState(null)
-  const [upcoming,  setUpcoming]  = useState([])
+  const [usage, setUsage] = useState(null)
+  const [upcoming, setUpcoming] = useState([])
   const [botAccount, setBotAccount] = useState(null)
-  const [loading,   setLoading]   = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!activeWorkspace) return
@@ -658,33 +654,33 @@ export default function Dashboard() {
         setUpcoming(upcomingSessions)
         setBotAccount(bot)
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }, [activeWorkspace?.id])
 
   function handleStar(id) {
     api.patch(`/meetings/${id}/star`, {}).then(({ starred }) =>
       setMeetings(prev => prev.map(m => m.id === id ? { ...m, starred } : m))
-    ).catch(() => {})
+    ).catch(() => { })
   }
 
   function handleDelete(id) {
     api.delete(`/meetings/${id}`).then(() =>
       setMeetings(prev => prev.filter(m => m.id !== id))
-    ).catch(() => {})
+    ).catch(() => { })
   }
 
-  const hour       = new Date().getHours()
-  const greeting   = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
-  const remaining  = usage ? Math.max((usage.meetings_limit ?? 3) - (usage.meetings_used ?? 0), 0) : null
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const remaining = usage ? Math.max((usage.meetings_limit ?? 3) - (usage.meetings_used ?? 0), 0) : null
   const doneMeetings = meetings.filter(m => m.status === 'done').length
 
   const filtered = meetings.filter(m => {
     const matchSearch = (m.title || '').toLowerCase().includes(search.toLowerCase())
     const matchFilter =
       filter === 'starred' ? m.starred :
-      filter === 'month'   ? new Date(m.date) > new Date(Date.now() - 30 * 86400000) :
-      true
+        filter === 'month' ? new Date(m.date) > new Date(Date.now() - 30 * 86400000) :
+          true
     return matchSearch && matchFilter
   })
 
@@ -692,7 +688,7 @@ export default function Dashboard() {
   useEffect(() => { setPage(1) }, [filter, search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <div className="flex h-screen bg-[#f8f7ff] overflow-hidden">
@@ -701,7 +697,7 @@ export default function Dashboard() {
       <main className="min-w-0 flex-1 overflow-y-auto">
 
         {/* ── Hero ── */}
-        <div className="relative bg-gradient-to-br from-violet-700 via-[#5b45e8] to-indigo-800 px-8 pt-10 pb-24 overflow-hidden">
+        <div className="relative overflow-hidden bg-gradient-to-br from-violet-700 via-[#5b45e8] to-indigo-800 pb-24 pl-8 pr-4 pt-14 sm:px-6 lg:px-8">
           {/* dot grid */}
           <div
             className="absolute inset-0 pointer-events-none"
@@ -740,10 +736,10 @@ export default function Dashboard() {
           {/* Quick action chips */}
           <div className="relative mt-7 flex gap-2 flex-wrap">
             {[
-              { icon: UserPlus,    label: 'Invite team',   to: '/team'    },
-              { icon: CheckSquare, label: 'My tasks',       to: '/tasks'   },
-              { icon: Zap,         label: remaining !== null ? `${remaining} meetings left` : 'View plan', to: '/billing' },
-              { icon: TrendingUp,  label: 'View analytics', to: '/dashboard' },
+              { icon: UserPlus, label: 'Invite team', to: '/team' },
+              { icon: CheckSquare, label: 'My tasks', to: '/tasks' },
+              { icon: Zap, label: remaining !== null ? `${remaining} meetings left` : 'View plan', to: '/billing' },
+              { icon: TrendingUp, label: 'View analytics', to: '/dashboard' },
             ].map(({ icon: Icon, label, to }) => (
               <Link
                 key={label}
@@ -782,11 +778,10 @@ export default function Dashboard() {
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                        filter === f
-                          ? 'bg-violet-600 text-white shadow-sm shadow-violet-300/30'
-                          : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
-                      }`}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${filter === f
+                        ? 'bg-violet-600 text-white shadow-sm shadow-violet-300/30'
+                        : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+                        }`}
                     >
                       {f === 'starred' && <Star size={10} className={filter === f ? 'fill-white text-white' : 'text-amber-400'} />}
                       {label}
