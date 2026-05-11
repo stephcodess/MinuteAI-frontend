@@ -83,7 +83,7 @@ export default function Subscription() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar active="billing" />
 
-      <main className="min-w-0 flex-1 overflow-y-auto pt-16 md:pt-0">
+      <main className="min-w-0 flex-1 overflow-y-auto">
         {/* top bar */}
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4 flex items-center gap-3">
           <Link to="/billing" className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500">

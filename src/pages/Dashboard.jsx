@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileText, Clock, Users, Zap, Search, MoreHorizontal,
-  Eye, Trash2, AlertCircle, CheckCircle2, Calendar,
+  Trash2, AlertCircle, CheckCircle2, Calendar,
   Plus, Star, UserPlus, Bell, Loader2,
   CheckSquare, TrendingUp, ChevronLeft, ChevronRight,
   Bot, Copy, CalendarClock, ExternalLink,
@@ -162,7 +162,7 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, delay }}
-      className="group flex items-center gap-4 px-5 py-4 hover:bg-violet-50/30 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+      className="group grid grid-cols-[auto_minmax(0,1fr)] gap-3 px-4 py-4 hover:bg-violet-50/30 border-b border-gray-50 last:border-0 transition-colors cursor-pointer sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4 sm:px-5"
       onClick={() => meeting.status === 'done' && navigate(`/results/${meeting.id}`)}
     >
       {/* Avatar */}
@@ -179,7 +179,7 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
           <p className="text-sm font-semibold text-gray-900 truncate">{meeting.title || 'Untitled meeting'}</p>
           {meeting.starred && <Star size={11} className="text-amber-400 fill-amber-400 shrink-0" />}
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-gray-400">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400">
           <span className="flex items-center gap-1"><Calendar size={9} />{fmtDate(meeting.date)}</span>
           {meeting.duration && meeting.duration !== '—' && (
             <span className="flex items-center gap-1"><Clock size={9} />{meeting.duration}</span>
@@ -188,7 +188,7 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
             <span className="flex items-center gap-1"><Users size={9} />{meeting.participants} people</span>
           )}
           {meeting.actions > 0 && (
-            <span className="flex items-center gap-1 text-violet-500 font-semibold">
+            <span className="hidden items-center gap-1 text-violet-500 font-semibold sm:flex">
               <Zap size={9} />{meeting.actions} actions
             </span>
           )}
@@ -196,7 +196,7 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
       </div>
 
       {/* Status */}
-      <span className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+      <span className={`hidden w-fit shrink-0 self-center text-[11px] font-semibold px-2.5 py-1 rounded-full sm:inline-flex sm:justify-self-center ${
         meeting.status === 'done'       ? 'bg-emerald-50 text-emerald-700' :
         meeting.status === 'processing' ? 'bg-blue-50 text-blue-600'       :
                                           'bg-red-50 text-red-600'
@@ -205,22 +205,69 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
       </span>
 
       {/* Actions */}
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={e => e.stopPropagation()}>
-        {meeting.status === 'done' && (
-          <button
-            title="View"
-            onClick={() => navigate(`/results/${meeting.id}`)}
-            className="p-1.5 rounded-lg hover:bg-white text-gray-400 hover:text-violet-600 transition-colors"
-          >
-            <Eye size={14} />
-          </button>
-        )}
+      <div className="hidden items-center justify-end gap-0.5 opacity-100 transition-opacity shrink-0 sm:flex" onClick={e => e.stopPropagation()}>
         <div className="relative">
           <button
             onClick={() => setMenuOpen(v => !v)}
-            className="p-1.5 rounded-lg hover:bg-white text-gray-400 hover:text-gray-700 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-white hover:text-gray-700"
+            aria-label="Meeting actions"
           >
             <MoreHorizontal size={14} />
+          </button>
+          <AnimatePresence>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-gray-100 z-20 py-1"
+                >
+                  <button
+                    onClick={() => { onStar?.(meeting.id); setMenuOpen(false) }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                  >
+                    <Star size={13} className={meeting.starred ? 'fill-amber-400 text-amber-400' : ''} />
+                    {meeting.starred ? 'Unstar' : 'Star'}
+                  </button>
+                  <button
+                    onClick={() => { onDelete?.(meeting.id); setMenuOpen(false) }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-red-500 hover:bg-red-50"
+                  >
+                    <Trash2 size={13} /> Delete
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="col-start-2 flex items-center gap-3 pt-1 sm:hidden" onClick={e => e.stopPropagation()}>
+        <span className={`w-fit shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+          meeting.status === 'done'       ? 'bg-emerald-50 text-emerald-700' :
+          meeting.status === 'processing' ? 'bg-blue-50 text-blue-600'       :
+                                            'bg-red-50 text-red-600'
+        }`}>
+          {meeting.status === 'done' ? '✓ Done' : meeting.status === 'processing' ? 'Processing' : 'Failed'}
+        </span>
+
+        {meeting.actions > 0 && (
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600">
+            <Zap size={11} />
+            {meeting.actions} actions
+          </span>
+        )}
+
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-700"
+            aria-label="Meeting actions"
+          >
+            <MoreHorizontal size={15} />
           </button>
           <AnimatePresence>
             {menuOpen && (
@@ -651,7 +698,7 @@ export default function Dashboard() {
     <div className="flex h-screen bg-[#f8f7ff] overflow-hidden">
       <Sidebar active="dashboard" />
 
-      <main className="min-w-0 flex-1 overflow-y-auto pt-16 md:pt-0">
+      <main className="min-w-0 flex-1 overflow-y-auto">
 
         {/* ── Hero ── */}
         <div className="relative bg-gradient-to-br from-violet-700 via-[#5b45e8] to-indigo-800 px-8 pt-10 pb-24 overflow-hidden">
@@ -711,15 +758,15 @@ export default function Dashboard() {
         </div>
 
         {/* ── Stats (overlap hero) ── */}
-        <div className="px-8 -mt-12 relative z-10 mb-7">
+        <div className="px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 mb-7">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {buildStats(statsData).map((s, i) => <StatCard key={s.label} {...s} index={i} />)}
           </div>
         </div>
 
         {/* ── Main content ── */}
-        <div className="px-8 pb-10">
-          <div className="flex gap-5 items-start">
+        <div className="px-4 pb-10 sm:px-6 lg:px-8">
+          <div className="space-y-5">
 
             {/* ── Meeting list ── */}
             <motion.div
@@ -729,8 +776,8 @@ export default function Dashboard() {
               className="flex-1 min-w-0 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
             >
               {/* list header */}
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-0.5">
+              <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div className="flex flex-wrap items-center gap-1">
                   {[['all', 'All'], ['month', 'This month'], ['starred', 'Starred']].map(([f, label]) => (
                     <button
                       key={f}
@@ -747,13 +794,13 @@ export default function Dashboard() {
                   ))}
                 </div>
 
-                <div className="relative">
+                <div className="relative w-full sm:w-auto">
                   <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   <input
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Search meetings…"
-                    className="pl-8 pr-4 py-2 rounded-xl border border-gray-200 text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent w-44 transition"
+                    className="w-full rounded-xl border border-gray-200 py-2 pl-8 pr-4 text-xs text-gray-700 placeholder-gray-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-violet-300 sm:w-56"
                   />
                 </div>
               </div>
@@ -813,10 +860,9 @@ export default function Dashboard() {
             </motion.div>
 
             {/* ── Right panel ── */}
-            <div className="w-72 shrink-0 space-y-4">
+            <div className="grid gap-4 lg:grid-cols-3">
               <RecorderInviteCard botAccount={botAccount} />
               <UpcomingMeetings sessions={upcoming} />
-              <ActivityFeed meetings={meetings} />
               <TeamPreview />
             </div>
 

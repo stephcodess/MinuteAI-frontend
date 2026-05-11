@@ -186,6 +186,71 @@ function TaskRow({ task, members, canManage, onUpdated }) {
   )
 }
 
+function TaskCard({ task, members, canManage, onUpdated }) {
+  const [cycling, setCycling] = useState(false)
+  const meta = STATUS_META[task.status] || STATUS_META.todo
+  const Icon = meta.icon
+
+  async function cycleStatus() {
+    setCycling(true)
+    try {
+      const updated = await api.patch(`/tasks/${task.id}`, { status: NEXT_STATUS[task.status] })
+      onUpdated(updated)
+    } finally {
+      setCycling(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <button
+          onClick={cycleStatus}
+          disabled={cycling}
+          title="Cycle status"
+          className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all ${meta.cls}`}
+        >
+          {cycling
+            ? <Loader2 size={13} className="animate-spin" />
+            : <Icon size={13} className={task.status === 'in_progress' ? 'animate-spin' : ''} />}
+        </button>
+        <p className={`min-w-0 flex-1 text-sm leading-relaxed ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+          {task.title}
+        </p>
+      </div>
+
+      <div className="mt-4 grid gap-3 text-xs">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-semibold uppercase tracking-wide text-gray-400">Assignee</span>
+          {canManage ? (
+            <AssigneePicker task={task} members={members} onUpdated={onUpdated} />
+          ) : (
+            <span className="text-gray-600">{task.assignee?.name ?? 'Unassigned'}</span>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-semibold uppercase tracking-wide text-gray-400">Status</span>
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.cls}`}>
+            <Icon size={10} className={task.status === 'in_progress' ? 'animate-spin' : ''} />
+            {meta.label}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-semibold uppercase tracking-wide text-gray-400">Deadline</span>
+          {task.deadline ? (
+            <span className="flex items-center gap-1.5 text-gray-500">
+              <CalendarDays size={11} />
+              {task.deadline}
+            </span>
+          ) : (
+            <span className="text-gray-300">-</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── CSV export ────────────────────────────────────────────────────────────────
 
 function downloadCSV(tasks, meetingTitle) {
@@ -323,13 +388,13 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
   const paginated  = tasks.slice((page - 1) * TASKS_PAGE_SIZE, page * TASKS_PAGE_SIZE)
 
   return (
-    <div className="py-6">
+    <div className="py-4 sm:py-6">
       {/* summary row */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-4">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <span className="text-sm font-semibold text-gray-900">{total} tasks</span>
           <div className="flex items-center gap-2">
-            <div className="w-40 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-gray-100 sm:w-40">
               <motion.div
                 className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full"
                 initial={{ width: 0 }}
@@ -350,8 +415,8 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
       </div>
 
       {/* table */}
-      <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white">
-        <table className="w-full text-sm border-collapse">
+      <div className="hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white md:block">
+        <table className="min-w-[720px] w-full text-sm border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Task</th>
@@ -372,6 +437,18 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="space-y-3 md:hidden">
+        {paginated.map(task => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            members={members}
+            canManage={canManage}
+            onUpdated={handleUpdated}
+          />
+        ))}
       </div>
 
       <TasksPagination
@@ -469,11 +546,11 @@ export default function Results() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar active={null} />
 
-      <main className="min-w-0 flex-1 flex flex-col overflow-hidden pt-16 md:pt-0">
+      <main className="min-w-0 flex-1 flex flex-col overflow-hidden">
 
         {/* ── sticky header ── */}
-        <div className="shrink-0 bg-white border-b border-gray-100 px-8 pt-5 pb-0">
-          <div className="flex items-start justify-between gap-6 pb-4">
+        <div className="shrink-0 bg-white border-b border-gray-100 px-4 pl-16 pt-5 pb-0 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-4 pb-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
             <div className="min-w-0">
               <Link
                 to="/dashboard"
@@ -481,29 +558,41 @@ export default function Results() {
               >
                 <ArrowLeft size={13} /> Back to dashboard
               </Link>
-              <h1 className="text-xl font-bold text-gray-900 leading-tight truncate">
+              <h1 className="text-xl font-bold text-gray-900 leading-tight sm:truncate">
                 {minutes?.title ?? 'Meeting Minutes'}
               </h1>
               {(metaParts.length > 0 || meta?.participants?.length > 0) && (
-                <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   {metaParts.map((p, i) => (
-                    <span key={i} className="flex items-center gap-1 text-xs text-gray-400">
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-500 ring-1 ring-gray-100">
                       {i === 0 ? <CalendarDays size={11} /> : <Clock size={11} />}
                       {p}
                     </span>
                   ))}
                   {meta?.participants?.length > 0 && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400">
-                      <Users size={11} />
-                      {meta.participants.join(', ')}
-                    </span>
+                    <>
+                      {meta.participants.slice(0, 12).map((participant) => (
+                        <span
+                          key={participant}
+                          className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-100"
+                        >
+                          <Users size={11} className="shrink-0" />
+                          <span className="truncate">{participant}</span>
+                        </span>
+                      ))}
+                      {meta.participants.length > 12 && (
+                        <span className="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-100">
+                          +{meta.participants.length - 12} more
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               )}
             </div>
 
             {/* action buttons */}
-            <div className="flex items-center gap-2 shrink-0 pt-6">
+            <div className="flex shrink-0 flex-wrap items-center gap-2 lg:pt-6">
               <button
                 onClick={copyText}
                 className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
@@ -554,7 +643,7 @@ export default function Results() {
 
         {/* ── scrollable content ── */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-5xl mx-auto px-8">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
             <AnimatePresence mode="wait">
               {activeTab === 'minutes' ? (
                 <motion.div

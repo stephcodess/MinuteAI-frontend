@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, LayoutDashboard, LogOut, ChevronDown, User } from 'lucide-react'
+import { Mic, LayoutDashboard, LogOut, ChevronDown, User, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -15,6 +15,7 @@ export default function Navbar() {
   const isAuth = pathname === '/login' || pathname === '/signup' || pathname === '/verify-email' || pathname === '/forgot-password'
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
     if (isDashboard || isAuth || !isHome) { setScrolled(false); return }
@@ -45,7 +46,7 @@ export default function Navbar() {
             MinuteAI
           </Link>
 
-          <div className="flex items-center gap-6 text-sm">
+          <div className="hidden items-center gap-6 text-sm md:flex">
             <a href="/#how-it-works" className={`font-medium transition-colors ${dark ? 'text-slate-300 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
               How it works
             </a>
@@ -129,8 +130,135 @@ export default function Navbar() {
               </div>
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition md:hidden ${
+              dark ? 'border-white/20 bg-white/10 text-white' : 'border-gray-200 bg-white text-gray-700 shadow-sm'
+            }`}
+            aria-label="Open navigation"
+          >
+            <Menu size={20} />
+          </button>
         </div>
       </nav>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
+              onClick={() => setMobileOpen(false)}
+              className="fixed inset-0 z-[90] bg-slate-950/45 backdrop-blur-sm md:hidden"
+              aria-label="Close navigation backdrop"
+            />
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              className="fixed inset-y-0 right-0 z-[100] flex w-80 max-w-[86vw] flex-col bg-white shadow-2xl md:hidden"
+            >
+              <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600">
+                  <Mic size={17} className="text-white" />
+                </div>
+                <span className="text-base font-bold text-gray-950">MinuteAI</span>
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  className="ml-auto flex h-9 w-9 items-center justify-center rounded-2xl text-gray-500 transition hover:bg-gray-100"
+                  aria-label="Close navigation"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <nav className="flex-1 px-4 py-5">
+                <div className="space-y-1">
+                  {[
+                    { label: 'How it works', to: '/#how-it-works' },
+                    { label: 'Features', to: '/#features' },
+                    { label: 'Pricing', to: '/pricing' },
+                  ].map((item) => (
+                    <Link
+                      key={item.label}
+                      to={item.to}
+                      onClick={() => setMobileOpen(false)}
+                      className="block rounded-2xl px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="mt-6 border-t border-gray-100 pt-5">
+                  {isSignedIn ? (
+                    <>
+                      <div className="mb-3 flex items-center gap-3 rounded-2xl bg-gray-50 px-4 py-3">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 text-xs font-bold text-white">
+                          {user?.avatar_url
+                            ? <img src={`${BASE}${user.avatar_url}`} alt="" className="h-full w-full object-cover" />
+                            : initials}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-gray-900">{user?.name}</p>
+                          <p className="truncate text-xs text-gray-400">{user?.email}</p>
+                        </div>
+                      </div>
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                      >
+                        <LayoutDashboard size={16} className="text-gray-400" />
+                        Dashboard
+                      </Link>
+                      <Link
+                        to="/settings"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                      >
+                        <User size={16} className="text-gray-400" />
+                        Account settings
+                      </Link>
+                      <button
+                        onClick={() => { signOut(); setMobileOpen(false); navigate('/') }}
+                        className="mt-2 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-red-500 transition hover:bg-red-50"
+                      >
+                        <LogOut size={16} />
+                        Sign out
+                      </button>
+                    </>
+                  ) : (
+                    <div className="grid gap-3">
+                      <Link
+                        to="/login"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-2xl border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                      >
+                        Sign in
+                      </Link>
+                      <Link
+                        to="/signup"
+                        onClick={() => setMobileOpen(false)}
+                        className="rounded-2xl bg-violet-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-violet-700"
+                      >
+                        Get started free
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </nav>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
       {!isHome && <div className="h-0" />}
     </>
   )

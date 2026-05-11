@@ -133,7 +133,7 @@ function Column({ col, tasks, onDragStart, onDrop, draggingOver, onDragOver, onD
   const isOver = draggingOver === col.key
 
   return (
-    <div className="flex flex-col min-w-0 w-full">
+    <div className="flex w-full min-w-[280px] flex-col sm:min-w-0">
       <div className={`flex items-center gap-2 px-3 py-2.5 rounded-t-xl border ${col.headerColor}`}>
         <span className={`w-2.5 h-2.5 rounded-full ${col.dotColor}`} />
         <span className="text-sm font-semibold text-gray-700">{col.label}</span>
@@ -146,7 +146,7 @@ function Column({ col, tasks, onDragStart, onDrop, draggingOver, onDragOver, onD
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={e => onDrop(e, col.key)}
-        className={`flex-1 min-h-[520px] rounded-b-xl border border-t-0 ${col.headerColor} transition-all duration-150 ${
+        className={`flex-1 min-h-[360px] rounded-b-xl border border-t-0 ${col.headerColor} transition-all duration-150 sm:min-h-[520px] ${
           isOver ? `${col.dropBg} ring-2 ${col.dropRing} ring-inset` : ''
         }`}
       >
@@ -328,11 +328,11 @@ function TaskDrawer({ task: initialTask, members, meetings, onClose, onUpdated, 
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-        className="fixed right-0 top-0 bottom-0 z-40 w-[440px] bg-white shadow-2xl flex flex-col"
+        className="fixed bottom-0 right-0 top-0 z-40 flex w-full max-w-[440px] flex-col bg-white shadow-2xl sm:w-[440px]"
       >
         {/* header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 border-b border-gray-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-wrap items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${STATUS_META[task.status]?.dot ?? 'bg-gray-400'}`} />
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Task</span>
             {saving && <Loader2 size={12} className="animate-spin text-violet-400" />}
@@ -356,7 +356,7 @@ function TaskDrawer({ task: initialTask, members, meetings, onClose, onUpdated, 
         </div>
 
         {/* body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6 sm:px-6">
 
           {/* title */}
           <div>
@@ -384,7 +384,7 @@ function TaskDrawer({ task: initialTask, members, meetings, onClose, onUpdated, 
           {/* status */}
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Status</p>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {Object.entries(STATUS_META).map(([key, meta]) => (
                 <button
                   key={key}
@@ -409,8 +409,8 @@ function TaskDrawer({ task: initialTask, members, meetings, onClose, onUpdated, 
 
             <div className="space-y-3">
               {/* assignee */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-500 w-20 shrink-0">Assignee</span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <span className="text-xs text-gray-500 sm:w-20 sm:shrink-0">Assignee</span>
                 <div className="flex-1">
                   <AssigneePicker
                     value={task.assignee}
@@ -422,8 +422,8 @@ function TaskDrawer({ task: initialTask, members, meetings, onClose, onUpdated, 
               </div>
 
               {/* meeting */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-500 w-20 shrink-0">Meeting</span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <span className="text-xs text-gray-500 sm:w-20 sm:shrink-0">Meeting</span>
                 <div className="flex-1">
                   <MeetingPicker
                     value={task.job_id}
@@ -435,8 +435,8 @@ function TaskDrawer({ task: initialTask, members, meetings, onClose, onUpdated, 
               </div>
 
               {/* deadline */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-500 w-20 shrink-0">Deadline</span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <span className="text-xs text-gray-500 sm:w-20 sm:shrink-0">Deadline</span>
                 <input
                   type="date"
                   value={task.deadline ?? ''}
@@ -541,7 +541,7 @@ function CreateTaskModal({ workspaceId, members, meetings, onCreate, onClose }) 
             </button>
           </div>
 
-          <div className="px-6 py-5 space-y-4">
+          <div className="max-h-[70vh] overflow-y-auto px-4 py-5 space-y-4 sm:px-6">
             {/* title */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1.5">Task title <span className="text-red-400">*</span></label>
@@ -557,7 +557,7 @@ function CreateTaskModal({ workspaceId, members, meetings, onCreate, onClose }) 
             {/* status */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1.5">Status</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {Object.entries(STATUS_META).map(([key, meta]) => (
                   <button
                     key={key}
@@ -654,7 +654,7 @@ function CreateTaskModal({ workspaceId, members, meetings, onCreate, onClose }) 
           </div>
 
           {/* footer */}
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 bg-gray-50/50 px-4 py-4 sm:px-6">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
               Cancel
             </button>
@@ -777,16 +777,17 @@ export default function Tasks() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar active="tasks" />
 
-      <main className="min-w-0 flex-1 flex flex-col overflow-hidden pt-16 md:pt-0">
+      <main className="min-w-0 flex-1 flex flex-col overflow-hidden">
         {/* top bar */}
-        <div className="shrink-0 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+        <div className="shrink-0 border-b border-gray-100 bg-white/80 px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-900">Tasks</h1>
             <p className="text-xs text-gray-400">
               {activeWorkspace?.name ?? 'Workspace'} · {tasks.length} task{tasks.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             {tasks.length > 0 && (
               <div className="hidden sm:flex items-center gap-2">
                 <span className="text-xs text-gray-400">
@@ -808,17 +809,18 @@ export default function Tasks() {
               Create Task
             </button>
           </div>
+          </div>
         </div>
 
         {/* board */}
-        <div className="flex-1 overflow-auto px-6 py-5">
+        <div className="flex-1 overflow-auto px-4 py-4 sm:px-6 sm:py-5">
           {loading ? (
             <div className="flex items-center justify-center h-full gap-2 text-gray-400">
               <Loader2 size={18} className="animate-spin" />
               <span className="text-sm">Loading tasks…</span>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-4 h-full min-w-[640px]">
+            <div className="grid h-full min-w-[900px] grid-cols-3 gap-4 lg:min-w-0">
               {COLUMNS.map(col => (
                 <Column
                   key={col.key}

@@ -137,7 +137,7 @@ export default function MeetingBots() {
     <div className="flex h-screen bg-[#f5f7fb] overflow-hidden">
       <Sidebar active="meeting-bots" />
 
-      <main className="min-w-0 flex-1 overflow-y-auto pt-16 md:pt-0">
+      <main className="min-w-0 flex-1 overflow-y-auto">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/85 px-8 py-4 backdrop-blur">
           <div>
             <h1 className="text-lg font-bold text-slate-950">Meeting bots</h1>

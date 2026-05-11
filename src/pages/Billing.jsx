@@ -23,7 +23,7 @@ function Pagination({ page, totalPages, total, onPage }) {
     pages.push(totalPages)
   }
   return (
-    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+    <div className="flex flex-col gap-3 border-t border-gray-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <span className="text-xs text-gray-400">
         Page <span className="font-medium text-gray-600">{page}</span> of <span className="font-medium text-gray-600">{totalPages}</span>
         <span className="ml-1 text-gray-300">· {total} invoices</span>
@@ -282,7 +282,7 @@ export default function Billing() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar active="billing" />
 
-      <main className="min-w-0 flex-1 overflow-y-auto pt-16 md:pt-0">
+      <main className="min-w-0 flex-1 overflow-y-auto">
         {/* top bar */}
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4">
           <h1 className="text-lg font-bold text-gray-900">Billing & subscription</h1>

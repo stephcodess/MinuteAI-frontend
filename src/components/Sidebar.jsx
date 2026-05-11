@@ -488,10 +488,10 @@ export default function Sidebar({ active }) {
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-[80] flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-700 shadow-lg shadow-slate-200/70 md:hidden"
+        className="fixed left-3 top-3 z-[80] flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-200 bg-white/95 text-gray-700 shadow-lg shadow-slate-200/70 backdrop-blur md:hidden"
         aria-label="Open sidebar"
       >
-        <Menu size={20} />
+        <Menu size={18} />
       </button>
 
       <AnimatePresence>
