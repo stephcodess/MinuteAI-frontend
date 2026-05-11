@@ -10,6 +10,8 @@ services:
         value: https://minuteai-backend.onrender.com
       - key: VITE_GOOGLE_CLIENT_ID
         value: 625680446331-drv4lb8ajnt1959986mucok1nuaidjm1.apps.googleusercontent.com
+      - key: VITE_MEETING_BOT_ENABLED
+        value: false
     routes:
       - type: rewrite
         source: /*

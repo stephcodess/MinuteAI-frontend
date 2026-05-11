@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, CalendarClock, Clock3, ExternalLink, Link2, Loader2, Mic, X } from 'lucide-react'
+import { Bot, CalendarClock, Clock3, ExternalLink, Link2, Loader2, Mic, Sparkles, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { createMeetingBotSession, downloadMeetingBotCalendar } from '../lib/api'
 import { useWorkspace } from '../context/WorkspaceContext'
 
 const RECORDER_NAME = 'MinuteAI Recorder'
+const IS_PRODUCTION = import.meta.env.PROD
+const MEETING_BOT_ENABLED = import.meta.env.VITE_MEETING_BOT_ENABLED === 'true'
 
 function SupportPill({ icon: Icon, label, tone }) {
   return (
@@ -29,6 +31,7 @@ export default function RecordMeetingModal({ open, onClose }) {
   const [durationMinutes, setDurationMinutes] = useState(30)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const showDevelopmentNotice = IS_PRODUCTION && !MEETING_BOT_ENABLED
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -89,8 +92,9 @@ export default function RecordMeetingModal({ open, onClose }) {
                     </div>
                     <h2 className="text-2xl font-black tracking-tight">Record a meeting</h2>
                     <p className="mt-2 max-w-lg text-sm leading-relaxed text-indigo-100/85">
-                      Paste a Google Meet or Zoom link and MinuteAI will create a meeting bot session for {activeWorkspace?.name ?? 'your workspace'}.
-                      The bot joins as the shared recorder identity instead of an individual user profile.
+                      {showDevelopmentNotice
+                        ? 'Live meeting recording is still being prepared for production. Manual uploads remain available while we finish the recorder.'
+                        : `Paste a Google Meet or Zoom link and MinuteAI will create a meeting bot session for ${activeWorkspace?.name ?? 'your workspace'}. The bot joins as the shared recorder identity instead of an individual user profile.`}
                     </p>
                   </div>
                   <button
@@ -102,6 +106,43 @@ export default function RecordMeetingModal({ open, onClose }) {
                 </div>
               </div>
 
+              {showDevelopmentNotice ? (
+                <div className="px-6 py-6">
+                  <div className="rounded-[24px] bg-[#f8fafc] p-5 ring-1 ring-slate-200/70">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                        <Sparkles size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-950">Meeting bot is coming soon</h3>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                          We are still hardening live call capture for Google Meet and Zoom. For now, upload a meeting recording after the call and MinuteAI will transcribe, format, and generate your minutes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose()
+                        navigate('/upload')
+                      }}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-300 transition hover:bg-slate-800"
+                    >
+                      <Mic size={16} />
+                      Upload recording
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              ) : (
               <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1.15fr_0.85fr]">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -242,6 +283,7 @@ export default function RecordMeetingModal({ open, onClose }) {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </motion.div>
         </>
