@@ -777,7 +777,7 @@ export default function Tasks() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar active="tasks" />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="min-w-0 flex-1 flex flex-col overflow-hidden pt-16 md:pt-0">
         {/* top bar */}
         <div className="shrink-0 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4 flex items-center justify-between">
           <div>

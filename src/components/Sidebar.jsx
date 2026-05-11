@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, LayoutDashboard, Upload, CreditCard, Settings, LogOut,
   Zap, Plus, Users, ChevronsUpDown, Check, Pencil, Trash2, X, Loader2, CheckSquare,
   Bell, CheckCircle2, ClipboardList,
-  Bot,
+  Bot, Menu,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useWorkspace } from '../context/WorkspaceContext'
@@ -371,7 +371,7 @@ function NotificationBell() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -12 }}
                 transition={{ type: 'spring', stiffness: 340, damping: 30 }}
-                className="fixed left-60 top-0 bottom-0 w-80 bg-white border-r border-gray-100 shadow-2xl z-50 flex flex-col"
+                className="fixed left-4 right-4 top-4 bottom-4 z-[110] flex flex-col overflow-hidden rounded-3xl bg-white border border-gray-100 shadow-2xl md:bottom-0 md:left-60 md:right-auto md:top-0 md:w-80 md:rounded-none md:border-r"
               >
                 {/* header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
@@ -461,11 +461,17 @@ function NotificationBell() {
 export default function Sidebar({ active }) {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [usage, setUsage] = useState(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
     api.get('/users/me/usage').then(setUsage).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
 
   const plan       = usage?.plan ?? 'free'
   const used       = usage?.meetings_used ?? 0
@@ -473,18 +479,57 @@ export default function Sidebar({ active }) {
   const pct        = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
   const planLabel  = plan === 'free' ? 'Free plan' : plan === 'pro' ? 'Pro plan' : 'Team plan'
 
+  function closeMobileSidebar() {
+    setMobileOpen(false)
+  }
+
   return (
-    <aside className="w-60 shrink-0 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0">
+    <>
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="fixed left-4 top-4 z-[80] flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-700 shadow-lg shadow-slate-200/70 md:hidden"
+        aria-label="Open sidebar"
+      >
+        <Menu size={20} />
+      </button>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            onClick={closeMobileSidebar}
+            className="fixed inset-0 z-[85] bg-slate-950/40 backdrop-blur-sm md:hidden"
+            aria-label="Close sidebar backdrop"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside className={`fixed inset-y-0 left-0 z-[90] w-72 max-w-[86vw] shrink-0 bg-white border-r border-gray-100 flex flex-col h-screen transition-transform duration-300 md:sticky md:top-0 md:z-auto md:w-60 md:max-w-none md:translate-x-0 ${
+        mobileOpen ? 'translate-x-0 shadow-2xl shadow-slate-950/20' : '-translate-x-full'
+      }`}>
 
       {/* logo */}
       <div className="px-5 py-4 border-b border-gray-100 flex items-center">
-        <Link to="/" className="flex items-center gap-2.5 font-bold text-gray-900 flex-1">
+        <Link to="/" onClick={closeMobileSidebar} className="flex items-center gap-2.5 font-bold text-gray-900 flex-1">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-sm">
             <Mic size={15} className="text-white" />
           </div>
           <span className="text-base">MinuteAI</span>
         </Link>
         <NotificationBell />
+        <button
+          type="button"
+          onClick={closeMobileSidebar}
+          className="ml-2 flex h-8 w-8 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 md:hidden"
+          aria-label="Close sidebar"
+        >
+          <X size={16} />
+        </button>
       </div>
 
       {/* workspace switcher */}
@@ -498,6 +543,7 @@ export default function Sidebar({ active }) {
             <Link
               key={key}
               to={to}
+              onClick={closeMobileSidebar}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 isActive ? 'bg-violet-50 text-violet-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
               }`}
@@ -526,6 +572,7 @@ export default function Sidebar({ active }) {
         {plan === 'free' && (
           <Link
             to="/billing"
+            onClick={closeMobileSidebar}
             className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors"
           >
             <Zap size={11} /> Upgrade to Pro
@@ -536,7 +583,7 @@ export default function Sidebar({ active }) {
       {/* user */}
       <div className="px-3 pb-4 border-t border-gray-100 pt-3">
         <button
-          onClick={() => { signOut(); navigate('/') }}
+          onClick={() => { closeMobileSidebar(); signOut(); navigate('/') }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors group"
         >
           <UserAvatar name={user?.name || 'User'} avatarUrl={user?.avatar_url} size={8} />
@@ -548,5 +595,6 @@ export default function Sidebar({ active }) {
         </button>
       </div>
     </aside>
+    </>
   )
 }

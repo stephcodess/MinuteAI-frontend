@@ -84,7 +84,7 @@ export default function MeetingBotDetail() {
   return (
     <div className="flex h-screen bg-[#f6f8fb] overflow-hidden">
       <Sidebar active="meeting-bots" />
-      <main className="flex-1 overflow-y-auto">
+      <main className="min-w-0 flex-1 overflow-y-auto pt-16 md:pt-0">
         <div className="px-8 py-8">
           <button
             onClick={() => navigate('/meeting-bots')}

@@ -651,7 +651,7 @@ export default function Dashboard() {
     <div className="flex h-screen bg-[#f8f7ff] overflow-hidden">
       <Sidebar active="dashboard" />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="min-w-0 flex-1 overflow-y-auto pt-16 md:pt-0">
 
         {/* ── Hero ── */}
         <div className="relative bg-gradient-to-br from-violet-700 via-[#5b45e8] to-indigo-800 px-8 pt-10 pb-24 overflow-hidden">

@@ -124,7 +124,7 @@ export default function Upload() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar active="upload" />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="min-w-0 flex-1 overflow-y-auto pt-16 md:pt-0">
 
         {/* ── header ── */}
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-gray-100 px-8 py-4 flex items-center justify-between">

@@ -469,7 +469,7 @@ export default function Results() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar active={null} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="min-w-0 flex-1 flex flex-col overflow-hidden pt-16 md:pt-0">
 
         {/* ── sticky header ── */}
         <div className="shrink-0 bg-white border-b border-gray-100 px-8 pt-5 pb-0">
