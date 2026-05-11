@@ -9,7 +9,7 @@ services:
       - key: VITE_API_URL
         value: https://minuteai-backend.onrender.com
       - key: VITE_GOOGLE_CLIENT_ID
-        sync: false
+        value: 625680446331-drv4lb8ajnt1959986mucok1nuaidjm1.apps.googleusercontent.com
     routes:
       - type: rewrite
         source: /*
