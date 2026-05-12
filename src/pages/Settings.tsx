@@ -1,14 +1,14 @@
 import { useState, useEffect, useId, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User, Mail, Lock, Bell, Trash2, CheckCircle, Eye, EyeOff,
   AlertTriangle, Save, Zap, Globe, Moon, Sun, Monitor,
-  Download, Shield, Camera, Loader2,
+  Download, Shield, Camera, Loader2, Link2, X,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/Sidebar'
-import { api, formRequest } from '../lib/api'
+import { api, formRequest, getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration } from '../lib/api'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -127,6 +127,77 @@ function SaveBtn({ saved, onClick = undefined, label = 'Save changes', icon: Ico
 
 export default function Settings() {
   const { user, updateUser } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // integrations
+  const [integrations, setIntegrations] = useState<Record<string, any>>({
+    google: { connected: false, email: null, auto_join: true },
+    zoom:   { connected: false, email: null, auto_join: true },
+  })
+  const [integrationBanner, setIntegrationBanner] = useState<{ type: 'success' | 'error', msg: string } | null>(null)
+  const [connectingProvider, setConnectingProvider] = useState<string | null>(null)
+  const [disconnectingProvider, setDisconnectingProvider] = useState<string | null>(null)
+
+  async function loadIntegrations() {
+    try {
+      const data = await getIntegrations()
+      setIntegrations(data)
+    } catch {}
+  }
+
+  useEffect(() => {
+    loadIntegrations()
+  }, [])
+
+  useEffect(() => {
+    const connected = searchParams.get('connected')
+    const error     = searchParams.get('error')
+    if (connected) {
+      setIntegrationBanner({ type: 'success', msg: `${connected === 'google' ? 'Google Calendar' : 'Zoom'} connected! Your upcoming meetings will be recorded automatically.` })
+      loadIntegrations()
+      setSearchParams({})
+    } else if (error) {
+      const msgs: Record<string, string> = {
+        google_denied: 'Google Calendar access was denied.',
+        zoom_denied:   'Zoom access was denied.',
+        google_token:  'Could not exchange Google auth code. Please try again.',
+        zoom_token:    'Could not exchange Zoom auth code. Please try again.',
+        invalid_state: 'OAuth state expired. Please try again.',
+      }
+      setIntegrationBanner({ type: 'error', msg: msgs[error] || 'Connection failed. Please try again.' })
+      setSearchParams({})
+    }
+  }, [searchParams])
+
+  async function handleConnect(provider: string) {
+    setConnectingProvider(provider)
+    try {
+      const { url } = await getIntegrationConnectUrl(provider)
+      window.location.href = url
+    } catch {
+      setIntegrationBanner({ type: 'error', msg: `Could not start ${provider} OAuth flow.` })
+      setConnectingProvider(null)
+    }
+  }
+
+  async function handleDisconnect(provider: string) {
+    setDisconnectingProvider(provider)
+    try {
+      await disconnectIntegration(provider)
+      await loadIntegrations()
+    } finally {
+      setDisconnectingProvider(null)
+    }
+  }
+
+  async function handleAutoJoinToggle(provider: string, value: boolean) {
+    setIntegrations(prev => ({ ...prev, [provider]: { ...prev[provider], auto_join: value } }))
+    try {
+      await updateIntegration(provider, { auto_join: value })
+    } catch {
+      await loadIntegrations()
+    }
+  }
 
   // avatar
   const fileInputRef = useRef(null)
@@ -414,8 +485,81 @@ export default function Settings() {
               </form>
             </Section>
 
+            {/* Integrations */}
+            <Section icon={Link2} title="Integrations" desc="Connect your calendar to auto-record upcoming meetings" index={4}>
+              <AnimatePresence>
+                {integrationBanner && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className={`mb-4 flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
+                      integrationBanner.type === 'success'
+                        ? 'border-green-200 bg-green-50 text-green-700'
+                        : 'border-red-200 bg-red-50 text-red-700'
+                    }`}
+                  >
+                    <span>{integrationBanner.msg}</span>
+                    <button onClick={() => setIntegrationBanner(null)} className="shrink-0 mt-0.5">
+                      <X size={14} />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="space-y-4">
+                {[
+                  { provider: 'google', label: 'Google Calendar', icon: '🗓️', desc: 'Auto-join Google Meet calls from your calendar' },
+                  { provider: 'zoom',   label: 'Zoom',            icon: '📹', desc: 'Auto-join Zoom meetings from your account' },
+                ].map(({ provider, label, icon, desc }) => {
+                  const info = integrations[provider] || { connected: false, email: null, auto_join: true }
+                  return (
+                    <div key={provider} className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-3">
+                        <span className="text-2xl leading-none mt-0.5">{icon}</span>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{label}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
+                          {info.connected && info.email && (
+                            <p className="text-xs text-violet-600 mt-1 font-medium">{info.email}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-start gap-2 sm:items-end sm:shrink-0">
+                        {info.connected ? (
+                          <>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>Auto-join</span>
+                              <Toggle checked={info.auto_join} onChange={v => handleAutoJoinToggle(provider, v)} />
+                            </div>
+                            <button
+                              onClick={() => handleDisconnect(provider)}
+                              disabled={disconnectingProvider === provider}
+                              className="text-xs font-semibold text-red-500 hover:text-red-700 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {disconnectingProvider === provider && <Loader2 size={11} className="animate-spin" />}
+                              Disconnect
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => handleConnect(provider)}
+                            disabled={connectingProvider === provider}
+                            className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                          >
+                            {connectingProvider === provider ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
+                            Connect
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Section>
+
             {/* Danger zone */}
-            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={4} danger>
+            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={5} danger>
               {!showDelete ? (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">

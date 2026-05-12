@@ -24,6 +24,7 @@ import Subscription from './pages/Subscription'
 import Tasks from './pages/Tasks'
 import MeetingBots from './pages/MeetingBots'
 import MeetingBotDetail from './pages/MeetingBotDetail'
+import LiveTranslator from './pages/LiveTranslator'
 import RecordMeetingFab from './components/RecordMeetingFab'
 
 function RequireAuth({ children }) {
@@ -60,6 +61,7 @@ function AppRoutes() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/meeting-bots" element={<MeetingBots />} />
           <Route path="/meeting-bots/:sessionId" element={<MeetingBotDetail />} />
+          <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />
         </Routes>
       </main>
       <RecordMeetingFab />

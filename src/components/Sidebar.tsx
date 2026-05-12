@@ -6,7 +6,7 @@ import {
   Mic, LayoutDashboard, Upload, CreditCard, Settings, LogOut,
   Zap, Plus, Users, ChevronsUpDown, Check, Pencil, Trash2, X, Loader2, CheckSquare,
   Bell, CheckCircle2, ClipboardList,
-  Bot, Menu,
+  Bot, Menu, Languages,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useWorkspace } from '../context/WorkspaceContext'
@@ -18,6 +18,7 @@ const NAV = [
   { key: 'dashboard',    icon: LayoutDashboard, label: 'Dashboard',   to: '/dashboard' },
   { key: 'upload',       icon: Upload,          label: 'New meeting', to: '/upload' },
   { key: 'meeting-bots', icon: Bot,             label: 'Meeting Bots', to: '/meeting-bots' },
+  { key: 'translator',   icon: Languages,       label: 'Live Translate', to: '/translator' },
   { key: 'tasks',        icon: CheckSquare,     label: 'My Tasks',    to: '/tasks' },
   { key: 'team',         icon: Users,           label: 'Team',        to: '/team' },
   { key: 'upgrade plan', icon: CreditCard,      label: 'Upgrade Access', to: '/billing' },

@@ -176,13 +176,16 @@ export default function MeetingBotDetail() {
                     <Logs size={18} className="text-slate-500" />
                     <h2 className="text-lg font-bold text-slate-950">Run log</h2>
                   </div>
-                  <div className="space-y-3">
-                    {(session.logs?.length ? session.logs : ['No run logs yet.']).map((line, index) => (
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                    {(Array.isArray(session.logs) && session.logs.length > 0
+                      ? session.logs
+                      : ['No run logs yet.']
+                    ).map((line, index) => (
                       <motion.div
                         key={`${index}-${line}`}
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-xs leading-relaxed text-slate-600"
+                        className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 font-mono text-xs leading-relaxed text-slate-600"
                       >
                         {line}
                       </motion.div>

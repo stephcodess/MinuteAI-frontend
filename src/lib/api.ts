@@ -226,3 +226,19 @@ export function cancelMeetingBotSession(sessionId) {
 export function endMeetingBotSession(sessionId) {
   return api.post(`/meeting-bots/${sessionId}/end`, {})
 }
+
+export function getIntegrations() {
+  return api.get('/integrations')
+}
+
+export function getIntegrationConnectUrl(provider: string) {
+  return api.get(`/integrations/connect/${provider}`)
+}
+
+export function disconnectIntegration(provider: string) {
+  return api.delete(`/integrations/${provider}`)
+}
+
+export function updateIntegration(provider: string, settings: { auto_join?: boolean }) {
+  return api.patch(`/integrations/${provider}`, settings)
+}
