@@ -234,13 +234,50 @@ export default function Settings() {
   const [pwError, setPwError]     = useState(null)
   const [pwSaved, setPwSaved]     = useState(false)
 
-  // notifications
-  const [notifs, setNotifs] = useState({
-    minutesReady: true,
-    weeklyDigest: false,
-    productUpdates: true,
-    errorAlerts: true,
+  // notifications — persisted in localStorage
+  const [notifs, setNotifs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('minuteai_notif_prefs')
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return { minutesReady: true, weeklyDigest: false, productUpdates: true, errorAlerts: true }
   })
+
+  function setNotif(key: string, value: boolean) {
+    setNotifs(prev => {
+      const next = { ...prev, [key]: value }
+      try { localStorage.setItem('minuteai_notif_prefs', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
+
+  // usage / plan
+  const [usage, setUsage] = useState<{ plan: string; meetings_used: number; meetings_limit: number } | null>(null)
+  const [exporting, setExporting] = useState(false)
+
+  useEffect(() => {
+    api.get('/users/me/usage').then(setUsage).catch(() => {})
+  }, [])
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const token = localStorage.getItem('minuteai_access')
+      const res = await fetch(`${BASE}/users/me/export`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = Object.assign(document.createElement('a'), { href: url, download: 'minuteai_export.zip' })
+      document.body.appendChild(a); a.click()
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove() }, 1000)
+    } catch {
+      // silent — could add a toast
+    } finally {
+      setExporting(false)
+    }
+  }
 
   // preferences
   const [timezone, setTimezone]   = useState('UTC')
@@ -420,7 +457,7 @@ export default function Settings() {
                       <p className="text-sm font-semibold text-gray-900">{label}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{desc}</p>
                     </div>
-                    <Toggle checked={notifs[key]} onChange={v => setNotifs(n => ({ ...n, [key]: v }))} />
+                    <Toggle checked={notifs[key]} onChange={v => setNotif(key, v)} />
                   </div>
                 ))}
               </div>
@@ -617,25 +654,57 @@ export default function Settings() {
             >
               <div className="flex items-center justify-between mb-3">
                 <p className="text-sm font-bold text-gray-900">Your plan</p>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">Active</span>
+                {usage && (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">Active</span>
+                )}
               </div>
-              <p className="text-xl font-bold text-gray-900 mb-0.5">Starter <span className="text-gray-400 font-normal text-sm">— Free</span></p>
-              <p className="text-xs text-gray-400 mb-4">2 of 3 monthly meetings used</p>
-              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: '66%' }}
-                  transition={{ duration: 0.8, delay: 0.4 }}
-                  className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full"
-                />
-              </div>
-              <Link
-                to="/billing"
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-              >
-                <Zap size={13} />
-                Upgrade to Pro
-              </Link>
+              {usage ? (
+                <>
+                  <p className="text-xl font-bold text-gray-900 mb-0.5 capitalize">
+                    {usage.plan === 'free' ? 'Starter' : usage.plan}
+                    {usage.plan === 'free' && <span className="text-gray-400 font-normal text-sm"> — Free</span>}
+                  </p>
+                  <p className="text-xs text-gray-400 mb-4">
+                    {usage.meetings_used} of {usage.meetings_limit} meetings used this period
+                  </p>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-4">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, usage.meetings_limit > 0 ? (usage.meetings_used / usage.meetings_limit) * 100 : 0)}%` }}
+                      transition={{ duration: 0.8, delay: 0.4 }}
+                      className={`h-full rounded-full ${
+                        usage.meetings_used >= usage.meetings_limit
+                          ? 'bg-gradient-to-r from-red-400 to-orange-400'
+                          : 'bg-gradient-to-r from-violet-500 to-indigo-500'
+                      }`}
+                    />
+                  </div>
+                  {usage.plan === 'free' && (
+                    <Link
+                      to="/billing"
+                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+                    >
+                      <Zap size={13} />
+                      Upgrade to Pro
+                    </Link>
+                  )}
+                  {usage.plan !== 'free' && (
+                    <Link
+                      to="/billing"
+                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-gray-200 hover:border-violet-300 text-gray-600 hover:text-violet-700 text-sm font-semibold transition-all"
+                    >
+                      Manage billing
+                    </Link>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-6 bg-gray-100 rounded w-2/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2 mt-1" />
+                  <div className="h-1.5 bg-gray-100 rounded-full mt-4 mb-4" />
+                  <div className="h-9 bg-gray-100 rounded-xl" />
+                </div>
+              )}
             </motion.div>
 
             {/* Security */}
@@ -660,7 +729,20 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Last sign-in</span>
-                  <span className="text-gray-700">Today</span>
+                  <span className="text-gray-700">
+                    {user?.last_login_at
+                      ? (() => {
+                          const d = new Date(user.last_login_at)
+                          const now = new Date()
+                          const diffMs = now.getTime() - d.getTime()
+                          const diffDays = Math.floor(diffMs / 86400000)
+                          if (diffDays === 0) return 'Today'
+                          if (diffDays === 1) return 'Yesterday'
+                          if (diffDays < 7)  return `${diffDays} days ago`
+                          return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                        })()
+                      : '—'}
+                  </span>
                 </div>
               </div>
             </motion.div>
@@ -679,9 +761,13 @@ export default function Settings() {
               <p className="text-xs text-gray-400 mb-4 leading-relaxed">
                 Download all your meeting minutes as a ZIP archive.
               </p>
-              <button className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-gray-200 hover:border-violet-300 hover:text-violet-700 text-gray-600 text-sm font-semibold transition-all">
-                <Download size={13} />
-                Export all minutes
+              <button
+                onClick={handleExport}
+                disabled={exporting}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-gray-200 hover:border-violet-300 hover:text-violet-700 text-gray-600 text-sm font-semibold transition-all disabled:opacity-50"
+              >
+                {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                {exporting ? 'Preparing…' : 'Export all minutes'}
               </button>
             </motion.div>
 

@@ -11,7 +11,7 @@ export default function Navbar() {
   const navigate = useNavigate()
   const { isSignedIn, user, signOut } = useAuth()
   const isHome = pathname === '/'
-  const isDashboard = ['/dashboard', '/billing', '/settings', '/team', '/upload', '/processing', '/results', '/subscription', '/tasks', '/meeting-bots'].some(p => pathname.startsWith(p))
+  const isDashboard = ['/dashboard', '/billing', '/settings', '/team', '/upload', '/processing', '/results', '/subscription', '/tasks', '/meeting-bots', '/translator'].some(p => pathname.startsWith(p))
   const isAuth = pathname === '/login' || pathname === '/signup' || pathname === '/verify-email' || pathname === '/forgot-password'
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -35,11 +35,9 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`z-50 px-6 py-4 transition-all duration-300 ${
-        isHome ? 'fixed top-0 left-0 right-0' : 'sticky top-0'
-      } ${
-        dark ? 'bg-transparent' : 'bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm'
-      }`}>
+      <nav className={`z-50 px-6 py-4 transition-all duration-300 ${isHome ? 'fixed top-0 left-0 right-0' : 'sticky top-0'
+        } ${dark ? 'bg-transparent' : 'bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm'
+        }`}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <Link to="/" className={`flex items-center gap-2 font-semibold text-lg transition-colors ${dark ? 'text-white' : 'text-gray-900'}`}>
             <Mic className={dark ? 'text-violet-400' : 'text-violet-600'} size={22} />
@@ -62,9 +60,8 @@ export default function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setMenuOpen(v => !v)}
-                  className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border transition-all ${
-                    dark ? 'border-white/20 hover:bg-white/10' : 'border-gray-200 hover:bg-gray-50'
-                  }`}
+                  className={`flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border transition-all ${dark ? 'border-white/20 hover:bg-white/10' : 'border-gray-200 hover:bg-gray-50'
+                    }`}
                 >
                   <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
                     {user?.avatar_url
@@ -120,11 +117,10 @@ export default function Navbar() {
                 <Link to="/login" className={`font-medium transition-colors ${dark ? 'text-slate-300 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
                   Sign in
                 </Link>
-                <Link to="/signup" className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  dark
+                <Link to="/signup" className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${dark
                     ? 'bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur'
                     : 'bg-violet-600 hover:bg-violet-700 text-white'
-                }`}>
+                  }`}>
                   Get started free
                 </Link>
               </div>
@@ -134,9 +130,8 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition md:hidden ${
-              dark ? 'border-white/20 bg-white/10 text-white' : 'border-gray-200 bg-white text-gray-700 shadow-sm'
-            }`}
+            className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition md:hidden ${dark ? 'border-white/20 bg-white/10 text-white' : 'border-gray-200 bg-white text-gray-700 shadow-sm'
+              }`}
             aria-label="Open navigation"
           >
             <Menu size={20} />
