@@ -30,7 +30,7 @@ const GRADS = [
   'from-lime-400 to-green-600',    'from-fuchsia-400 to-violet-600',
 ]
 
-const PLAN_MEMBER_LIMITS  = { free: 3, pro: 5, team: 25 }
+// Member/workspace limits are now DB-driven via the usage endpoint
 const MEMBERS_PAGE_SIZE   = 9
 const MEETINGS_PAGE_SIZE  = 8
 
@@ -758,25 +758,27 @@ export default function Team() {
               className="bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-200 rounded-2xl p-5"
             >
               {(() => {
-                const plan = usage?.plan ?? 'free'
-                const memberLimit = PLAN_MEMBER_LIMITS[plan] ?? 3
-                const isUpgradeable = plan !== 'team'
-                const planLabel = plan === 'team' ? 'Team plan' : plan === 'pro' ? 'Pro plan' : 'Free plan'
+                const planName = usage?.plan ?? 'free'
+                const memberLimit = usage?.max_members ?? null
+                const wsLimit = usage?.max_workspaces ?? null
+                const isFree = planName === 'free' || !usage?.plan
+                const planLabel = planName.charAt(0).toUpperCase() + planName.slice(1) + ' plan'
                 return (
                   <>
                     <p className="text-sm font-bold text-violet-900 mb-1">{planLabel}</p>
                     <p className="text-xs text-violet-700/80 leading-relaxed mb-4">
-                      {plan === 'team'
-                        ? `Your Team plan supports up to ${memberLimit} members per workspace.`
-                        : plan === 'pro'
-                        ? `Your Pro plan supports up to ${memberLimit} members and 3 workspaces.`
-                        : `Your Free plan supports up to ${memberLimit} members. Upgrade for more workspaces.`}
+                      {memberLimit != null
+                        ? `Up to ${memberLimit} members per workspace.`
+                        : 'Unlimited members per workspace.'}
+                      {wsLimit != null
+                        ? ` Up to ${wsLimit} workspaces.`
+                        : ' Unlimited workspaces.'}
                     </p>
-                    {isUpgradeable && (
+                    {isFree && (
                       <Link to="/billing"
                         className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-colors"
                       >
-                        <Zap size={11} />{plan === 'pro' ? 'Upgrade to Team' : 'Upgrade plan'}
+                        <Zap size={11} /> Upgrade plan
                       </Link>
                     )}
                   </>

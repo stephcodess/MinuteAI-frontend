@@ -174,7 +174,10 @@ export async function uploadAudio(file, email, onProgress, workspaceId) {
 export function getJobStatus(jobId)          { return apiFetch(`/status/${jobId}`) }
 export function getResults(jobId)            { return apiFetch(`/results/${jobId}`) }
 export function retryJob(jobId)              { return apiFetch(`/retry/${jobId}`, { method: 'POST' }) }
-export function getDownloadUrl(jobId, fmt)   { return `${BASE}/download/${jobId}/${fmt}` }
+export function getDownloadUrl(jobId, fmt, template?: string) {
+  const base = `${BASE}/download/${jobId}/${fmt}`
+  return template ? `${base}?template=${encodeURIComponent(template)}` : base
+}
 export function getMeetingBotCalendarUrl(sessionId) { return `${BASE}/meeting-bots/${sessionId}/calendar.ics` }
 
 export async function downloadMeetingBotCalendar(sessionId) {
@@ -232,7 +235,8 @@ export function getIntegrations() {
 }
 
 export function getIntegrationConnectUrl(provider: string) {
-  return api.get(`/integrations/connect/${provider}`)
+  const origin = encodeURIComponent(window.location.origin)
+  return api.get(`/integrations/connect/${provider}?origin=${origin}`)
 }
 
 export function disconnectIntegration(provider: string) {

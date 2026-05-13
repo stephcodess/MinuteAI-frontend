@@ -1,120 +1,60 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { CheckCircle, ArrowRight, Zap, Crown, Users, HelpCircle, SlidersHorizontal } from 'lucide-react'
+import { CheckCircle, ArrowRight, Zap, Crown, HelpCircle, SlidersHorizontal, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { api } from '../lib/api'
 
-const PLANS = {
-  monthly: [
-    {
-      name: 'Starter',
-      price: 'Free',
-      period: '',
-      desc: 'Perfect for occasional use',
-      features: [
-        '3 meetings per month',
-        'Up to 30 min each',
-        '.docx & PDF download',
-        'Action items extraction',
-        'Speaker identification',
-      ],
-      cta: 'Get started free',
-      ctaTo: '/signup',
-      highlight: false,
-      icon: null,
-    },
-    {
-      name: 'Pro',
-      price: '£19',
-      period: '/month',
-      desc: 'For professionals & frequent users',
-      features: [
-        'Unlimited meetings',
-        'Up to 3 hours each',
-        'Priority processing',
-        'Email delivery of minutes',
-        'Everything in Starter',
-      ],
-      cta: 'Start Pro — £19/mo',
-      ctaTo: '/signup',
-      highlight: true,
-      badge: 'Most popular',
-      icon: Crown,
-    },
-    {
-      name: 'Team',
-      price: '£79',
-      period: '/month',
-      desc: 'For teams & organisations',
-      features: [
-        'Up to 10 users',
-        'Shared workspace',
-        'Custom templates',
-        'Priority support',
-        'Everything in Pro',
-      ],
-      cta: 'Start Team plan',
-      ctaTo: '/signup',
-      highlight: false,
-      icon: Users,
-    },
-  ],
-  annual: [
-    {
-      name: 'Starter',
-      price: 'Free',
-      period: '',
-      desc: 'Perfect for occasional use',
-      features: [
-        '3 meetings per month',
-        'Up to 30 min each',
-        '.docx & PDF download',
-        'Action items extraction',
-        'Speaker identification',
-      ],
-      cta: 'Get started free',
-      ctaTo: '/signup',
-      highlight: false,
-      icon: null,
-    },
-    {
-      name: 'Pro',
-      price: '£15',
-      period: '/month',
-      yearlyNote: 'Billed as £182/year',
-      desc: 'For professionals & frequent users',
-      features: [
-        'Unlimited meetings',
-        'Up to 3 hours each',
-        'Priority processing',
-        'Email delivery of minutes',
-        'Everything in Starter',
-      ],
-      cta: 'Start Pro — £15/mo',
-      ctaTo: '/signup',
-      highlight: true,
-      badge: 'Best value',
-      icon: Crown,
-    },
-    {
-      name: 'Team',
-      price: '£63',
-      period: '/month',
-      yearlyNote: 'Billed as £756/year',
-      desc: 'For teams & organisations',
-      features: [
-        'Up to 10 users',
-        'Shared workspace',
-        'Custom templates',
-        'Priority support',
-        'Everything in Pro',
-      ],
-      cta: 'Start Team plan',
-      ctaTo: '/signup',
-      highlight: false,
-      icon: Users,
-    },
-  ],
+function fmtPlanPrice(cents, currency) {
+  const sym = { gbp: '£', usd: '$', eur: '€' }[currency?.toLowerCase()] || '$'
+  if (!cents) return 'Free'
+  const val = cents / 100
+  return `${sym}${val % 1 === 0 ? val : val.toFixed(2)}`
+}
+
+function normalizePricingPlan(p, billing, isSignedIn, recommended) {
+  const isFree = !p.price_monthly
+  const monthlyAmt = p.price_monthly || 0
+  const annualMonthly = Math.round(monthlyAmt * 0.8)
+  const displayAmt = billing === 'annual' && !isFree ? annualMonthly : monthlyAmt
+  const sym = { gbp: '£', usd: '$', eur: '€' }[p.currency?.toLowerCase()] || '$'
+  const isRec = p.display_name === recommended
+
+  return {
+    name: p.display_name || p.name,
+    planKey: p.name,
+    price: fmtPlanPrice(displayAmt, p.currency),
+    period: isFree ? '' : '/month',
+    yearlyNote: billing === 'annual' && !isFree
+      ? `Billed as ${sym}${((annualMonthly * 12) / 100).toFixed(0)}/year`
+      : undefined,
+    desc: p.description || '',
+    features: Array.isArray(p.features) ? p.features : [],
+    cta: isSignedIn
+      ? (isFree ? 'Continue free' : `Choose ${p.display_name}`)
+      : (isFree ? 'Get started free' : `Start ${p.display_name}`),
+    ctaTo: isSignedIn ? (isFree ? '/upload' : '/billing') : '/signup',
+    highlight: isRec || Boolean(p.is_popular),
+    badge: isRec ? (billing === 'annual' ? 'Best value' : 'Recommended') : (p.is_popular ? 'Most popular' : undefined),
+    icon: isRec || p.is_popular ? Crown : null,
+    meetings_per_month: p.meetings_per_month,
+    price_monthly: p.price_monthly,
+  }
+}
+
+function recommendPlan(rawPlans, { meetings, teamSize }) {
+  if (!rawPlans?.length) return ''
+  if (teamSize > 1) {
+    const paid = rawPlans.filter(p => p.price_monthly > 0)
+    return paid.length > 0 ? paid[paid.length - 1].display_name : ''
+  }
+  const freePlan = rawPlans.find(p => !p.price_monthly || p.name === 'free')
+  const freeLimit = freePlan?.meetings_per_month ?? 3
+  if (meetings > freeLimit) {
+    const paid = rawPlans.filter(p => p.price_monthly > 0)
+    return paid.length > 0 ? paid[0].display_name : ''
+  }
+  return freePlan?.display_name || rawPlans[0]?.display_name || ''
 }
 
 const FAQS = [
@@ -135,12 +75,6 @@ const FAQS = [
     a: 'Absolutely. Audio files are encrypted in transit and at rest, processed only to generate your minutes, and deleted from our servers within 24 hours.',
   },
 ]
-
-function recommendPlan({ meetings, teamSize }) {
-  if (teamSize > 1) return 'Team'
-  if (meetings > 3) return 'Pro'
-  return 'Starter'
-}
 
 function PricingEstimator({ billing, meetings, setMeetings, teamSize, setTeamSize, recommended }) {
   const estimatedHours = Math.max(1, Math.round(meetings * 0.75))
@@ -319,20 +253,25 @@ export default function Pricing() {
   const [billing, setBilling] = useState('monthly')
   const [meetings, setMeetings] = useState(6)
   const [teamSize, setTeamSize] = useState(1)
+  const [rawPlans, setRawPlans] = useState(null)
   const { isSignedIn } = useAuth()
+
+  useEffect(() => {
+    api.get('/billing/plans')
+      .then(data => setRawPlans(Array.isArray(data) ? data : []))
+      .catch(() => setRawPlans([]))
+  }, [])
+
   const recommended = useMemo(
-    () => recommendPlan({ meetings, teamSize }),
-    [meetings, teamSize],
+    () => recommendPlan(rawPlans, { meetings, teamSize }),
+    [rawPlans, meetings, teamSize],
   )
-  const plans = PLANS[billing].map(plan => ({
-    ...plan,
-    badge: plan.name === recommended ? 'Recommended' : plan.badge,
-    highlight: plan.name === recommended,
-    ctaTo: isSignedIn ? (plan.name === 'Starter' ? '/upload' : '/billing') : '/signup',
-    cta: isSignedIn
-      ? (plan.name === 'Starter' ? 'Continue free' : `Choose ${plan.name}`)
-      : plan.cta,
-  }))
+
+  const plans = useMemo(() => {
+    if (!rawPlans) return null
+    return rawPlans.map(p => normalizePricingPlan(p, billing, isSignedIn, recommended))
+  }, [rawPlans, billing, isSignedIn, recommended])
+
   const payAsYouGoTo = isSignedIn ? '/upload' : '/signup'
 
   return (
@@ -399,11 +338,19 @@ export default function Pricing() {
         />
 
         {/* plans */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
-          {plans.map((plan, i) => (
-            <PlanCard key={plan.name} plan={plan} billing={billing} index={i} />
-          ))}
-        </div>
+        {plans === null ? (
+          <div className="flex items-center justify-center py-20 mb-14">
+            <Loader2 size={28} className="text-violet-400 animate-spin" />
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="text-center py-20 mb-14 text-gray-400 text-sm">No plans available. Check back soon.</div>
+        ) : (
+          <div className={`grid grid-cols-1 gap-6 mb-14 ${plans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'}`}>
+            {plans.map((plan, i) => (
+              <PlanCard key={plan.name} plan={plan} billing={billing} index={i} />
+            ))}
+          </div>
+        )}
 
         {/* pay-as-you-go strip */}
         <motion.div

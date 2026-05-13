@@ -6,6 +6,7 @@ import {
   Circle, CheckCircle2, Loader2, CalendarDays, User as UserIcon,
   ChevronDown, ArrowLeft, TableProperties, FileText, Users,
   Clock, Hash, AlignLeft, ChevronLeft, ChevronRight,
+  X, Zap, BarChart2, Minimize2,
 } from 'lucide-react'
 import { useResults } from '../hooks/useResults'
 import { useWorkspace } from '../context/WorkspaceContext'
@@ -496,6 +497,197 @@ function MinutesTab({ minutes, copied, onCopy }) {
   )
 }
 
+// ── Template Picker Modal ─────────────────────────────────────────────────────
+
+const EXPORT_TEMPLATES = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    desc: 'Classic numbered sections with action items table',
+    icon: FileText,
+    gradient: 'from-violet-500 to-indigo-600',
+    ring: 'ring-violet-400',
+    accent: '#7c3aed',
+    headerBg: '#1e104f',
+    sectionBg: '#f5f3ff',
+    preview: { title: '#1e104f', heading: '#3c2878', tag: '#7c3aed', tagBg: '#f5f3ff' },
+  },
+  {
+    id: 'modern',
+    name: 'Modern',
+    desc: 'Clean teal design, active direct language',
+    icon: Zap,
+    gradient: 'from-teal-500 to-emerald-600',
+    ring: 'ring-teal-400',
+    accent: '#00897b',
+    headerBg: '#00695c',
+    sectionBg: '#e6f7f5',
+    preview: { title: '#00695c', heading: '#00897b', tag: '#009688', tagBg: '#e6f7f5' },
+  },
+  {
+    id: 'executive',
+    name: 'Executive',
+    desc: 'Action items first, concise summaries for leadership',
+    icon: BarChart2,
+    gradient: 'from-blue-700 to-blue-900',
+    ring: 'ring-blue-500',
+    accent: '#1d4ed8',
+    headerBg: '#0a2463',
+    sectionBg: '#ebf0ff',
+    preview: { title: '#0a2463', heading: '#1e40af', tag: '#1d4ed8', tagBg: '#ebf0ff' },
+  },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    desc: 'Understated grey layout, maximum whitespace',
+    icon: Minimize2,
+    gradient: 'from-gray-500 to-gray-700',
+    ring: 'ring-gray-400',
+    accent: '#6b7280',
+    headerBg: '#282828',
+    sectionBg: '#f5f5f5',
+    preview: { title: '#282828', heading: '#505050', tag: '#6b7280', tagBg: '#f5f5f5' },
+  },
+]
+
+function DocPreview({ tpl }) {
+  return (
+    <div className="w-full rounded-lg overflow-hidden border border-gray-100 shadow-sm select-none pointer-events-none">
+      {/* doc header */}
+      <div className="px-3 pt-3 pb-2" style={{ backgroundColor: tpl.headerBg }}>
+        <div className="h-2 w-16 rounded-full bg-white/80 mb-1.5" />
+        <div className="h-1 w-10 rounded-full bg-white/40" />
+      </div>
+      {/* body */}
+      <div className="bg-white px-3 py-2 space-y-2">
+        {/* section row */}
+        {[1, 2, 3].map(i => (
+          <div key={i}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: tpl.preview.heading }} />
+              <div className="h-1.5 rounded-full" style={{ width: `${40 + i * 10}%`, backgroundColor: tpl.preview.heading }} />
+            </div>
+            <div className="space-y-0.5 pl-3.5">
+              <div className="h-1 rounded-full bg-gray-100" style={{ width: '90%' }} />
+              <div className="h-1 rounded-full bg-gray-100" style={{ width: '75%' }} />
+            </div>
+          </div>
+        ))}
+        {/* action items chip */}
+        <div className="flex items-center gap-1 mt-1">
+          <div className="h-4 rounded px-1.5 flex items-center" style={{ backgroundColor: tpl.preview.tagBg }}>
+            <div className="h-1 w-8 rounded-full" style={{ backgroundColor: tpl.preview.tag }} />
+          </div>
+          <div className="h-4 rounded px-1.5 flex items-center" style={{ backgroundColor: tpl.preview.tagBg }}>
+            <div className="h-1 w-6 rounded-full" style={{ backgroundColor: tpl.preview.tag }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TemplatePickerModal({ format, onClose, onDownload }) {
+  const [selected, setSelected] = useState('standard')
+  const formatLabel = format === 'pdf' ? 'PDF' : '.docx'
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* backdrop */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
+          onClick={onClose}
+        />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="relative z-10 w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden"
+        >
+          {/* header */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Choose a template</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Select a style for your {formatLabel} document</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* template grid */}
+          <div className="px-6 py-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {EXPORT_TEMPLATES.map(tpl => {
+              const Icon = tpl.icon
+              const isSelected = selected === tpl.id
+              return (
+                <motion.button
+                  key={tpl.id}
+                  onClick={() => setSelected(tpl.id)}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`relative flex flex-col gap-2 p-3 rounded-2xl border-2 text-left transition-all duration-200 ${
+                    isSelected
+                      ? `border-transparent ring-2 ${tpl.ring} bg-gray-50 shadow-md`
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <DocPreview tpl={tpl} />
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className={`w-5 h-5 rounded-lg bg-gradient-to-br ${tpl.gradient} flex items-center justify-center shrink-0`}>
+                      <Icon size={11} className="text-white" />
+                    </div>
+                    <p className="text-xs font-bold text-gray-800">{tpl.name}</p>
+                  </div>
+                  <p className="text-[10px] text-gray-400 leading-snug">{tpl.desc}</p>
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+                      <CheckCircle2 size={10} className="text-white" />
+                    </div>
+                  )}
+                </motion.button>
+              )
+            })}
+          </div>
+
+          {/* footer */}
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-400">
+              Template applies colors and layout — content stays the same
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <motion.button
+                onClick={() => { onDownload(selected); onClose() }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200 transition-all"
+              >
+                {format === 'pdf' ? <FileDown size={14} /> : <Download size={14} />}
+                Download {formatLabel}
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  )
+}
+
 // ── Results page ──────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -508,6 +700,7 @@ export default function Results() {
   const { minutes, downloadDocx, downloadPdf, loading, error } = useResults(jobId)
   const [copied,  setCopied]  = useState(false)
   const [activeTab, setActiveTab] = useState('minutes')
+  const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
 
   async function copyText() {
     if (!minutes?.plainText) return
@@ -601,14 +794,14 @@ export default function Results() {
                 {copied ? 'Copied!' : 'Copy text'}
               </button>
               <button
-                onClick={downloadPdf}
+                onClick={() => setTemplateModal('pdf')}
                 className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
               >
                 <FileDown size={14} />
                 PDF
               </button>
               <button
-                onClick={downloadDocx}
+                onClick={() => setTemplateModal('docx')}
                 className="flex items-center gap-1.5 text-sm bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl font-medium transition-colors shadow-sm shadow-violet-200"
               >
                 <Download size={14} />
@@ -681,6 +874,17 @@ export default function Results() {
         </div>
 
       </main>
+
+      {templateModal && (
+        <TemplatePickerModal
+          format={templateModal}
+          onClose={() => setTemplateModal(null)}
+          onDownload={(template) => {
+            if (templateModal === 'pdf') downloadPdf(template)
+            else downloadDocx(template)
+          }}
+        />
+      )}
     </div>
   )
 }

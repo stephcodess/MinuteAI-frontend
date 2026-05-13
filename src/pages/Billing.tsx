@@ -50,13 +50,35 @@ function Pagination({ page, totalPages, total, onPage }) {
   )
 }
 
-const FREE_PLAN = {
+const FALLBACK_FREE = {
   key: 'free',
   name: 'Starter',
   price: 'Free',
   period: '',
   desc: 'Perfect for occasional use',
   features: ['3 meetings / month', 'Up to 30 min each', '.docx & PDF export', 'Action items extraction'],
+  amount: 0,
+  currency: 'gbp',
+  interval: null,
+  is_popular: false,
+}
+
+function normalizePlan(p) {
+  const amt = p.price_monthly ?? 0
+  const sym = { gbp: '£', usd: '$', eur: '€' }[p.currency?.toLowerCase()] || '$'
+  const price = amt === 0 ? 'Free' : `${sym}${amt / 100 % 1 === 0 ? amt / 100 : (amt / 100).toFixed(2)}`
+  return {
+    key: p.name,
+    name: p.display_name || p.name,
+    price,
+    period: p.interval ? `/${p.interval === 'month' ? 'mo' : p.interval}` : '',
+    desc: p.description || `${p.display_name || p.name} plan`,
+    features: Array.isArray(p.features) ? p.features : [],
+    amount: amt,
+    currency: p.currency || 'gbp',
+    interval: p.interval,
+    is_popular: Boolean(p.is_popular),
+  }
 }
 
 function fmtDate(unix) {
@@ -73,7 +95,7 @@ function fmtMoney(amount, currency = 'GBP') {
 
 function PlanCard({ plan, idx, currentPlan, onUpgrade, upgrading, promoCode }) {
   const isCurrent  = plan.key === currentPlan
-  const isHighlight = idx === 1  // middle paid plan gets the highlight treatment
+  const isHighlight = Boolean(plan.is_popular)
   const isDowngrade = plan.key === 'free' && currentPlan !== 'free'
   const busy        = upgrading === plan.key
   const period      = plan.interval ? `/${plan.interval === 'month' ? 'mo' : plan.interval}` : ''
@@ -188,14 +210,14 @@ export default function Billing() {
     loadUsage.then(setUsage).catch(() => {})
 
     api.get('/billing/plans')
-      .then(paid => {
-        const paidNorm = paid.map(p => ({
-          ...p,
-          desc: p.description || `${p.name} plan`,
-        }))
-        setPlans([{ ...FREE_PLAN }, ...paidNorm])
+      .then(raw => {
+        const normalized = (Array.isArray(raw) ? raw : []).map(normalizePlan)
+        if (!normalized.some(p => p.key === 'free')) {
+          normalized.unshift({ ...FALLBACK_FREE })
+        }
+        setPlans(normalized)
       })
-      .catch(() => setPlans([{ ...FREE_PLAN }]))
+      .catch(() => setPlans([{ ...FALLBACK_FREE }]))
 
     if (searchParams.get('success') || searchParams.get('canceled')) {
       setSearchParams({}, { replace: true })
@@ -269,13 +291,13 @@ export default function Billing() {
     setPromoMessage('')
   }
 
-  const plan       = usage?.plan           ?? 'free'
-  const used       = usage?.meetings_used  ?? 0
-  const limit      = usage?.meetings_limit ?? 3
-  const pct        = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
-  const planLabel  = plan === 'team' ? 'Team' : plan === 'pro' ? 'Pro' : 'Starter'
+  const plan       = usage?.plan          ?? 'free'
+  const used       = usage?.meetings_used ?? 0
+  const limit      = usage?.meetings_limit ?? null  // null = unlimited
+  const pct        = limit != null && limit > 0 ? Math.min((used / limit) * 100, 100) : 0
+  const planLabel  = (plans ?? []).find(p => p.key === plan)?.name ?? (plan.charAt(0).toUpperCase() + plan.slice(1))
   const isPaid     = plan !== 'free'
-  const remaining  = Math.max(limit - used, 0)
+  const remaining  = limit != null ? Math.max(limit - used, 0) : null
   const barColor   = pct >= 90 ? 'from-red-500 to-rose-500' : pct >= 60 ? 'from-amber-500 to-orange-500' : 'from-violet-500 to-indigo-500'
 
   return (
@@ -339,7 +361,8 @@ export default function Billing() {
                 </div>
                 {usage ? (
                   <p className="text-sm text-gray-400">
-                    {used} of {limit} meetings used this month · {remaining} remaining
+                    {used}{limit != null ? ` of ${limit}` : ''} meetings used this month
+                    {remaining !== null ? ` · ${remaining} remaining` : ' · unlimited'}
                   </p>
                 ) : (
                   <div className="h-3 w-48 bg-gray-100 rounded animate-pulse mt-1" />
@@ -612,7 +635,7 @@ export default function Billing() {
               <p className="text-sm font-bold text-gray-900 mb-4">This month</p>
               <div className="space-y-3">
                 {[
-                  { icon: FileText, label: 'Meetings processed', value: usage ? `${used} / ${limit}` : '—', color: 'text-violet-600', bg: 'bg-violet-50' },
+                  { icon: FileText, label: 'Meetings processed', value: usage ? `${used} / ${limit ?? '∞'}` : '—', color: 'text-violet-600', bg: 'bg-violet-50' },
                   { icon: Clock,    label: 'Plan',               value: planLabel,                            color: 'text-indigo-600', bg: 'bg-indigo-50' },
                 ].map(({ icon: Icon, label, value, color, bg }) => (
                   <div key={label} className="flex items-center gap-3">

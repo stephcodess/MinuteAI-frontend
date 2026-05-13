@@ -14,12 +14,12 @@ export function useResults(jobId) {
       .finally(() => setLoading(false))
   }, [jobId])
 
-  function downloadDocx() {
-    window.open(getDownloadUrl(jobId, 'docx'), '_blank')
+  function downloadDocx(template?: string) {
+    window.open(getDownloadUrl(jobId, 'docx', template), '_blank')
   }
 
-  function downloadPdf() {
-    window.open(getDownloadUrl(jobId, 'pdf'), '_blank')
+  function downloadPdf(template?: string) {
+    window.open(getDownloadUrl(jobId, 'pdf', template), '_blank')
   }
 
   return { minutes, loading, error, downloadDocx, downloadPdf }
