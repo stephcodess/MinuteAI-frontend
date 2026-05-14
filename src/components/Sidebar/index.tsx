@@ -428,7 +428,7 @@ export default function Sidebar({ active }) {
     <>
       {/* Mobile toggle */}
       <button type="button" onClick={() => setMobileOpen(true)}
-        className="fixed left-3 top-3 z-[80] flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-[#0a0d1a]/90 text-slate-300 shadow-lg backdrop-blur md:hidden"
+        className="fixed right-3 top-3 z-[80] flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-[#0a0d1a]/90 text-slate-300 shadow-lg backdrop-blur md:hidden"
         aria-label="Open sidebar">
         <Menu size={18} />
       </button>

@@ -511,7 +511,7 @@ export default function LiveTranslator() {
         <div className="shrink-0 px-4 sm:px-8 pt-6 sm:pt-7 pb-4 sm:pb-5" style={{ borderBottom: '1px solid var(--divider)' }}>
           {/* top row */}
           <div className="mb-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-start justify-between gap-3 mb-3 pr-14 sm:pr-0">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-3)' }}>Real-time</p>
                 <h1 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2.5" style={{ color: 'var(--text-1)' }}>

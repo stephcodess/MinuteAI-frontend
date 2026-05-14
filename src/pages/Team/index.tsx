@@ -453,7 +453,7 @@ export default function Team() {
 
       <main className="min-w-0 flex-1 overflow-y-auto">
         {/* top bar */}
-        <div className="sticky top-0 z-10 flex flex-col gap-4 py-4 pl-16 pr-4 backdrop-blur sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between" style={{ borderBottom: '1px solid var(--divider)', background: 'var(--sidebar-bg)' }}>
+        <div className="sticky top-0 z-10 flex flex-col gap-4 px-4 py-4 backdrop-blur sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between" style={{ borderBottom: '1px solid var(--divider)', background: 'var(--sidebar-bg)' }}>
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-violet-500/10 flex items-center justify-center">
               <Users size={15} className="text-violet-400" />
