@@ -508,59 +508,54 @@ export default function LiveTranslator() {
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden relative z-[1]">
 
         {/* ── Header ── */}
-        <div className="shrink-0 px-8 pt-7 pb-5 pl-16 sm:pl-8" style={{ borderBottom: '1px solid var(--divider)' }}>
+        <div className="shrink-0 px-4 sm:px-8 pt-6 sm:pt-7 pb-4 sm:pb-5" style={{ borderBottom: '1px solid var(--divider)' }}>
           {/* top row */}
-          <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-3)' }}>Real-time</p>
-              <h1 className="text-2xl font-black tracking-tight flex items-center gap-2.5" style={{ color: 'var(--text-1)' }}>
-                <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 shrink-0">
-                  <Languages size={17} className="text-white" />
-                </span>
-                Live Translator
-              </h1>
-              <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
-                Mic keeps listening while translations are processed
-              </p>
-            </div>
-
-            {/* controls */}
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* source */}
-              <div className="w-44"><LangSelector value={sourceLang} onChange={setSourceLang} allowAuto /></div>
-              <ArrowRight size={14} style={{ color: 'var(--text-3)' }} className="shrink-0" />
-              {/* target */}
-              <div className="w-44"><LangSelector value={targetLang} onChange={setTargetLang} /></div>
-
-              {/* mic button */}
+          <div className="mb-4">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-3)' }}>Real-time</p>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2.5" style={{ color: 'var(--text-1)' }}>
+                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 shrink-0">
+                    <Languages size={16} className="text-white" />
+                  </span>
+                  Live Translator
+                </h1>
+              </div>
+              {/* mic button — top-right on all sizes */}
               <motion.button
                 onClick={isRecording ? stopRecording : startRecording}
                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm transition-all overflow-hidden ${
+                className={`relative flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full font-semibold text-sm transition-all overflow-hidden shrink-0 ${
                   isRecording
                     ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                     : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/30'
                 }`}>
                 {isRecording ? (
-                  <><Square size={14} className="fill-rose-400 text-rose-400" /> Stop</>
+                  <><Square size={14} className="fill-rose-400 text-rose-400" /><span className="hidden sm:inline">Stop</span></>
                 ) : (
-                  <><Mic size={14} /> Start listening</>
+                  <><Mic size={14} /><span className="hidden sm:inline">Start listening</span></>
                 )}
               </motion.button>
+            </div>
 
+            {/* language selectors row */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0"><LangSelector value={sourceLang} onChange={setSourceLang} allowAuto /></div>
+              <ArrowRight size={14} style={{ color: 'var(--text-3)' }} className="shrink-0" />
+              <div className="flex-1 min-w-0"><LangSelector value={targetLang} onChange={setTargetLang} /></div>
               {segments.length > 0 && (
                 <button onClick={clearAll}
-                  className="text-xs font-medium px-3 py-2 rounded-full transition hover:bg-rose-500/10 hover:text-rose-400"
+                  className="text-xs font-medium px-3 py-2 rounded-full transition hover:bg-rose-500/10 hover:text-rose-400 shrink-0"
                   style={{ color: 'var(--text-3)' }}>
-                  Clear all
+                  Clear
                 </button>
               )}
             </div>
           </div>
 
           {/* status bar */}
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
               <Waveform recording={isRecording} speaking={isSpeaking} />
               <div className="flex items-center gap-1.5">
                 <motion.span
@@ -581,29 +576,18 @@ export default function LiveTranslator() {
                 <motion.div initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
                   className="flex items-center gap-1.5 text-[11px] text-violet-400 font-semibold">
                   <Loader2 size={11} className="animate-spin" />
-                  {pendingCount > 1 ? `Translating ${pendingCount} segments…` : 'Translating…'}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-              {detectedLang && sourceLang === 'auto' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium"
-                  style={{ background: 'var(--input-bg)', color: 'var(--text-2)', border: '1px solid var(--card-border)' }}>
-                  <Volume2 size={10} style={{ color: 'var(--text-3)' }} />
-                  Detected: <span className="font-bold" style={{ color: 'var(--text-1)' }}>{srcLang?.flag} {srcLang?.name}</span>
+                  <span className="hidden sm:inline">{pendingCount > 1 ? `Translating ${pendingCount} segments…` : 'Translating…'}</span>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {(detectedLang || sourceLang !== 'auto') && (
-              <div className="ml-auto flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-semibold text-violet-400"
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-violet-400"
                 style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}>
                 <Globe size={11} />
-                {sourceLang === 'auto' ? srcLang ? `${srcLang.flag} ${srcLang.name}` : '🌐 Auto' : `${getLang(sourceLang).flag} ${getLang(sourceLang).name}`}
+                {sourceLang === 'auto' ? srcLang ? `${srcLang.flag} ${srcLang.name}` : '🌐' : `${getLang(sourceLang).flag}`}
                 <ArrowRight size={10} className="text-violet-500/50" />
-                {tgtLang.flag} {tgtLang.name}
+                {tgtLang.flag} <span className="hidden sm:inline">{tgtLang.name}</span>
               </div>
             )}
           </div>
@@ -613,7 +597,7 @@ export default function LiveTranslator() {
         <AnimatePresence>
           {(error || permissionDenied) && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="shrink-0 mx-6 mt-4 flex items-center gap-2.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl px-4 py-3 text-sm text-rose-400">
+              className="shrink-0 mx-4 sm:mx-6 mt-4 flex items-center gap-2.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl px-4 py-3 text-sm text-rose-400">
               <AlertCircle size={14} className="shrink-0" />
               {permissionDenied ? "Microphone access was denied. Allow it in your browser's address bar and try again." : error}
             </motion.div>
@@ -621,10 +605,10 @@ export default function LiveTranslator() {
         </AnimatePresence>
 
         {/* ── Two panels ── */}
-        <div className="flex-1 overflow-hidden flex min-h-0 gap-0">
+        <div className="flex-1 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row min-h-0">
 
           {/* Left — source */}
-          <div className="flex-1 flex flex-col min-w-0" style={{ borderRight: '1px solid var(--divider)' }}>
+          <div className="flex-1 flex flex-col min-w-0 border-b lg:border-b-0 lg:border-r" style={{ borderColor: 'var(--divider)' }}>
             {/* panel header */}
             <div className="shrink-0 flex items-center gap-2.5 px-6 py-3" style={{ borderBottom: '1px solid var(--divider)', background: 'var(--card-bg)' }}>
               <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center">
@@ -696,7 +680,7 @@ export default function LiveTranslator() {
           </div>
 
           {/* Right — translation */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 min-h-[300px] lg:min-h-0">
             {/* panel header */}
             <div className="shrink-0 flex items-center justify-between gap-2.5 px-6 py-3" style={{ borderBottom: '1px solid var(--divider)', background: 'var(--card-bg)' }}>
               <div className="flex items-center gap-2.5">
