@@ -5,17 +5,20 @@ const links = {
   Product: [
     { label: 'How it works', to: '/#how-it-works' },
     { label: 'Features', to: '/#features' },
+    { label: 'Integrations', to: '/#integrations' },
     { label: 'Pricing', to: '/pricing' },
+    { label: 'Security', to: '/#security' },
   ],
   Company: [
     { label: 'About', to: '/' },
     { label: 'Blog', to: '/' },
     { label: 'Careers', to: '/' },
+    { label: 'Contact', to: '/contact' },
   ],
   Legal: [
-    { label: 'Privacy policy', to: '/' },
-    { label: 'Terms of service', to: '/' },
-    { label: 'Security', to: '/' },
+    { label: 'Privacy policy', to: '/privacy' },
+    { label: 'Terms of service', to: '/terms' },
+    { label: 'Contact us', to: '/contact' },
   ],
 }
 

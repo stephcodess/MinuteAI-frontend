@@ -26,6 +26,9 @@ import MeetingBots from './pages/MeetingBots'
 import MeetingBotDetail from './pages/MeetingBotDetail'
 import LiveTranslator from './pages/LiveTranslator'
 import Onboarding from './pages/Onboarding'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
+import ContactUs from './pages/ContactUs'
 import RecordMeetingFab from './components/RecordMeetingFab'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -80,6 +83,9 @@ function AppRoutes() {
           <Route path="/meeting-bots/:sessionId" element={<MeetingBotDetail />} />
           <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/contact" element={<ContactUs />} />
         </Routes>
       </main>
       <RecordMeetingFab />
