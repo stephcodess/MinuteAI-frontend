@@ -2,8 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { WorkspaceProvider } from './context/WorkspaceContext'
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+import { ThemeProvider } from './context/ThemeContext'
 import Navbar from './components/Navbar'
 import LoadingScreen from './components/LoadingScreen'
 import Landing from './pages/Landing'
@@ -27,6 +26,8 @@ import MeetingBotDetail from './pages/MeetingBotDetail'
 import LiveTranslator from './pages/LiveTranslator'
 import RecordMeetingFab from './components/RecordMeetingFab'
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+
 function RequireAuth({ children }) {
   const { isSignedIn } = useAuth()
   if (!isSignedIn) return <Navigate to="/login" replace />
@@ -35,11 +36,9 @@ function RequireAuth({ children }) {
 
 function AppRoutes() {
   const { ready } = useAuth()
-
   if (!ready) return <LoadingScreen />
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1">
         <Routes>
@@ -72,13 +71,15 @@ function AppRoutes() {
 export default function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <AuthProvider>
-        <WorkspaceProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </WorkspaceProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <WorkspaceProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </WorkspaceProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </GoogleOAuthProvider>
   )
 }

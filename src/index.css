@@ -1,12 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ── Theme CSS variables ─────────────────────────────────────── */
+
+:root, html.dark {
+  --page-bg:        #080b14;
+  --sidebar-bg:     #0a0d1a;
+  --sidebar-border: rgba(255,255,255,0.06);
+  --card-bg:        rgba(255,255,255,0.04);
+  --card-border:    rgba(255,255,255,0.08);
+  --card-hover:     rgba(255,255,255,0.07);
+  --dropdown-bg:    #0d1117;
+  --dropdown-border:rgba(255,255,255,0.10);
+  --input-bg:       rgba(255,255,255,0.06);
+  --input-border:   rgba(255,255,255,0.10);
+  --input-text:     #ffffff;
+  --input-ph:       #64748b;
+  --text-1:         #ffffff;
+  --text-2:         #94a3b8;
+  --text-3:         #64748b;
+  --divider:        rgba(255,255,255,0.05);
+  --nav-active-bg:  rgba(139,92,246,0.15);
+  --nav-active-txt: #c4b5fd;
+  --nav-idle-txt:   #94a3b8;
+  --nav-hover-bg:   rgba(255,255,255,0.05);
+  --scrollbar-track:#080b14;
+  --scrollbar-thumb:#2d2f3e;
+}
+
+html.light {
+  --page-bg:        #f4f2ff;
+  --sidebar-bg:     #ffffff;
+  --sidebar-border: rgba(0,0,0,0.06);
+  --card-bg:        rgba(255,255,255,0.85);
+  --card-border:    rgba(0,0,0,0.07);
+  --card-hover:     rgba(255,255,255,1);
+  --dropdown-bg:    #ffffff;
+  --dropdown-border:rgba(0,0,0,0.08);
+  --input-bg:       rgba(0,0,0,0.04);
+  --input-border:   rgba(0,0,0,0.10);
+  --input-text:     #111827;
+  --input-ph:       #9ca3af;
+  --text-1:         #111827;
+  --text-2:         #6b7280;
+  --text-3:         #9ca3af;
+  --divider:        rgba(0,0,0,0.06);
+  --nav-active-bg:  rgba(124,58,237,0.10);
+  --nav-active-txt: #6d28d9;
+  --nav-idle-txt:   #6b7280;
+  --nav-hover-bg:   rgba(0,0,0,0.04);
+  --scrollbar-track:#f4f2ff;
+  --scrollbar-thumb:#d1d5db;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track  { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb  { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { filter: brightness(1.3); }
+
+/* ── Theme utility classes ───────────────────────────────────── */
+.page-bg    { background-color: var(--page-bg); }
+.sidebar-bg { background-color: var(--sidebar-bg); }
+.glass-card {
+  background-color: var(--card-bg);
+  border-color: var(--card-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glass-card:hover { background-color: var(--card-hover); }
+.glass-dropdown {
+  background-color: var(--dropdown-bg);
+  border-color: var(--dropdown-border);
+}
+.glass-input {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+}
+.glass-input::placeholder { color: var(--input-ph); }
+.t1 { color: var(--text-1); }
+.t2 { color: var(--text-2); }
+.t3 { color: var(--text-3); }
+.divider { border-color: var(--divider); }
+.nav-active { background-color: var(--nav-active-bg); color: var(--nav-active-txt); }
+.nav-idle   { color: var(--nav-idle-txt); }
+.nav-idle:hover { background-color: var(--nav-hover-bg); color: var(--text-1); }
+
+/* ── Orb background layer (used on authenticated pages) ─────── */
+.app-bg {
+  background-color: var(--page-bg);
+  position: relative;
+}
+.app-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(124,58,237,0.07) 0%, transparent 70%),
+    radial-gradient(circle 700px at -5%  -15%,    rgba(109,40,217,0.14) 0%, transparent 70%),
+    radial-gradient(circle 600px at 105% 110%,    rgba(79,70,229,0.10)  0%, transparent 70%),
+    radial-gradient(circle 450px at 60%   45%,    rgba(168,85,247,0.07) 0%, transparent 70%);
+}
+html.light .app-bg::before {
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(124,58,237,0.04) 0%, transparent 70%),
+    radial-gradient(circle 700px at -5%  -15%,    rgba(109,40,217,0.06) 0%, transparent 70%),
+    radial-gradient(circle 600px at 105% 110%,    rgba(79,70,229,0.05)  0%, transparent 70%);
+}
+
+/* ── Grid background (subtle dot/line mesh) ─────────────────── */
+.app-grid::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M 56 0 L 0 0 0 56' fill='none' stroke='white' stroke-width='0.5' opacity='0.04'/%3E%3C/svg%3E");
+}
+html.light .app-grid::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M 56 0 L 0 0 0 56' fill='none' stroke='black' stroke-width='0.5' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ── Page content must sit above the fixed orb bg ────────────── */
+.page-content { position: relative; z-index: 1; }
+
+/* ── Gradient text animation ─────────────────────────────────── */
+@keyframes gradient-shift {
+  0%   { background-position: 0% center; }
+  50%  { background-position: 100% center; }
+  100% { background-position: 0% center; }
+}
+.animate-gradient { animation: gradient-shift 4s ease infinite; }
+
+/* ── All buttons: pill by default ────────────────────────────── */
+button { border-radius: 9999px; }
