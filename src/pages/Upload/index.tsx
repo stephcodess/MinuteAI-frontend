@@ -364,7 +364,7 @@ export default function Upload() {
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden relative z-[1]">
 
         {/* ── Page header ── */}
-        <div className="shrink-0 px-8 pt-7 pb-5 pl-16 sm:pl-8" style={{ borderBottom: '1px solid var(--divider)' }}>
+        <div className="shrink-0 px-4 sm:px-8 pt-6 sm:pt-7 pb-4 sm:pb-5" style={{ borderBottom: '1px solid var(--divider)' }}>
           <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
             <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-3)' }}>
               {activeWorkspace?.name ?? 'Your workspace'}
@@ -377,9 +377,6 @@ export default function Upload() {
                   </span>
                   New Meeting
                 </h1>
-                <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
-                  Upload a recording to generate professional minutes
-                </p>
               </div>
               <StepIndicator step={step} />
             </div>
@@ -387,10 +384,10 @@ export default function Upload() {
         </div>
 
         {/* ── Two-column body ── */}
-        <div className="flex-1 overflow-hidden flex min-h-0">
+        <div className="flex-1 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row min-h-0">
 
           {/* LEFT — drop zone */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-y-auto px-8 py-8 pl-16 sm:pl-8" style={{ borderRight: '1px solid var(--divider)' }}>
+          <div className="flex-1 flex flex-col min-w-0 lg:overflow-y-auto px-4 sm:px-8 py-6 sm:py-8 border-b lg:border-b-0 lg:border-r" style={{ borderColor: 'var(--divider)' }}>
 
             {/* Drop zone */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -507,7 +504,7 @@ export default function Upload() {
             </motion.div>
 
             {/* Trust strip */}
-            <div className="flex items-center justify-center gap-6 mt-6 text-xs" style={{ color: 'var(--text-3)' }}>
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-6 text-xs" style={{ color: 'var(--text-3)' }}>
               {[{ icon: Lock, label: 'End-to-end encrypted' }, { icon: Zap, label: 'Results in ~2 min' }, { icon: Trash2, label: 'Deleted after 24h' }]
                 .map(({ icon: Icon, label }) => (
                   <div key={label} className="flex items-center gap-1.5">
@@ -534,11 +531,11 @@ export default function Upload() {
           </div>
 
           {/* RIGHT — configuration */}
-          <div className="w-96 shrink-0 flex flex-col overflow-y-auto">
+          <div className="w-full lg:w-96 lg:shrink-0 flex flex-col lg:overflow-y-auto">
             <AnimatePresence mode="wait">
               {!file ? (
                 <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="flex-1 flex flex-col items-center justify-center gap-4 px-8 py-16 text-center">
+                  className="flex-1 flex flex-col items-center justify-center gap-4 px-6 sm:px-8 py-10 sm:py-16 text-center">
                   <div className="w-16 h-16 rounded-3xl flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
                     <AlignLeft size={26} style={{ color: 'var(--text-3)' }} />
                   </div>
@@ -550,7 +547,7 @@ export default function Upload() {
               ) : (
                 <motion.div key="config" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }}
-                  className="flex-1 px-6 py-6 space-y-5">
+                  className="flex-1 px-4 sm:px-6 py-5 sm:py-6 space-y-5">
 
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-7 h-7 rounded-xl bg-violet-600 flex items-center justify-center shrink-0">
