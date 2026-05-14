@@ -126,7 +126,7 @@ export default function Signup() {
       try {
         await googleSignIn(access_token)
         setSuccess(true)
-        setTimeout(() => navigate('/dashboard'), 1600)
+        setTimeout(() => navigate('/onboarding'), 1600)
       } catch (err: any) {
         setError(err.message || 'Google sign-in failed.')
       } finally { setLoading(false) }

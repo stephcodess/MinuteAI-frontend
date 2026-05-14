@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { WorkspaceProvider } from './context/WorkspaceContext'
@@ -24,6 +25,7 @@ import Tasks from './pages/Tasks'
 import MeetingBots from './pages/MeetingBots'
 import MeetingBotDetail from './pages/MeetingBotDetail'
 import LiveTranslator from './pages/LiveTranslator'
+import Onboarding from './pages/Onboarding'
 import RecordMeetingFab from './components/RecordMeetingFab'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -34,8 +36,24 @@ function RequireAuth({ children }) {
   return children
 }
 
+const AUTH_PATHS = ['/login', '/signup', '/verify-email', '/forgot-password', '/accept-invite', '/onboarding']
+
 function AppRoutes() {
-  const { ready } = useAuth()
+  const { ready, isSignedIn, user } = useAuth()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+
+  useEffect(() => {
+    if (
+      ready &&
+      isSignedIn &&
+      !user?.onboarding_completed &&
+      !AUTH_PATHS.includes(location.pathname)
+    ) {
+      navigate('/onboarding', { replace: true })
+    }
+  }, [ready, isSignedIn, user?.onboarding_completed, location.pathname, navigate])
+
   if (!ready) return <LoadingScreen />
   return (
     <div className="min-h-screen flex flex-col">
@@ -61,6 +79,7 @@ function AppRoutes() {
           <Route path="/meeting-bots" element={<MeetingBots />} />
           <Route path="/meeting-bots/:sessionId" element={<MeetingBotDetail />} />
           <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />
+          <Route path="/onboarding" element={<Onboarding />} />
         </Routes>
       </main>
       <RecordMeetingFab />

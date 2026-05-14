@@ -120,9 +120,10 @@ export default function Login() {
     onSuccess: async ({ access_token }) => {
       setLoading(true); setError(null)
       try {
-        await googleSignIn(access_token)
+        const data = await googleSignIn(access_token)
         setSuccess(true)
-        setTimeout(() => navigate('/dashboard'), 1600)
+        const dest = data?.user?.onboarding_completed ? '/dashboard' : '/onboarding'
+        setTimeout(() => navigate(dest), 1600)
       } catch (err: any) {
         setError(err.message || 'Google sign-in failed.')
       } finally { setLoading(false) }
@@ -139,9 +140,10 @@ export default function Login() {
     }
     setLoading(true); setError(null)
     try {
-      await signIn(email, password)
+      const data = await signIn(email, password)
       setSuccess(true)
-      setTimeout(() => navigate('/dashboard'), 1600)
+      const dest = data?.user?.onboarding_completed ? '/dashboard' : '/onboarding'
+      setTimeout(() => navigate(dest), 1600)
     } catch (err: any) {
       if (err.message?.toLowerCase().includes('verify')) {
         navigate('/verify-email', { state: { email } }); return

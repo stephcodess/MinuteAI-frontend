@@ -107,7 +107,7 @@ function SuccessState() {
       <motion.h3 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
         className="text-xl font-bold text-white mb-1">Email verified!</motion.h3>
       <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }}
-        className="text-sm text-slate-400">Taking you to your dashboard…</motion.p>
+        className="text-sm text-slate-400">Setting up your account…</motion.p>
     </motion.div>
   )
 }
@@ -150,7 +150,7 @@ export default function VerifyEmail() {
     try {
       await verifyEmail(userId, c)
       setSuccess(true)
-      setTimeout(() => navigate('/dashboard'), 1600)
+      setTimeout(() => navigate('/onboarding'), 1600)
     } catch (err: any) {
       setError(err.message)
       setShake(true); setTimeout(() => setShake(false), 500)
