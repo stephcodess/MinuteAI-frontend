@@ -351,7 +351,7 @@ export default function MeetingBots() {
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden relative z-[1]">
 
         {/* ── Top header ── */}
-        <div className="shrink-0 px-8 pt-8 pb-6 pl-16 sm:pl-8">
+        <div className="shrink-0 px-4 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
             <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text-3)' }}>
               {activeWorkspace?.name ?? 'Your workspace'}
@@ -366,15 +366,15 @@ export default function MeetingBots() {
               <motion.button
                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                 onClick={() => setShowCreate(true)}
-                className="flex items-center gap-2.5 px-6 py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-sm shadow-xl shadow-violet-500/30 hover:from-violet-500 hover:to-indigo-500 transition-all shrink-0">
-                <Plus size={16} /> Deploy Bot
+                className="flex items-center gap-2 sm:gap-2.5 px-3 sm:px-6 py-2.5 sm:py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-sm shadow-xl shadow-violet-500/30 hover:from-violet-500 hover:to-indigo-500 transition-all shrink-0">
+                <Plus size={16} /><span className="hidden sm:inline">Deploy Bot</span>
               </motion.button>
             </div>
           </motion.div>
 
           {/* ── Stat ribbon ── */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="grid grid-cols-4 gap-4 mt-6">
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-5 sm:mt-6">
             {[
               { icon: Activity,      label: 'Total',     value: sessions.length,   color: 'text-violet-400', bg: 'bg-violet-500/10' },
               { icon: Radio,         label: 'Live now',  value: live.length,        color: 'text-emerald-400',bg: 'bg-emerald-500/10', pulse: live.length > 0 },
@@ -395,19 +395,20 @@ export default function MeetingBots() {
         </div>
 
         {/* ── Session feed ── */}
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-8 pb-8 pl-16 sm:pl-8">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-4 sm:px-8 pb-6 sm:pb-8">
           {/* Tab bar */}
           <div className="shrink-0 flex items-center gap-2 mb-4">
             <div className="flex p-1 rounded-2xl gap-1" style={{ background: 'var(--input-bg)' }}>
               {TABS.map(({ key, label, Icon }) => (
                 <button key={key} onClick={() => setTab(key)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                     tab === key
                       ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
                       : ''
                   }`}
                   style={{ color: tab === key ? undefined : 'var(--text-3)' }}>
-                  <Icon size={14} />{label}
+                  <Icon size={14} /><span className="hidden xs:inline sm:inline">{label}</span>
+                  <span className="inline xs:hidden sm:hidden">{key === 'all' ? `All (${sessions.length})` : `Soon (${upcoming.length})`}</span>
                 </button>
               ))}
             </div>
