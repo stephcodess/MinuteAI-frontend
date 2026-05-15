@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, MicOff, Square, ChevronDown, Copy, Check,
   Globe, AlertCircle, Loader2, Volume2, ArrowRight,
-  Sparkles, Languages,
+  Sparkles, Languages, Bot, X,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
-import { formRequest } from '../../lib/api'
+import { formRequest, api } from '../../lib/api'
 
 // ── Language registry ─────────────────────────────────────────────────────────
 
@@ -224,6 +224,8 @@ export default function LiveTranslator() {
   const [error, setError]               = useState<string | null>(null)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [liveText, setLiveText]         = useState('')
+  const [activeBotSession, setActiveBotSession] = useState<any>(null)
+  const [showBotNotice, setShowBotNotice]       = useState(false)
 
   const streamRef       = useRef<MediaStream | null>(null)
   const audioCtxRef     = useRef<AudioContext | null>(null)
@@ -244,6 +246,14 @@ export default function LiveTranslator() {
 
   useEffect(() => { sourceLangRef.current = sourceLang }, [sourceLang])
   useEffect(() => { targetLangRef.current = targetLang }, [targetLang])
+
+  useEffect(() => {
+    const ACTIVE = ['queued', 'preparing', 'joining', 'waiting_for_host', 'recording']
+    api.get('/meeting-bots').then((sessions: any[]) => {
+      const active = sessions?.find(s => ACTIVE.includes(s.status))
+      if (active) { setActiveBotSession(active); setShowBotNotice(true) }
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (sourceScrollRef.current) sourceScrollRef.current.scrollTop = sourceScrollRef.current.scrollHeight
@@ -506,6 +516,50 @@ export default function LiveTranslator() {
       <Sidebar active="translator" />
 
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden relative z-[1]">
+
+        {/* ── Bot-on-call notice ── */}
+        <AnimatePresence>
+          {showBotNotice && activeBotSession && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.18 }}
+              className="shrink-0 flex items-center gap-3 px-4 sm:px-8 py-3 border-b"
+              style={{
+                background: 'linear-gradient(90deg, rgba(124,58,237,0.1), rgba(79,70,229,0.06))',
+                borderColor: 'rgba(139,92,246,0.2)',
+              }}
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-400">
+                <Bot size={15} />
+              </span>
+              <p className="flex-1 min-w-0 text-sm" style={{ color: 'var(--text-2)' }}>
+                <span className="font-semibold" style={{ color: 'var(--text-1)' }}>
+                  MinuteAI bot is on your call
+                </span>
+                {activeBotSession.title ? ` — ${activeBotSession.title}` : ''}
+                . Do you want live translation?
+              </p>
+              {!isRecording && (
+                <button
+                  onClick={() => { startRecording(); setShowBotNotice(false) }}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 transition"
+                >
+                  <Mic size={12} />
+                  Start listening
+                </button>
+              )}
+              <button
+                onClick={() => setShowBotNotice(false)}
+                className="shrink-0 p-1.5 rounded-full transition hover:bg-white/10"
+                style={{ color: 'var(--text-3)' }}
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Header ── */}
         <div className="shrink-0 px-4 sm:px-8 pt-6 sm:pt-7 pb-4 sm:pb-5" style={{ borderBottom: '1px solid var(--divider)' }}>

@@ -30,6 +30,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 import ContactUs from './pages/ContactUs'
 import RecordMeetingFab from './components/RecordMeetingFab'
+import StephChat from './components/StephChat'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
@@ -89,6 +90,7 @@ function AppRoutes() {
         </Routes>
       </main>
       <RecordMeetingFab />
+      <StephChat />
     </div>
   )
 }
