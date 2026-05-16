@@ -6,7 +6,8 @@ import {
   Circle, CheckCircle2, Loader2, CalendarDays, User as UserIcon,
   ChevronDown, ArrowLeft, TableProperties, FileText, Users,
   Clock, Hash, AlignLeft, ChevronLeft, ChevronRight,
-  X, Zap, BarChart2, Minimize2,
+  X, Zap, BarChart2, Minimize2, Lightbulb, HelpCircle,
+  ArrowRight, MessageSquare, Target, List,
 } from 'lucide-react'
 import { useResults } from '../../hooks/useResults'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -462,37 +463,223 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
   )
 }
 
+// ── Priority badge ────────────────────────────────────────────────────────────
+
+function PriorityBadge({ priority }) {
+  const cfg = {
+    high:   { cls: 'bg-rose-50 text-rose-600 ring-rose-100',   label: 'High'   },
+    medium: { cls: 'bg-amber-50 text-amber-600 ring-amber-100', label: 'Medium' },
+    low:    { cls: 'bg-gray-50 text-gray-500 ring-gray-100',    label: 'Low'    },
+  }[priority] ?? { cls: 'bg-gray-50 text-gray-400 ring-gray-100', label: priority }
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  )
+}
+
+// ── Question status badge ─────────────────────────────────────────────────────
+
+function StatusBadge({ status }) {
+  const cfg = {
+    answered:   { cls: 'bg-emerald-50 text-emerald-700 ring-emerald-100', label: 'Answered'   },
+    unresolved: { cls: 'bg-rose-50 text-rose-600 ring-rose-100',          label: 'Unresolved' },
+    deferred:   { cls: 'bg-amber-50 text-amber-600 ring-amber-100',       label: 'Deferred'   },
+  }[status] ?? { cls: 'bg-gray-50 text-gray-400 ring-gray-100', label: status }
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cfg.cls}`}>
+      {cfg.label}
+    </span>
+  )
+}
+
+// ── Section card ──────────────────────────────────────────────────────────────
+
+function SectionCard({ icon: Icon, title, accent = 'violet', children, delay = 0 }) {
+  const colors = {
+    violet: { ring: 'bg-violet-100', text: 'text-violet-600', border: 'border-violet-100' },
+    indigo: { ring: 'bg-indigo-100', text: 'text-indigo-600', border: 'border-indigo-100' },
+    teal:   { ring: 'bg-teal-100',   text: 'text-teal-600',   border: 'border-teal-100'   },
+    rose:   { ring: 'bg-rose-100',   text: 'text-rose-600',   border: 'border-rose-100'   },
+    amber:  { ring: 'bg-amber-100',  text: 'text-amber-600',  border: 'border-amber-100'  },
+  }[accent] ?? { ring: 'bg-violet-100', text: 'text-violet-600', border: 'border-violet-100' }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, delay }}
+      className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+    >
+      <div className={`flex items-center gap-3 px-6 py-4 border-b ${colors.border} bg-gray-50/60`}>
+        <div className={`w-7 h-7 rounded-lg ${colors.ring} flex items-center justify-center shrink-0`}>
+          <Icon size={14} className={colors.text} />
+        </div>
+        <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
+      </div>
+      <div className="px-6 py-5">{children}</div>
+    </motion.div>
+  )
+}
+
 // ── Minutes tab ───────────────────────────────────────────────────────────────
 
 function MinutesTab({ minutes, copied, onCopy }) {
-  if (!minutes?.sections?.length) return (
+  if (!minutes?.sections?.length && !minutes?.overview) return (
     <div className="py-20 text-center text-gray-400 text-sm">No content available.</div>
   )
 
   return (
     <div className="py-6 space-y-4">
-      {minutes.sections.map((section, i) => {
+
+      {/* Overview */}
+      {minutes.overview && (
+        <SectionCard icon={FileText} title="Overview" accent="violet" delay={0}>
+          <p className="text-gray-700 text-sm leading-relaxed">{minutes.overview}</p>
+        </SectionCard>
+      )}
+
+      {/* Key Decisions */}
+      {minutes.keyDecisions?.length > 0 && (
+        <SectionCard icon={Lightbulb} title="Key Decisions" accent="indigo" delay={0.04}>
+          <ul className="space-y-3">
+            {minutes.keyDecisions.map((d, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="mt-1 w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-[10px] font-bold text-indigo-600">
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800">{d.decision}</p>
+                  {d.made_by && <p className="text-xs text-gray-400 mt-0.5">{d.made_by}</p>}
+                  {d.context && <p className="text-xs text-gray-500 mt-1 italic">{d.context}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+
+      {/* Topics discussed */}
+      {minutes.sections?.map((section, i) => {
         const Icon = sectionIcon(section.title)
         return (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: i * 0.04 }}
-            className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
-          >
-            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50/60">
-              <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                <Icon size={14} className="text-violet-600" />
-              </div>
-              <h2 className="text-sm font-semibold text-gray-800">{section.title}</h2>
-            </div>
-            <div className="px-6 py-5">
-              <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{section.content}</p>
-            </div>
-          </motion.div>
+          <SectionCard key={i} icon={Icon} title={section.title} accent="violet" delay={0.06 + i * 0.04}>
+            {/* prose summary */}
+            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap mb-4">
+              {section.summary || section.content}
+            </p>
+            {/* bullet key points */}
+            {section.key_points?.length > 0 && (
+              <ul className="space-y-2 border-t border-gray-100 pt-4">
+                {section.key_points.map((point, j) => (
+                  <li key={j} className="flex gap-2.5 text-sm text-gray-600">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
         )
       })}
+
+      {/* Action items (compact preview — full list in Tasks tab) */}
+      {minutes.actionItems?.length > 0 && (
+        <SectionCard icon={TableProperties} title="Action Items" accent="teal" delay={0.12}>
+          <div className="space-y-2">
+            {minutes.actionItems.map((item, i) => (
+              <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                <CheckCircle2 size={14} className="text-teal-500 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800">{item.task}</p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {item.owner && (
+                      <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                        <UserIcon size={10} /> {item.owner}
+                      </span>
+                    )}
+                    {item.deadline && item.deadline !== 'TBD' && (
+                      <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                        <CalendarDays size={10} /> {item.deadline}
+                      </span>
+                    )}
+                    {item.priority && <PriorityBadge priority={item.priority} />}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-3 italic">
+            Track and assign these in the Tasks tab →
+          </p>
+        </SectionCard>
+      )}
+
+      {/* Speaker Summaries */}
+      {minutes.speakerSummaries?.length > 0 && (
+        <SectionCard icon={Users} title="Speaker Summaries" accent="indigo" delay={0.16}>
+          <div className="space-y-5">
+            {minutes.speakerSummaries.map((spk, i) => (
+              <div key={i} className={i > 0 ? 'pt-5 border-t border-gray-100' : ''}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    {(spk.speaker || 'S').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{spk.speaker}</p>
+                    {spk.role && <p className="text-[11px] text-gray-400">{spk.role}</p>}
+                  </div>
+                </div>
+                {spk.key_contributions?.length > 0 && (
+                  <ul className="space-y-1.5 pl-9">
+                    {spk.key_contributions.map((c, j) => (
+                      <li key={j} className="flex gap-2 text-sm text-gray-600">
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-300 shrink-0" />
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Questions Raised */}
+      {minutes.questionsRaised?.length > 0 && (
+        <SectionCard icon={HelpCircle} title="Questions Raised" accent="amber" delay={0.20}>
+          <ul className="space-y-4">
+            {minutes.questionsRaised.map((q, i) => (
+              <li key={i} className={i > 0 ? 'pt-4 border-t border-gray-100' : ''}>
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <p className="text-sm font-medium text-gray-800">{q.question}</p>
+                  <StatusBadge status={q.status} />
+                </div>
+                {q.asked_by && <p className="text-[11px] text-gray-400 mb-1">Asked by {q.asked_by}</p>}
+                {q.answer_summary && (
+                  <p className="text-sm text-gray-600 italic">{q.answer_summary}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+
+      {/* Next Steps */}
+      {minutes.nextSteps?.length > 0 && (
+        <SectionCard icon={Target} title="Next Steps" accent="teal" delay={0.24}>
+          <ul className="space-y-2">
+            {minutes.nextSteps.map((step, i) => (
+              <li key={i} className="flex gap-2.5 text-sm text-gray-700">
+                <ArrowRight size={14} className="text-teal-500 mt-0.5 shrink-0" />
+                {step}
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+
     </div>
   )
 }

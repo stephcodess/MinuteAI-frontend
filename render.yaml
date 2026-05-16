@@ -8,6 +8,8 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://minuteai-backend.onrender.com
+      - key: VITE_WS_URL
+        value: wss://minuteai-backend.onrender.com
       - key: VITE_GOOGLE_CLIENT_ID
         value: 625680446331-drv4lb8ajnt1959986mucok1nuaidjm1.apps.googleusercontent.com
       - key: VITE_MEETING_BOT_ENABLED

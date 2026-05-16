@@ -10,7 +10,8 @@ import { formRequest } from '../../lib/api'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import Sidebar from '../../components/Sidebar'
 
-const ACCEPTED_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/webm', 'video/mp4']
+const ACCEPTED_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/aac', 'audio/wav', 'audio/webm', 'video/mp4']
+const ACCEPTED_EXTS  = ['mp3', 'mp4', 'm4a', 'wav', 'webm']
 const MAX_SIZE_MB = 500
 const FORMATS = ['MP3', 'MP4', 'M4A', 'WAV', 'WebM']
 const CHUNK_SIZE = 5 * 1024 * 1024
@@ -290,7 +291,9 @@ export default function Upload() {
   const step = uploading ? 2 : file ? 1 : 0
 
   function validateFile(f) {
-    if (!ACCEPTED_TYPES.includes(f.type)) return 'Unsupported format. Please use MP3, MP4, M4A, WAV, or WebM.'
+    const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
+    if (!ACCEPTED_TYPES.includes(f.type) && !ACCEPTED_EXTS.includes(ext))
+      return 'Unsupported format. Please use MP3, MP4, M4A, WAV, or WebM.'
     if (f.size > MAX_SIZE_MB * 1024 * 1024) return `File too large — max ${MAX_SIZE_MB} MB.`
     return null
   }

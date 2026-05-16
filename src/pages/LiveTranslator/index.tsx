@@ -62,7 +62,9 @@ interface Segment {
   sourceText: string
   translatedText: string
   timestamp: Date
-  pending: boolean   // translation not back yet
+  pending: boolean
+  speaker?: number        // 0-based index from Deepgram (null when unavailable)
+  speakerLabel?: string   // e.g. "Speaker 1"
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -226,6 +228,7 @@ export default function LiveTranslator() {
   const [liveText, setLiveText]         = useState('')
   const [activeBotSession, setActiveBotSession] = useState<any>(null)
   const [showBotNotice, setShowBotNotice]       = useState(false)
+  const [isBotMode, setIsBotMode]               = useState(false)
 
   const streamRef       = useRef<MediaStream | null>(null)
   const audioCtxRef     = useRef<AudioContext | null>(null)
@@ -243,6 +246,7 @@ export default function LiveTranslator() {
   const transScrollRef  = useRef<HTMLDivElement>(null)
   const segIdRef        = useRef(0)
   const recognitionRef  = useRef<any>(null)
+  const botWsRef        = useRef<WebSocket | null>(null)
 
   useEffect(() => { sourceLangRef.current = sourceLang }, [sourceLang])
   useEffect(() => { targetLangRef.current = targetLang }, [targetLang])
@@ -463,6 +467,58 @@ export default function LiveTranslator() {
     setLiveText('')
   }
 
+  // ── Bot audio mode ───────────────────────────────────────────────────────────
+  function startBotAudio(sessionId: string) {
+    setError(null)
+    setIsBotMode(true)
+    setIsRecording(true)
+    const token = localStorage.getItem('minuteai_access') || ''
+    const wsUrl = `${import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000'}/ws/bot-live-translate/${sessionId}?token=${token}&target_lang=${targetLang}&source_lang=${sourceLang}`
+    const ws = new WebSocket(wsUrl)
+    botWsRef.current = ws
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data)
+        if (msg.type === 'partial') {
+          setLiveText(msg.speaker_label ? `[${msg.speaker_label}] ${msg.text}` : msg.text)
+        } else if (msg.type === 'result') {
+          setLiveText('')
+          const segId = ++segIdRef.current
+          setDetectedLang(msg.source_language)
+          setSegments(prev => [...prev, {
+            id: segId,
+            sourceLanguage: msg.source_language || sourceLang,
+            targetLanguage: targetLang,
+            sourceText: msg.source_text,
+            translatedText: msg.translated_text,
+            timestamp: new Date(),
+            pending: false,
+            speaker: msg.speaker,
+            speakerLabel: msg.speaker_label,
+          }])
+        } else if (msg.type === 'error') {
+          setError(msg.message)
+        }
+      } catch { /* ignore */ }
+    }
+
+    ws.onerror = () => setError('Bot audio connection failed.')
+    ws.onclose = () => {
+      setIsRecording(false)
+      setIsBotMode(false)
+      setLiveText('')
+    }
+  }
+
+  function stopBotAudio() {
+    botWsRef.current?.close()
+    botWsRef.current = null
+    setIsRecording(false)
+    setIsBotMode(false)
+    setLiveText('')
+  }
+
   async function startRecording() {
     setError(null)
     setPermissionDenied(false)
@@ -490,6 +546,7 @@ export default function LiveTranslator() {
   }
 
   function stopRecording() {
+    if (isBotMode) { stopBotAudio(); return }
     teardown()
     setIsRecording(false)
     setIsSpeaking(false)
@@ -539,16 +596,26 @@ export default function LiveTranslator() {
                   MinuteAI bot is on your call
                 </span>
                 {activeBotSession.title ? ` — ${activeBotSession.title}` : ''}
-                . Do you want live translation?
+                . Use bot audio for speaker labels.
               </p>
               {!isRecording && (
-                <button
-                  onClick={() => { startRecording(); setShowBotNotice(false) }}
-                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 transition"
-                >
-                  <Mic size={12} />
-                  Start listening
-                </button>
+                <div className="shrink-0 flex items-center gap-2">
+                  <button
+                    onClick={() => { startBotAudio(activeBotSession.id); setShowBotNotice(false) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700 transition"
+                  >
+                    <Bot size={12} />
+                    Bot audio
+                  </button>
+                  <button
+                    onClick={() => { startRecording(); setShowBotNotice(false) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border hover:bg-white/5 transition"
+                    style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+                  >
+                    <Mic size={12} />
+                    Mic
+                  </button>
+                </div>
               )}
               <button
                 onClick={() => setShowBotNotice(false)}
@@ -696,6 +763,9 @@ export default function LiveTranslator() {
                         background: seg.pending ? 'rgba(139,92,246,0.05)' : 'var(--card-bg)',
                         borderColor: seg.pending ? 'rgba(139,92,246,0.2)' : 'var(--card-border)',
                       }}>
+                      {seg.speakerLabel && (
+                        <p className="text-[10px] font-bold mb-1 text-violet-400">{seg.speakerLabel}</p>
+                      )}
                       <div className="flex items-start gap-2">
                         <p className="flex-1 text-sm leading-relaxed"
                           style={{ color: seg.pending ? 'var(--text-3)' : 'var(--text-1)', fontStyle: seg.pending ? 'italic' : 'normal' }}>
@@ -772,6 +842,9 @@ export default function LiveTranslator() {
                       background: seg.pending ? 'rgba(139,92,246,0.05)' : 'var(--card-bg)',
                       borderColor: seg.pending ? 'rgba(139,92,246,0.2)' : 'var(--card-border)',
                     }}>
+                    {seg.speakerLabel && (
+                      <p className="text-[10px] font-bold mb-1 text-violet-400">{seg.speakerLabel}</p>
+                    )}
                     {seg.pending ? (
                       <div className="flex items-center gap-2 text-violet-400">
                         <Loader2 size={13} className="animate-spin shrink-0" />
