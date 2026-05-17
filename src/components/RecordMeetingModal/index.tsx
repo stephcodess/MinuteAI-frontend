@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, CalendarClock, Clock3, ExternalLink, Link2, Loader2, Mic, Sparkles, X } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { createMeetingBotSession, downloadMeetingBotCalendar } from '../../lib/api'
+import { Bot, CalendarClock, Clock3, ExternalLink, Link2, Loader2, Mic, Sparkles, X, AlertTriangle } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { createMeetingBotSession, downloadMeetingBotCalendar, getIntegrations } from '../../lib/api'
 import { useWorkspace } from '../../context/WorkspaceContext'
 
 const RECORDER_NAME = 'MinuteAI Recorder'
@@ -25,6 +25,10 @@ function SupportPill({ icon: Icon, label, tone }) {
   )
 }
 
+function isGoogleMeetUrl(url: string) {
+  return /meet\.google\.com\/[a-z]/.test(url)
+}
+
 export default function RecordMeetingModal({ open, onClose }) {
   const navigate = useNavigate()
   const { activeWorkspace } = useWorkspace()
@@ -35,7 +39,19 @@ export default function RecordMeetingModal({ open, onClose }) {
   const [durationMinutes, setDurationMinutes] = useState(30)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null)
   const showDevelopmentNotice = IS_PRODUCTION && !MEETING_BOT_ENABLED
+
+  useEffect(() => {
+    if (!open) return
+    getIntegrations()
+      .then((integrations: any) => {
+        setGoogleConnected(!!(integrations?.google?.connected))
+      })
+      .catch(() => setGoogleConnected(null))
+  }, [open])
+
+  const showGoogleAuthHint = isGoogleMeetUrl(meetingUrl) && googleConnected === false
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -240,6 +256,23 @@ export default function RecordMeetingModal({ open, onClose }) {
                       </div>
                     </div>
                   </div>
+
+                  {showGoogleAuthHint && (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-3">
+                      <AlertTriangle size={15} className="mt-0.5 shrink-0 text-amber-500" />
+                      <span>
+                        The bot will join as a guest. For org-restricted meetings,{' '}
+                        <Link
+                          to="/settings"
+                          onClick={onClose}
+                          className="font-semibold underline underline-offset-2 hover:text-amber-900"
+                        >
+                          connect your Google account in Settings
+                        </Link>{' '}
+                        so it can sign in instead.
+                      </span>
+                    </div>
+                  )}
 
                   {error && (
                     <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">

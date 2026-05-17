@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, FileAudio, X, AlertCircle, Lock, Zap, Trash2,
   ArrowRight, CheckCircle, Languages, ChevronDown,
-  FileText, BarChart2, AlignLeft, Minimize2,
+  FileText, BarChart2, AlignLeft, Minimize2, SlidersHorizontal,
 } from 'lucide-react'
 import { formRequest } from '../../lib/api'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -266,6 +266,60 @@ function SelectField({ label, value, onChange, options }) {
   )
 }
 
+function ConfigFields({ meetingType, setMeetingType, audioLanguage, setAudioLanguage, outputLanguage, setOutputLanguage, meetingTitle, setMeetingTitle, attendees, setAttendees, customInstructions, setCustomInstructions, template, setTemplate }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
+        <SelectField label="Meeting type" value={meetingType} onChange={setMeetingType} options={MEETING_TYPES} />
+        <SelectField label="Audio language" value={audioLanguage} onChange={setAudioLanguage} options={AUDIO_LANGUAGES} />
+      </div>
+
+      <SelectField label="Document language" value={outputLanguage} onChange={setOutputLanguage}
+        options={OUTPUT_LANGUAGES.map(l => ({ value: l.code, label: l.name }))} />
+
+      <div className="space-y-1.5">
+        <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
+          Meeting title <span className="font-normal opacity-60">(optional)</span>
+        </label>
+        <input type="text" value={meetingTitle} onChange={e => setMeetingTitle(e.target.value)}
+          placeholder="e.g. Q3 Planning Session"
+          className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input"
+          style={{ border: '1px solid var(--input-border)' }} />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
+          Attendees <span className="font-normal opacity-60">(comma-separated)</span>
+        </label>
+        <input type="text" value={attendees} onChange={e => setAttendees(e.target.value)}
+          placeholder="Alice (PM), Bob (Eng)…"
+          className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input"
+          style={{ border: '1px solid var(--input-border)' }} />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
+          Custom instructions <span className="font-normal opacity-60">(optional)</span>
+        </label>
+        <textarea value={customInstructions} onChange={e => setCustomInstructions(e.target.value)}
+          placeholder="e.g. Focus on technical decisions. Highlight risks."
+          rows={2}
+          className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input resize-none"
+          style={{ border: '1px solid var(--input-border)' }} />
+      </div>
+
+      <div className="space-y-2">
+        <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Document template</label>
+        <div className="grid grid-cols-2 gap-2">
+          {TEMPLATES.map(tpl => (
+            <TemplateCard key={tpl.id} tpl={tpl} selected={template === tpl.id} onClick={() => setTemplate(tpl.id)} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Upload() {
@@ -274,6 +328,7 @@ export default function Upload() {
   const [error, setError]                   = useState(null)
   const [uploading, setUploading]           = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [configOpen, setConfigOpen]         = useState(false)
 
   // Config state
   const [meetingType, setMeetingType]             = useState('general')
@@ -289,6 +344,16 @@ export default function Upload() {
   const { activeWorkspace } = useWorkspace()
 
   const step = uploading ? 2 : file ? 1 : 0
+
+  const configProps = {
+    meetingType, setMeetingType,
+    audioLanguage, setAudioLanguage,
+    outputLanguage, setOutputLanguage,
+    meetingTitle, setMeetingTitle,
+    attendees, setAttendees,
+    customInstructions, setCustomInstructions,
+    template, setTemplate,
+  }
 
   function validateFile(f) {
     const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
@@ -390,7 +455,7 @@ export default function Upload() {
         <div className="flex-1 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row min-h-0">
 
           {/* LEFT — drop zone */}
-          <div className="flex-1 flex flex-col min-w-0 lg:overflow-y-auto px-4 sm:px-8 py-6 sm:py-8 border-b lg:border-b-0 lg:border-r" style={{ borderColor: 'var(--divider)' }}>
+          <div className="flex-1 flex flex-col min-w-0 lg:overflow-y-auto px-4 sm:px-8 py-6 sm:py-8 lg:border-r" style={{ borderColor: 'var(--divider)' }}>
 
             {/* Drop zone */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -469,8 +534,24 @@ export default function Upload() {
               )}
             </AnimatePresence>
 
+            {/* Mobile configure button — only visible when file is selected */}
+            <AnimatePresence>
+              {file && !uploading && (
+                <motion.button
+                  key="configure-btn"
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+                  onClick={() => setConfigOpen(true)}
+                  className="lg:hidden mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all"
+                  style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-2)' }}
+                >
+                  <SlidersHorizontal size={15} style={{ color: 'var(--text-3)' }} />
+                  Configure output
+                </motion.button>
+              )}
+            </AnimatePresence>
+
             {/* CTA button */}
-            <motion.div className="mt-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.18 }}>
+            <motion.div className="mt-4" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.18 }}>
               <motion.button onClick={handleSubmit} disabled={!file || uploading}
                 whileHover={file && !uploading ? { scale: 1.015 } : {}}
                 whileTap={file && !uploading ? { scale: 0.98 } : {}}
@@ -533,8 +614,8 @@ export default function Upload() {
             </motion.div>
           </div>
 
-          {/* RIGHT — configuration */}
-          <div className="w-full lg:w-96 lg:shrink-0 flex flex-col lg:overflow-y-auto">
+          {/* RIGHT — configuration (desktop only) */}
+          <div className="hidden lg:flex lg:w-96 lg:shrink-0 flex-col lg:overflow-y-auto">
             <AnimatePresence mode="wait">
               {!file ? (
                 <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -550,9 +631,9 @@ export default function Upload() {
               ) : (
                 <motion.div key="config" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.3 }}
-                  className="flex-1 px-4 sm:px-6 py-5 sm:py-6 space-y-5">
+                  className="flex-1 px-6 py-6">
 
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center gap-3 mb-5">
                     <div className="w-7 h-7 rounded-xl bg-violet-600 flex items-center justify-center shrink-0">
                       <AlignLeft size={13} className="text-white" />
                     </div>
@@ -562,64 +643,71 @@ export default function Upload() {
                     </div>
                   </div>
 
-                  {/* meeting type + audio lang */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <SelectField label="Meeting type" value={meetingType} onChange={setMeetingType} options={MEETING_TYPES} />
-                    <SelectField label="Audio language" value={audioLanguage} onChange={setAudioLanguage} options={AUDIO_LANGUAGES} />
-                  </div>
-
-                  <SelectField label="Document language" value={outputLanguage} onChange={setOutputLanguage}
-                    options={OUTPUT_LANGUAGES.map(l => ({ value: l.code, label: l.name }))} />
-
-                  {/* title */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
-                      Meeting title <span className="font-normal opacity-60">(optional)</span>
-                    </label>
-                    <input type="text" value={meetingTitle} onChange={e => setMeetingTitle(e.target.value)}
-                      placeholder="e.g. Q3 Planning Session"
-                      className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input"
-                      style={{ border: '1px solid var(--input-border)' }} />
-                  </div>
-
-                  {/* attendees */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
-                      Attendees <span className="font-normal opacity-60">(comma-separated)</span>
-                    </label>
-                    <input type="text" value={attendees} onChange={e => setAttendees(e.target.value)}
-                      placeholder="Alice (PM), Bob (Eng)…"
-                      className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input"
-                      style={{ border: '1px solid var(--input-border)' }} />
-                  </div>
-
-                  {/* custom instructions */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
-                      Custom instructions <span className="font-normal opacity-60">(optional)</span>
-                    </label>
-                    <textarea value={customInstructions} onChange={e => setCustomInstructions(e.target.value)}
-                      placeholder="e.g. Focus on technical decisions. Highlight risks."
-                      rows={2}
-                      className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input resize-none"
-                      style={{ border: '1px solid var(--input-border)' }} />
-                  </div>
-
-                  {/* template */}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Document template</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {TEMPLATES.map(tpl => (
-                        <TemplateCard key={tpl.id} tpl={tpl} selected={template === tpl.id} onClick={() => setTemplate(tpl.id)} />
-                      ))}
-                    </div>
-                  </div>
+                  <ConfigFields {...configProps} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
         </div>
+
+        {/* ── Mobile config modal (bottom sheet) ── */}
+        <AnimatePresence>
+          {configOpen && (
+            <>
+              <motion.div
+                key="backdrop"
+                className="fixed inset-0 z-40 lg:hidden"
+                style={{ background: 'rgba(0,0,0,0.6)' }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={() => setConfigOpen(false)}
+              />
+              <motion.div
+                key="sheet"
+                className="fixed bottom-0 left-0 right-0 z-50 lg:hidden flex flex-col rounded-t-3xl overflow-hidden"
+                style={{ background: 'var(--card-bg)', maxHeight: '85vh' }}
+                initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              >
+                {/* Sheet header */}
+                <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ borderBottom: '1px solid var(--divider)' }}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-xl bg-violet-600 flex items-center justify-center shrink-0">
+                      <AlignLeft size={13} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Configure output</p>
+                      <p className="text-xs" style={{ color: 'var(--text-3)' }}>Tailor the generated minutes</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setConfigOpen(false)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition"
+                    style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+
+                {/* Scrollable fields */}
+                <div className="overflow-y-auto flex-1 px-5 py-5">
+                  <ConfigFields {...configProps} />
+                </div>
+
+                {/* Done button */}
+                <div className="px-5 py-4 shrink-0" style={{ borderTop: '1px solid var(--divider)' }}>
+                  <button
+                    onClick={() => setConfigOpen(false)}
+                    className="w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold"
+                  >
+                    Done
+                  </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
       </main>
     </div>
   )
