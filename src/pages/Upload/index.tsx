@@ -407,7 +407,7 @@ export default function Upload() {
                     : 'border-white/10 hover:border-violet-500/40 hover:bg-violet-500/5 bg-white/[0.03]'
                 }`}
               >
-                <input ref={inputRef} type="file" accept=".mp3,.mp4,.m4a,.wav,.webm" className="hidden"
+                <input ref={inputRef} type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/webm,video/mp4,video/webm,.mp3,.mp4,.m4a,.wav,.webm" className="hidden"
                   onChange={e => { if (e.target.files[0]) handleFileSelect(e.target.files[0]) }} />
 
                 <AnimatePresence mode="wait">
