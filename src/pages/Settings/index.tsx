@@ -5,10 +5,11 @@ import {
   User, Mail, Lock, Bell, Trash2, CheckCircle, Eye, EyeOff,
   AlertTriangle, Save, Zap, Globe, Moon, Sun, Monitor,
   Download, Shield, Camera, Loader2, Link2, X, Settings as SettingsIcon,
+  ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Sidebar from '../../components/Sidebar'
-import { api, formRequest, getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration } from '../../lib/api'
+import { api, formRequest, getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration, updateIntegrationSettings, getIntegrationResources, connectWebhook } from '../../lib/api'
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -132,13 +133,23 @@ export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   // integrations
-  const [integrations, setIntegrations] = useState<Record<string, any>>({
-    google: { connected: false, email: null, auto_join: true },
-    zoom:   { connected: false, email: null, auto_join: true },
-  })
+  const [integrations, setIntegrations] = useState<Record<string, any>>({})
   const [integrationBanner, setIntegrationBanner] = useState<{ type: 'success' | 'error', msg: string } | null>(null)
   const [connectingProvider, setConnectingProvider] = useState<string | null>(null)
   const [disconnectingProvider, setDisconnectingProvider] = useState<string | null>(null)
+  const [configuringProvider, setConfiguringProvider] = useState<string | null>(null)
+  const [configInputs, setConfigInputs] = useState<Record<string, string>>({})
+  const [configSaving, setConfigSaving] = useState(false)
+  const [webhookUrl, setWebhookUrl] = useState('')
+
+  const PROVIDER_LABELS: Record<string, string> = {
+    google: 'Google Calendar', zoom: 'Zoom', outlook: 'Outlook Calendar',
+    slack: 'Slack', hubspot: 'HubSpot', notion: 'Notion',
+    linear: 'Linear', webhook: 'Webhook / Zapier',
+    google_drive: 'Google Drive', salesforce: 'Salesforce',
+    asana: 'Asana', jira: 'Jira', pipedrive: 'Pipedrive',
+    trello: 'Trello', clickup: 'ClickUp', monday: 'Monday.com',
+  }
 
   async function loadIntegrations() {
     try {
@@ -147,9 +158,7 @@ export default function Settings() {
     } catch {}
   }
 
-  useEffect(() => {
-    loadIntegrations()
-  }, [])
+  useEffect(() => { loadIntegrations() }, [])
 
   const handledOAuthRef = useRef(false)
   useEffect(() => {
@@ -158,30 +167,32 @@ export default function Settings() {
     const error     = searchParams.get('error')
     if (connected) {
       handledOAuthRef.current = true
-      setIntegrationBanner({ type: 'success', msg: `${connected === 'google' ? 'Google Calendar' : 'Zoom'} connected! Your upcoming meetings will be recorded automatically.` })
+      const label = PROVIDER_LABELS[connected] || connected
+      const calendarProviders = ['google', 'zoom', 'outlook']
+      const msg = calendarProviders.includes(connected)
+        ? `${label} connected! Upcoming meetings will be recorded automatically.`
+        : `${label} connected! Meeting notes will be sent after each session.`
+      setIntegrationBanner({ type: 'success', msg })
       loadIntegrations()
       setSearchParams({}, { replace: true })
     } else if (error) {
       handledOAuthRef.current = true
-      const msgs: Record<string, string> = {
-        google_denied: 'Google Calendar access was denied.',
-        zoom_denied:   'Zoom access was denied.',
-        google_token:  'Could not exchange Google auth code. Please try again.',
-        zoom_token:    'Could not exchange Zoom auth code. Please try again.',
-        invalid_state: 'OAuth state expired. Please try again.',
-      }
-      setIntegrationBanner({ type: 'error', msg: msgs[error] || 'Connection failed. Please try again.' })
+      setIntegrationBanner({ type: 'error', msg: 'Connection failed — please try again.' })
       setSearchParams({}, { replace: true })
     }
   }, [])
 
   async function handleConnect(provider: string) {
+    if (provider === 'webhook') {
+      setConfiguringProvider('webhook')
+      return
+    }
     setConnectingProvider(provider)
     try {
       const { url } = await getIntegrationConnectUrl(provider)
       window.location.href = url
     } catch {
-      setIntegrationBanner({ type: 'error', msg: `Could not start ${provider} OAuth flow.` })
+      setIntegrationBanner({ type: 'error', msg: `Could not start ${PROVIDER_LABELS[provider] || provider} OAuth.` })
       setConnectingProvider(null)
     }
   }
@@ -193,6 +204,36 @@ export default function Settings() {
       await loadIntegrations()
     } finally {
       setDisconnectingProvider(null)
+    }
+  }
+
+  async function handleSaveConfig(provider: string) {
+    setConfigSaving(true)
+    try {
+      await updateIntegrationSettings(provider, configInputs)
+      setConfiguringProvider(null)
+      setConfigInputs({})
+      await loadIntegrations()
+    } catch {
+      setIntegrationBanner({ type: 'error', msg: 'Could not save configuration.' })
+    } finally {
+      setConfigSaving(false)
+    }
+  }
+
+  async function handleConnectWebhook() {
+    if (!webhookUrl.trim()) return
+    setConfigSaving(true)
+    try {
+      await connectWebhook(webhookUrl.trim())
+      setConfiguringProvider(null)
+      setWebhookUrl('')
+      await loadIntegrations()
+      setIntegrationBanner({ type: 'success', msg: 'Webhook connected! Meeting notes will be POSTed after each session.' })
+    } catch {
+      setIntegrationBanner({ type: 'error', msg: 'Invalid webhook URL.' })
+    } finally {
+      setConfigSaving(false)
     }
   }
 
@@ -548,7 +589,7 @@ export default function Settings() {
             </Section>
 
             {/* Integrations */}
-            <Section icon={Link2} title="Integrations" desc="Connect your calendar to auto-record upcoming meetings" index={4}>
+            <Section icon={Link2} title="Integrations" desc="Connect your tools — notes auto-sync after every meeting" index={4}>
               <AnimatePresence>
                 {integrationBanner && (
                   <motion.div
@@ -557,67 +598,173 @@ export default function Settings() {
                     exit={{ opacity: 0, y: -6 }}
                     className={`mb-4 flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
                       integrationBanner.type === 'success'
-                        ? 'border-green-200 bg-green-500/100/10 text-green-700'
-                        : 'border-red-200 bg-red-500/10 text-red-700'
+                        ? 'border-green-200 bg-green-50/10 text-green-400'
+                        : 'border-red-200 bg-red-500/10 text-red-400'
                     }`}
                   >
                     <span>{integrationBanner.msg}</span>
-                    <button onClick={() => setIntegrationBanner(null)} className="shrink-0 mt-0.5">
-                      <X size={14} />
-                    </button>
+                    <button onClick={() => setIntegrationBanner(null)} className="shrink-0 mt-0.5"><X size={14} /></button>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="space-y-4">
-                {[
-                  { provider: 'google', label: 'Google Calendar', icon: '🗓️', desc: 'Auto-join Google Meet calls from your calendar' },
-                  { provider: 'zoom',   label: 'Zoom',            icon: '📹', desc: 'Auto-join Zoom meetings from your account' },
-                ].map(({ provider, label, icon, desc }) => {
-                  const info = integrations[provider] || { connected: false, email: null, auto_join: true }
-                  return (
-                    <div key={provider} className="flex flex-col gap-3 rounded-xl border border-white/[0.06] bg-white/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl leading-none mt-0.5">{icon}</span>
-                        <div>
-                          <p className="text-sm font-semibold text-white">{label}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
-                          {info.connected && info.email && (
-                            <p className="text-xs text-violet-600 mt-1 font-medium">{info.email}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-start gap-2 sm:items-end sm:shrink-0">
-                        {info.connected ? (
-                          <>
-                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <span>Auto-join</span>
-                              <Toggle checked={info.auto_join} onChange={v => handleAutoJoinToggle(provider, v)} />
-                            </div>
-                            <button
-                              onClick={() => handleDisconnect(provider)}
-                              disabled={disconnectingProvider === provider}
-                              className="text-xs font-semibold text-red-500 hover:text-red-700 disabled:opacity-50 flex items-center gap-1"
-                            >
-                              {disconnectingProvider === provider && <Loader2 size={11} className="animate-spin" />}
-                              Disconnect
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => handleConnect(provider)}
-                            disabled={connectingProvider === provider}
-                          className="flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:shadow-[0_4px_12px_rgba(124,58,237,0.35)] disabled:opacity-50 transition-all"
-                          >
-                            {connectingProvider === provider ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
-                            Connect
-                          </button>
-                        )}
-                      </div>
+              {/* Webhook connect inline form */}
+              <AnimatePresence>
+                {configuringProvider === 'webhook' && (
+                  <motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                    className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-4 space-y-3">
+                    <p className="text-xs font-semibold text-white">Webhook / Zapier URL</p>
+                    <p className="text-xs text-slate-500">After each meeting MinuteAI will POST meeting data to this URL. Works with Zapier, Make, n8n, or any custom endpoint.</p>
+                    <input
+                      type="url"
+                      value={webhookUrl}
+                      onChange={e => setWebhookUrl(e.target.value)}
+                      placeholder="https://hooks.zapier.com/hooks/catch/..."
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-violet-500/60 focus:outline-none"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={handleConnectWebhook} disabled={configSaving || !webhookUrl.trim()}
+                        className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
+                        {configSaving ? <Loader2 size={12} className="animate-spin" /> : null} Save
+                      </button>
+                      <button onClick={() => { setConfiguringProvider(null); setWebhookUrl('') }}
+                        className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-400 hover:bg-white/5">Cancel</button>
                     </div>
-                  )
-                })}
-              </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {[
+                {
+                  group: 'Calendar & Video',
+                  items: [
+                    { provider: 'google',  icon: '🗓️', desc: 'Auto-join Google Meet calls from your calendar', autoJoin: true },
+                    { provider: 'zoom',    icon: '📹', desc: 'Auto-join Zoom meetings from your account', autoJoin: true },
+                    { provider: 'outlook', icon: '📅', desc: 'Auto-join Teams & Outlook meetings from your calendar', autoJoin: true },
+                  ]
+                },
+                {
+                  group: 'Communication',
+                  items: [
+                    { provider: 'slack', icon: '💬', desc: 'Post meeting recap to a Slack channel after each session' },
+                  ]
+                },
+                {
+                  group: 'CRM',
+                  items: [
+                    { provider: 'hubspot',    icon: '🟠', desc: 'Log meeting notes to HubSpot contacts and deals' },
+                    { provider: 'salesforce', icon: '☁️', desc: 'Sync notes to Salesforce accounts and opportunities', comingSoon: true },
+                    { provider: 'pipedrive',  icon: '🔵', desc: 'Add meeting notes to Pipedrive deals', comingSoon: true },
+                  ]
+                },
+                {
+                  group: 'Project Management',
+                  items: [
+                    { provider: 'notion',  icon: '⬜', desc: 'Create a meeting notes page in your Notion database', config: { label: 'Notion Database ID', key: 'database_id', placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' } },
+                    { provider: 'linear',  icon: '🔷', desc: 'Create Linear issues from action items after meetings', config: { label: 'Linear Team', key: 'team_id', placeholder: 'Auto-detected on connect' } },
+                    { provider: 'asana',   icon: '🌸', desc: 'Create Asana tasks from meeting action items', comingSoon: true },
+                    { provider: 'jira',    icon: '🔵', desc: 'Create Jira tickets from meeting action items', comingSoon: true },
+                    { provider: 'trello',  icon: '🟦', desc: 'Add meeting action items as Trello cards', comingSoon: true },
+                    { provider: 'clickup', icon: '🟣', desc: 'Create ClickUp tasks from action items', comingSoon: true },
+                    { provider: 'monday',  icon: '🟡', desc: 'Add items to Monday.com boards from meetings', comingSoon: true },
+                  ]
+                },
+                {
+                  group: 'Storage & Docs',
+                  items: [
+                    { provider: 'google_drive', icon: '📁', desc: 'Save meeting DOCX to a Google Drive folder', config: { label: 'Drive Folder ID (optional)', key: 'folder_id', placeholder: 'Leave blank for My Drive root' } },
+                  ]
+                },
+                {
+                  group: 'Automation',
+                  items: [
+                    { provider: 'webhook', icon: '🔗', desc: 'POST meeting data to any URL — works with Zapier, Make, n8n' },
+                  ]
+                },
+              ].map(({ group, items }) => (
+                <div key={group} className="mb-6 last:mb-0">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">{group}</p>
+                  <div className="space-y-2">
+                    {items.map(({ provider, icon, desc, autoJoin, comingSoon, config }: any) => {
+                      const info = integrations[provider] || { connected: false, email: null, auto_join: true, settings: {} }
+                      const isConfiguring = configuringProvider === provider && provider !== 'webhook'
+                      const needsConfig = config && info.connected && !info.settings?.[config.key]
+                      return (
+                        <div key={provider} className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-4">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-3">
+                              <span className="text-xl leading-none mt-0.5">{icon}</span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-semibold text-white">{PROVIDER_LABELS[provider] || provider}</p>
+                                  {comingSoon && <span className="rounded-full bg-slate-700 px-2 py-0.5 text-[10px] font-medium text-slate-400">Coming soon</span>}
+                                  {needsConfig && !isConfiguring && <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-medium text-amber-400">Configure</span>}
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
+                                {info.connected && info.email && <p className="text-xs text-violet-500 mt-1 font-medium">{info.email}</p>}
+                                {info.connected && info.settings?.[config?.key] && (
+                                  <p className="text-xs text-slate-500 mt-0.5">{config.label}: <span className="text-slate-400">{info.settings[config.key]}</span></p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-start gap-2 sm:items-end sm:shrink-0">
+                              {comingSoon ? null : info.connected ? (
+                                <div className="flex items-center gap-3">
+                                  {config && (
+                                    <button onClick={() => { setConfiguringProvider(isConfiguring ? null : provider); setConfigInputs(info.settings || {}) }}
+                                      className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                                      {isConfiguring ? <ChevronUp size={12} /> : <ChevronDown size={12} />} Config
+                                    </button>
+                                  )}
+                                  {autoJoin && (
+                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                      <span>Auto-join</span>
+                                      <Toggle checked={info.auto_join} onChange={v => handleAutoJoinToggle(provider, v)} />
+                                    </div>
+                                  )}
+                                  <button onClick={() => handleDisconnect(provider)} disabled={disconnectingProvider === provider}
+                                    className="text-xs font-semibold text-red-500 hover:text-red-400 disabled:opacity-50 flex items-center gap-1">
+                                    {disconnectingProvider === provider && <Loader2 size={11} className="animate-spin" />}
+                                    Disconnect
+                                  </button>
+                                </div>
+                              ) : (
+                                <button onClick={() => handleConnect(provider)} disabled={!!connectingProvider || comingSoon}
+                                  className="flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:shadow-[0_4px_12px_rgba(124,58,237,0.35)] disabled:opacity-50 transition-all">
+                                  {connectingProvider === provider ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
+                                  Connect
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {/* Inline config form */}
+                          <AnimatePresence>
+                            {isConfiguring && config && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                                className="mt-3 overflow-hidden border-t border-white/[0.06] pt-3 space-y-2">
+                                <label className="text-xs font-medium text-slate-400">{config.label}</label>
+                                <input type="text" value={configInputs[config.key] || ''}
+                                  onChange={e => setConfigInputs(prev => ({ ...prev, [config.key]: e.target.value }))}
+                                  placeholder={config.placeholder}
+                                  className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white placeholder:text-slate-600 focus:border-violet-500/60 focus:outline-none"
+                                />
+                                <div className="flex gap-2">
+                                  <button onClick={() => handleSaveConfig(provider)} disabled={configSaving}
+                                    className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
+                                    {configSaving ? <Loader2 size={12} className="animate-spin" /> : null} Save
+                                  </button>
+                                  <button onClick={() => { setConfiguringProvider(null); setConfigInputs({}) }}
+                                    className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-400 hover:bg-white/5">Cancel</button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </Section>
 
             {/* Danger zone */}

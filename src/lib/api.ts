@@ -250,3 +250,15 @@ export function updateIntegration(provider: string, settings: { auto_join?: bool
 export function getUpcomingCalendarEvents(days = 7) {
   return api.get(`/integrations/calendar/upcoming?days=${days}`)
 }
+
+export function updateIntegrationSettings(provider: string, settings: Record<string, string>) {
+  return api.patch(`/integrations/${provider}/settings`, settings)
+}
+
+export function getIntegrationResources(provider: string) {
+  return api.get(`/integrations/${provider}/resources`)
+}
+
+export function connectWebhook(url: string) {
+  return api.post('/integrations/webhook/connect', { url })
+}
