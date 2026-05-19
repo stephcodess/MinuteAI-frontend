@@ -17,6 +17,7 @@ import { useWorkspace } from '../../context/WorkspaceContext'
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
   queued:           { label: 'Queued',           color: 'text-slate-400',   dot: 'bg-slate-400',   ring: 'bg-slate-400/20'   },
+  scheduled:        { label: 'Scheduled',        color: 'text-violet-400',  dot: 'bg-violet-400',  ring: 'bg-violet-400/20'  },
   preparing:        { label: 'Preparing',         color: 'text-indigo-400',  dot: 'bg-indigo-400',  ring: 'bg-indigo-400/20'  },
   joining:          { label: 'Joining',           color: 'text-sky-400',     dot: 'bg-sky-400',     ring: 'bg-sky-400/20'     },
   waiting_for_host: { label: 'Waiting for host',  color: 'text-amber-400',   dot: 'bg-amber-400',   ring: 'bg-amber-400/20'   },
@@ -225,6 +226,8 @@ function SessionCard({ session, highlighted, onNavigate, onEnd, onCancel, onCale
                   ? 'Recording finished — transcription in progress.'
                   : session.status === 'cancelled'
                   ? 'Session was cancelled.'
+                  : session.status === 'scheduled'
+                  ? `⏰ Scheduled — bot will join at ${fmt(session.scheduled_for)}.`
                   : session.status === 'recording'
                   ? '🔴 Live — MinuteAI is recording your meeting.'
                   : `MinuteAI Recorder is ${session.status.replace('_', ' ')}.`}

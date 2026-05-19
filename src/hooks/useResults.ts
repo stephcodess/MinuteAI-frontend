@@ -14,6 +14,12 @@ export function useResults(jobId) {
       .finally(() => setLoading(false))
   }, [jobId])
 
+  function refresh() {
+    return getResults(jobId)
+      .then(data => { setMinutes(data); setError(null) })
+      .catch(err => setError(err.message))
+  }
+
   function downloadDocx(template?: string) {
     window.open(getDownloadUrl(jobId, 'docx', template), '_blank')
   }
@@ -22,5 +28,5 @@ export function useResults(jobId) {
     window.open(getDownloadUrl(jobId, 'pdf', template), '_blank')
   }
 
-  return { minutes, loading, error, downloadDocx, downloadPdf }
+  return { minutes, loading, error, downloadDocx, downloadPdf, refresh }
 }

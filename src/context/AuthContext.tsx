@@ -7,6 +7,14 @@ const ACCESS_KEY  = 'minuteai_access'
 const REFRESH_KEY = 'minuteai_refresh'
 const USER_KEY    = 'minuteai_user'
 
+function parseJwtExp(token: string): number | null {
+  try {
+    return JSON.parse(atob(token.split('.')[1])).exp * 1000
+  } catch {
+    return null
+  }
+}
+
 async function apiFetch(path, options: RequestInit = {}) {
   const { headers: extraHeaders, ...rest } = options
   const res = await fetch(`${API}${path}`, {
@@ -24,12 +32,39 @@ export function AuthProvider({ children }) {
   })
   const [ready, setReady] = useState(false)
 
-  // Listen for forced logout triggered by lib/api.js when refresh fails mid-session
+  // When api.ts fails a token refresh mid-request, clear auth and signal for redirect
   useEffect(() => {
-    const handler = () => _clear()
+    const handler = () => {
+      _clear()
+      window.dispatchEvent(new CustomEvent('minuteai:session-expired'))
+    }
     window.addEventListener('minuteai:logout', handler)
     return () => window.removeEventListener('minuteai:logout', handler)
   }, [])
+
+  // Proactively refresh the access token ~5 min before it expires
+  useEffect(() => {
+    if (!user) return
+    const id = setInterval(async () => {
+      const token = localStorage.getItem(ACCESS_KEY)
+      const rt    = localStorage.getItem(REFRESH_KEY)
+      if (!token || !rt) return
+      const exp = parseJwtExp(token)
+      if (!exp || exp - Date.now() > 5 * 60 * 1000) return  // plenty of time left
+      try {
+        const data = await apiFetch('/auth/refresh', {
+          method: 'POST',
+          body: JSON.stringify({ refresh_token: rt }),
+        })
+        localStorage.setItem(ACCESS_KEY, data.access_token)
+        if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
+      } catch {
+        _clear()
+        window.dispatchEvent(new CustomEvent('minuteai:session-expired'))
+      }
+    }, 60_000) // check every minute
+    return () => clearInterval(id)
+  }, [user])
 
   // On mount: verify stored access token is still valid
   useEffect(() => {
@@ -37,7 +72,7 @@ export function AuthProvider({ children }) {
     if (!stored) { setReady(true); return }
 
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 5000)
+    const timer = setTimeout(() => controller.abort(), 3000)
 
     async function boot() {
       try {
@@ -46,10 +81,16 @@ export function AuthProvider({ children }) {
           signal: controller.signal,
         })
         setUser(u)
-      } catch {
-        // Access token invalid/expired — try refresh
+      } catch (err: any) {
+        // Network failure / timeout — keep cached user, don't force logout
+        if (err?.name === 'AbortError' || err?.message?.includes('fetch')) {
+          setReady(true)
+          clearTimeout(timer)
+          return
+        }
+        // Token rejected (401) — try refresh
         const rt = localStorage.getItem(REFRESH_KEY)
-        if (!rt) { _clear(); return }
+        if (!rt) { _clear(); setReady(true); return }
         try {
           const { access_token } = await apiFetch('/auth/refresh', {
             method: 'POST',

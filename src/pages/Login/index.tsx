@@ -1,5 +1,5 @@
 import { useState, useId } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Eye, EyeOff, ArrowRight, Zap } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
@@ -106,6 +106,8 @@ const STATS = [
 
 export default function Login() {
   const [searchParams] = useSearchParams()
+  const location                        = useLocation()
+  const sessionExpired                  = !!(location.state as any)?.expired
   const [email, setEmail]               = useState(searchParams.get('email') || '')
   const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -238,6 +240,23 @@ export default function Login() {
                 <SuccessState key="success" name={userName} />
               ) : (
                 <motion.div key="form" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}>
+
+                  {/* Session expired banner */}
+                  <AnimatePresence>
+                    {sessionExpired && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                        exit={{ opacity: 0, y: -8, height: 0 }}
+                        className="mb-5 flex items-center gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3"
+                      >
+                        <span className="text-amber-400 text-base leading-none">⏱</span>
+                        <p className="text-amber-400 text-xs font-medium">
+                          Your session expired. Please sign in again.
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Badge */}
                   <div className="mb-6 flex justify-center">

@@ -378,6 +378,23 @@ export default function Upload() {
     if (f) handleFileSelect(f)
   }
 
+  async function openNativeFilePicker() {
+    const result = await window.electronAPI!.openFile()
+    if (!result) return
+    const blob = new Blob([result.data])
+    const file = new File([blob], result.name)
+    handleFileSelect(file)
+  }
+
+  function handleDropZoneClick() {
+    if (file) return
+    if (window.electronAPI) {
+      openNativeFilePicker()
+    } else {
+      inputRef.current?.click()
+    }
+  }
+
   async function handleSubmit() {
     if (!file || uploading) return
     setUploading(true)
@@ -460,7 +477,7 @@ export default function Upload() {
             {/* Drop zone */}
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
               <div
-                onClick={() => !file && inputRef.current?.click()}
+                onClick={handleDropZoneClick}
                 onDragOver={e => { e.preventDefault(); setDragging(true) }}
                 onDragLeave={e => { if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false) }}
                 onDrop={onDrop}

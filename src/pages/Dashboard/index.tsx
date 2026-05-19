@@ -11,7 +11,7 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import Sidebar from '../../components/Sidebar'
-import { api, getWorkspaceBotAccount, listUpcomingMeetingBotSessions } from '../../lib/api'
+import { api, getWorkspaceBotAccount, listUpcomingMeetingBotSessions, getUpcomingCalendarEvents } from '../../lib/api'
 
 const PAGE_SIZE = 8
 
@@ -566,12 +566,47 @@ function RecorderInviteCard({ botAccount }) {
   )
 }
 
-function UpcomingMeetings({ sessions }) {
+const LIVE_STATUSES = new Set(['preparing', 'joining', 'waiting_for_host', 'recording'])
+const LIVE_LABEL = { preparing: 'Preparing…', joining: 'Joining…', waiting_for_host: 'Waiting for host', recording: 'Recording' }
+
+function fmtCalStart(iso: string) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const now = new Date()
+  const isToday = d.toDateString() === now.toDateString()
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1)
+  const isTomorrow = d.toDateString() === tomorrow.toDateString()
+  const prefix = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return `${prefix} at ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+}
+
+function recordingBadge(status: string | null, auto_join: boolean) {
+  if (!status && auto_join) {
+    return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">Will record</span>
+  }
+  if (status === 'recording') {
+    return <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />Recording</span>
+  }
+  if (status && LIVE_STATUSES.has(status)) {
+    return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{LIVE_LABEL[status] || status}</span>
+  }
+  if (status === 'done') {
+    return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-500/10 text-slate-400">Recorded</span>
+  }
+  return null
+}
+
+function UpcomingMeetings({ sessions, calendarData }) {
+  const { connected, auto_join, events = [] } = calendarData || {}
+  const liveSessions = sessions.filter(s => LIVE_STATUSES.has(s.status) && !s.scheduled_for)
+  const hasLive = liveSessions.length > 0
+  const isEmpty = liveSessions.length === 0 && events.length === 0
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 16 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, delay: 0.25 }}
+      transition={{ duration: 0.4, delay: 0.2 }}
       className="glass-card border rounded-2xl overflow-hidden"
     >
       <div className="px-5 py-4 border-b divider flex items-center justify-between">
@@ -581,46 +616,101 @@ function UpcomingMeetings({ sessions }) {
           </div>
           <p className="text-sm font-bold text-white">Upcoming</p>
         </div>
-        <Link to="/meeting-bots" className="text-[11px] font-semibold text-violet-600 hover:underline">
-          View all
-        </Link>
+        <div className="flex items-center gap-2">
+          {hasLive && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              Live
+            </span>
+          )}
+          <Link to="/meeting-bots" className="text-[11px] font-semibold text-violet-400 hover:text-violet-300">
+            View all
+          </Link>
+        </div>
       </div>
 
-      {sessions.length === 0 ? (
-        <div className="px-5 py-8 text-center">
-          <CalendarClock size={22} className="mx-auto text-slate-600" />
-          <p className="mt-2 text-xs font-semibold text-slate-500">No upcoming bot meetings</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">Invite the workspace recorder or schedule from MinuteAI.</p>
-        </div>
-      ) : (
+      {/* Live sessions (no calendar event) */}
+      {liveSessions.length > 0 && (
         <div className="divide-y divide-[var(--divider)]">
-          {sessions.map((session, index) => (
+          {liveSessions.map((session, index) => (
             <motion.div
               key={session.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.3 + index * 0.04 }}
+              className="px-5 py-3.5 bg-red-500/[0.04]"
+            >
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-white">{session.title || 'Meeting'}</p>
+                  <p className="mt-0.5 text-[11px] font-semibold text-red-400">{LIVE_LABEL[session.status] || session.status}</p>
+                  {session.meeting_url && (
+                    <a href={session.meeting_url} target="_blank" rel="noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300">
+                      Join <ExternalLink size={10} />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Calendar events */}
+      {events.length > 0 && (
+        <div className="divide-y divide-[var(--divider)]">
+          {events.map((event, index) => (
+            <motion.div
+              key={event.id}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.3 + index * 0.04 }}
               className="px-5 py-3.5"
             >
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                  <Bot size={14} />
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+                  <Calendar size={14} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-white">{session.title || 'Scheduled meeting'}</p>
-                  <p className="mt-0.5 text-[11px] text-slate-500">{fmtUpcoming(session.scheduled_for)}</p>
-                  <a
-                    href={session.meeting_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-700 hover:text-cyan-800"
-                  >
-                    Open link <ExternalLink size={10} />
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <p className="truncate text-xs font-bold text-white">{event.title}</p>
+                    {recordingBadge(event.recording_status, auto_join)}
+                  </div>
+                  <p className="text-[11px] text-slate-500">{fmtCalStart(event.start)}</p>
+                  <a href={event.meet_url} target="_blank" rel="noreferrer"
+                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300">
+                    Join Meet <ExternalLink size={10} />
                   </a>
                 </div>
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {isEmpty && (
+        <div className="px-5 py-8 text-center">
+          <CalendarClock size={22} className="mx-auto text-slate-600" />
+          {connected === false ? (
+            <>
+              <p className="mt-2 text-xs font-semibold text-slate-500">Connect Google Calendar to see upcoming meetings</p>
+              <Link to="/settings?tab=integrations" className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-400 hover:underline">
+                Connect Calendar
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-xs font-semibold text-slate-500">No upcoming Google Meet meetings</p>
+              <Link to="/meeting-bots" className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-400 hover:underline">
+                <Plus size={10} /> Schedule a recording
+              </Link>
+            </>
+          )}
         </div>
       )}
     </motion.div>
@@ -638,6 +728,7 @@ export default function Dashboard() {
   const [statsData, setStatsData] = useState(null)
   const [usage, setUsage] = useState(null)
   const [upcoming, setUpcoming] = useState([])
+  const [calendarData, setCalendarData] = useState(null)
   const [botAccount, setBotAccount] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -651,13 +742,15 @@ export default function Dashboard() {
       api.get('/users/me/usage'),
       listUpcomingMeetingBotSessions(activeWorkspace.id, 5),
       getWorkspaceBotAccount(activeWorkspace.id),
+      getUpcomingCalendarEvents(7).catch(() => null),
     ])
-      .then(([m, s, u, upcomingSessions, bot]) => {
+      .then(([m, s, u, upcomingSessions, bot, calData]) => {
         setMeetings(m)
         setStatsData(s)
         setUsage(u)
         setUpcoming(upcomingSessions)
         setBotAccount(bot)
+        setCalendarData(calData)
       })
       .catch(() => { })
       .finally(() => setLoading(false))
@@ -888,8 +981,8 @@ export default function Dashboard() {
 
             {/* Right column: sidebar widgets */}
             <div className="flex flex-col gap-4">
+              <UpcomingMeetings sessions={upcoming} calendarData={calendarData} />
               <RecorderInviteCard botAccount={botAccount} />
-              <UpcomingMeetings sessions={upcoming} />
               <TeamPreview />
             </div>
 

@@ -684,6 +684,143 @@ function MinutesTab({ minutes, copied, onCopy }) {
   )
 }
 
+// ── Speaker Names Modal ───────────────────────────────────────────────────────
+
+function SpeakerNamesModal({ jobId, onClose, onApplied }) {
+  const [speakers, setSpeakers] = useState<Array<{ label: string; samples: string[] }>>([])
+  const [nameMap,  setNameMap]  = useState<Record<string, string>>({})
+  const [loading,  setLoading]  = useState(true)
+  const [saving,   setSaving]   = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
+
+  useEffect(() => {
+    api.get(`/results/${jobId}/speakers`)
+      .then(data => {
+        setSpeakers(data.speakers || [])
+        setNameMap(data.speaker_map || {})
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [jobId])
+
+  async function handleApply() {
+    setSaving(true)
+    setError(null)
+    try {
+      await api.post(`/results/${jobId}/speakers/apply`, { speaker_map: nameMap })
+      await onApplied()
+      onClose()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
+          onClick={onClose}
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="relative z-10 w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+        >
+          {/* header */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Name Speakers</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Assign real names — minutes and transcript update instantly.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          {/* body */}
+          <div className="px-6 py-5 max-h-[58vh] overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-12 text-gray-400 gap-2 text-sm">
+                <Loader2 size={15} className="animate-spin" /> Loading speakers…
+              </div>
+            ) : speakers.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-10">
+                No speakers detected in this transcript.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {speakers.map(spk => (
+                  <div key={spk.label} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        {spk.label.replace('Speaker ', '').trim().charAt(0)}
+                      </div>
+                      <span className="text-xs font-semibold text-gray-600">{spk.label}</span>
+                    </div>
+                    {spk.samples.length > 0 && (
+                      <div className="mb-3 space-y-1.5">
+                        {spk.samples.map((s, i) => (
+                          <p key={i} className="text-[11px] text-gray-400 italic leading-relaxed pl-2 border-l-2 border-gray-200">
+                            "{s}"
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      placeholder={`Real name for ${spk.label} (optional)`}
+                      value={nameMap[spk.label] || ''}
+                      onChange={e => setNameMap(m => ({ ...m, [spk.label]: e.target.value }))}
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            {error && <p className="text-xs text-red-500 mt-3">{error}</p>}
+          </div>
+
+          {/* footer */}
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
+            <p className="text-xs text-gray-400">Leave blank to keep the original label.</p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <motion.button
+                onClick={handleApply}
+                disabled={saving || loading || speakers.length === 0}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200 transition-all disabled:opacity-50"
+              >
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCheck size={13} />}
+                Apply Names
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  )
+}
+
 // ── Template Picker Modal ─────────────────────────────────────────────────────
 
 const EXPORT_TEMPLATES = [
@@ -884,10 +1021,11 @@ const TABS = [
 
 export default function Results() {
   const { jobId } = useParams()
-  const { minutes, downloadDocx, downloadPdf, loading, error } = useResults(jobId)
-  const [copied,  setCopied]  = useState(false)
-  const [activeTab, setActiveTab] = useState('minutes')
+  const { minutes, downloadDocx, downloadPdf, loading, error, refresh } = useResults(jobId)
+  const [copied,        setCopied]        = useState(false)
+  const [activeTab,     setActiveTab]     = useState('minutes')
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
+  const [speakerModal,  setSpeakerModal]  = useState(false)
 
   async function copyText() {
     if (!minutes?.plainText) return
@@ -981,6 +1119,13 @@ export default function Results() {
                 {copied ? 'Copied!' : 'Copy text'}
               </button>
               <button
+                onClick={() => setSpeakerModal(true)}
+                className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
+              >
+                <Users size={14} />
+                Name Speakers
+              </button>
+              <button
                 onClick={() => setTemplateModal('pdf')}
                 className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
               >
@@ -1070,6 +1215,14 @@ export default function Results() {
             if (templateModal === 'pdf') downloadPdf(template)
             else downloadDocx(template)
           }}
+        />
+      )}
+
+      {speakerModal && (
+        <SpeakerNamesModal
+          jobId={jobId}
+          onClose={() => setSpeakerModal(false)}
+          onApplied={refresh}
         />
       )}
     </div>

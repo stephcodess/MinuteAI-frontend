@@ -246,3 +246,7 @@ export function disconnectIntegration(provider: string) {
 export function updateIntegration(provider: string, settings: { auto_join?: boolean }) {
   return api.patch(`/integrations/${provider}`, settings)
 }
+
+export function getUpcomingCalendarEvents(days = 7) {
+  return api.get(`/integrations/calendar/upcoming?days=${days}`)
+}
