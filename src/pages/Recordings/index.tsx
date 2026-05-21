@@ -326,7 +326,7 @@ export default function Recordings() {
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 inline-grid grid-cols-2 gap-1 rounded-xl p-1"
+          <div className="mb-6 grid w-fit grid-cols-2 gap-1 rounded-xl p-1"
             style={{ background: 'var(--input-bg)' }}>
             {TABS.map(({ id, label, icon: Icon }) => {
               const count = meetings.filter(m => m.has_audio && m.audio_type === id).length

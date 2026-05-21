@@ -307,7 +307,7 @@ export default function PdfToAudio() {
           <div className="mx-auto w-full max-w-2xl">
 
             {/* Tabs — positioned at top of content like Team page */}
-            <div className="mb-6 inline-grid grid-cols-2 gap-1 rounded-xl p-1" style={{ background: 'var(--input-bg)' }}>
+            <div className="mb-6 grid w-fit grid-cols-2 gap-1 rounded-xl p-1" style={{ background: 'var(--input-bg)' }}>
               {(['generate', 'audios'] as const).map(tab => (
                 <button
                   key={tab}
