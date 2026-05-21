@@ -5,6 +5,7 @@ import {
   Mic, FileAudio, X, AlertCircle, Lock, Zap, Trash2,
   ArrowRight, CheckCircle, Languages, ChevronDown,
   FileText, BarChart2, AlignLeft, Minimize2, SlidersHorizontal,
+  ShieldCheck,
 } from 'lucide-react'
 import { formRequest } from '../../lib/api'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -53,6 +54,7 @@ const OUTPUT_LANGUAGES = [
   { code: 'hi', name: 'Hindi'       },
   { code: 'sw', name: 'Swahili'     },
   { code: 'yo', name: 'Yoruba'      },
+  { code: 'ig', name: 'Igbo'        },
   { code: 'ha', name: 'Hausa'       },
   { code: 'id', name: 'Indonesian'  },
   { code: 'vi', name: 'Vietnamese'  },
@@ -60,26 +62,27 @@ const OUTPUT_LANGUAGES = [
 ]
 
 const AUDIO_LANGUAGES = [
-  { code: '',   name: 'Auto-detect' },
-  { code: 'en', name: 'English'     },
-  { code: 'fr', name: 'French'      },
-  { code: 'es', name: 'Spanish'     },
-  { code: 'de', name: 'German'      },
-  { code: 'it', name: 'Italian'     },
-  { code: 'pt', name: 'Portuguese'  },
-  { code: 'nl', name: 'Dutch'       },
-  { code: 'ru', name: 'Russian'     },
-  { code: 'zh', name: 'Chinese'     },
-  { code: 'ja', name: 'Japanese'    },
-  { code: 'ko', name: 'Korean'      },
-  { code: 'ar', name: 'Arabic'      },
-  { code: 'hi', name: 'Hindi'       },
-  { code: 'tr', name: 'Turkish'     },
-  { code: 'pl', name: 'Polish'      },
-  { code: 'sv', name: 'Swedish'     },
-  { code: 'uk', name: 'Ukrainian'   },
-  { code: 'yo', name: 'Yoruba'      },
-  { code: 'ha', name: 'Hausa'       },
+  { code: '',   name: 'Auto-detect'      },
+  { code: 'en', name: 'English'          },
+  { code: 'yo', name: 'Yoruba'           },
+  { code: 'ig', name: 'Igbo'             },
+  { code: 'ha', name: 'Hausa'            },
+  { code: 'fr', name: 'French'           },
+  { code: 'es', name: 'Spanish'          },
+  { code: 'de', name: 'German'           },
+  { code: 'it', name: 'Italian'          },
+  { code: 'pt', name: 'Portuguese'       },
+  { code: 'nl', name: 'Dutch'            },
+  { code: 'ru', name: 'Russian'          },
+  { code: 'zh', name: 'Chinese'          },
+  { code: 'ja', name: 'Japanese'         },
+  { code: 'ko', name: 'Korean'           },
+  { code: 'ar', name: 'Arabic'           },
+  { code: 'hi', name: 'Hindi'            },
+  { code: 'tr', name: 'Turkish'          },
+  { code: 'pl', name: 'Polish'           },
+  { code: 'sv', name: 'Swedish'          },
+  { code: 'uk', name: 'Ukrainian'        },
 ]
 
 const TEMPLATES = [
@@ -320,6 +323,83 @@ function ConfigFields({ meetingType, setMeetingType, audioLanguage, setAudioLang
   )
 }
 
+// ── Consent modal ─────────────────────────────────────────────────────────────
+
+function ConsentModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  const [checked, setChecked] = useState(false)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }} transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+        className="relative w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+        style={{ background: 'var(--dropdown-bg)', border: '1px solid var(--card-border)' }}
+      >
+        <div className="h-1 w-full bg-gradient-to-r from-violet-600 via-indigo-500 to-purple-600" />
+
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30 shrink-0">
+              <ShieldCheck size={18} className="text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold" style={{ color: 'var(--text-1)' }}>Recording consent</h2>
+              <p className="text-xs" style={{ color: 'var(--text-3)' }}>Required before processing</p>
+            </div>
+          </div>
+
+          <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-2)' }}>
+            By uploading this recording you confirm that:
+          </p>
+          <ul className="space-y-2 mb-5 text-sm" style={{ color: 'var(--text-2)' }}>
+            {[
+              'All participants were informed that the meeting was being recorded',
+              'All participants gave their consent before recording started',
+              'You have the right to process this audio under your applicable data protection law',
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <div className="w-4 h-4 rounded-full bg-violet-600 flex items-center justify-center shrink-0 mt-0.5">
+                  <CheckCircle size={10} className="text-white" />
+                </div>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+
+          <label className="flex items-start gap-3 cursor-pointer select-none mb-5">
+            <div
+              onClick={() => setChecked(c => !c)}
+              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                checked ? 'bg-violet-600 border-violet-600' : 'border-slate-600'
+              }`}
+            >
+              {checked && <CheckCircle size={12} className="text-white" />}
+            </div>
+            <span className="text-sm" style={{ color: 'var(--text-2)' }}>
+              I confirm all participants consented to this recording
+            </span>
+          </label>
+
+          <div className="flex gap-3">
+            <button onClick={onCancel}
+              className="flex-1 py-3 rounded-full text-sm font-semibold transition"
+              style={{ background: 'var(--input-bg)', color: 'var(--text-2)', border: '1px solid var(--card-border)' }}>
+              Cancel
+            </button>
+            <button onClick={onConfirm} disabled={!checked}
+              className="flex-1 py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/30">
+              Confirm &amp; upload
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Upload() {
@@ -329,6 +409,7 @@ export default function Upload() {
   const [uploading, setUploading]           = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [configOpen, setConfigOpen]         = useState(false)
+  const [showConsent, setShowConsent]       = useState(false)
 
   // Config state
   const [meetingType, setMeetingType]             = useState('general')
@@ -395,8 +476,13 @@ export default function Upload() {
     }
   }
 
-  async function handleSubmit() {
+  function handleSubmit() {
     if (!file || uploading) return
+    setShowConsent(true)
+  }
+
+  async function doUpload() {
+    setShowConsent(false)
     setUploading(true)
     setUploadProgress(0)
     setError(null)
@@ -414,6 +500,7 @@ export default function Upload() {
       initForm.append('custom_instructions', customInstructions)
       initForm.append('template', template)
       initForm.append('output_language', outputLanguage)
+      initForm.append('consent_acknowledged', 'true')
 
       const { jobId } = await formRequest('/upload/init', { method: 'POST', body: initForm })
 
@@ -444,6 +531,12 @@ export default function Upload() {
 
   return (
     <div className="flex h-screen app-bg app-grid overflow-hidden">
+      <AnimatePresence>
+        {showConsent && (
+          <ConsentModal onConfirm={doUpload} onCancel={() => setShowConsent(false)} />
+        )}
+      </AnimatePresence>
+
       <Sidebar active="upload" />
 
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden relative z-[1]">

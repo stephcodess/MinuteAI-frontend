@@ -129,7 +129,7 @@ function SaveBtn({ saved, onClick = undefined, label = 'Save changes', icon: Ico
 }
 
 export default function Settings() {
-  const { user, updateUser } = useAuth()
+  const { user, updateUser, signOut } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   // integrations
@@ -335,6 +335,17 @@ export default function Settings() {
   // danger zone
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [showDelete, setShowDelete]       = useState(false)
+  const [deleting, setDeleting]           = useState(false)
+
+  async function handleDeleteAccount() {
+    setDeleting(true)
+    try {
+      await api.delete('/users/me')
+      signOut()
+    } catch {
+      setDeleting(false)
+    }
+  }
 
   useEffect(() => {
     api.get('/users/me/preferences').then(p => {
@@ -767,8 +778,43 @@ export default function Settings() {
               ))}
             </Section>
 
+            {/* Privacy & data */}
+            <Section icon={Shield} title="Privacy & data" desc="How your recordings and transcripts are processed" index={5}>
+              <div className="space-y-5">
+                <div>
+                  <p className="text-sm font-semibold text-white mb-2">Third-party AI processors</p>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-3">
+                    Your audio and transcripts are sent to these services to generate your minutes. MinuteAI does not train any AI models on your data.
+                  </p>
+                  <div className="space-y-2">
+                    {[
+                      { name: 'AssemblyAI / Groq Whisper', desc: 'Receives your audio file for speech-to-text transcription.' },
+                      { name: 'Anthropic Claude', desc: 'Receives your transcript text to generate structured meeting minutes.' },
+                    ].map(p => (
+                      <div key={p.name} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                        <Shield size={14} className="mt-0.5 shrink-0 text-violet-400" />
+                        <div>
+                          <p className="text-xs font-semibold text-white">{p.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{p.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white mb-2">Data retention</p>
+                  <ul className="text-xs text-slate-500 leading-relaxed space-y-1.5">
+                    <li>• Audio and video recordings are kept so you can re-download them anytime.</li>
+                    <li>• Transcripts and minutes are kept until you delete your account.</li>
+                    <li>• All data is permanently deleted when you close your account.</li>
+                    <li>• Consent audit logs are retained for legal compliance (NDPA / UK GDPR).</li>
+                  </ul>
+                </div>
+              </div>
+            </Section>
+
             {/* Danger zone */}
-            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={5} danger>
+            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={6} danger>
               {!showDelete ? (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
@@ -796,11 +842,12 @@ export default function Settings() {
                   />
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
-                      disabled={deleteConfirm !== 'delete my account'}
+                      onClick={handleDeleteAccount}
+                      disabled={deleteConfirm !== 'delete my account' || deleting}
                       className="flex items-center justify-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      <Trash2 size={14} />
-                      Permanently delete
+                      {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                      {deleting ? 'Deleting…' : 'Permanently delete'}
                     </button>
                     <button
                       onClick={() => { setShowDelete(false); setDeleteConfirm('') }}

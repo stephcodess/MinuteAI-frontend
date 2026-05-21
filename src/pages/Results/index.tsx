@@ -1021,7 +1021,7 @@ const TABS = [
 
 export default function Results() {
   const { jobId } = useParams()
-  const { minutes, downloadDocx, downloadPdf, loading, error, refresh } = useResults(jobId)
+  const { minutes, downloadDocx, downloadPdf, downloadAudio, loading, error, refresh } = useResults(jobId)
   const [copied,        setCopied]        = useState(false)
   const [activeTab,     setActiveTab]     = useState('minutes')
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
@@ -1139,6 +1139,16 @@ export default function Results() {
                 <Download size={14} />
                 Download .docx
               </button>
+              {minutes?.has_audio && (
+                <button
+                  onClick={downloadAudio}
+                  className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
+                  title="Download original recording"
+                >
+                  <Download size={14} />
+                  Recording
+                </button>
+              )}
             </div>
           </div>
 

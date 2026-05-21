@@ -28,5 +28,9 @@ export function useResults(jobId) {
     window.open(getDownloadUrl(jobId, 'pdf', template), '_blank')
   }
 
-  return { minutes, loading, error, downloadDocx, downloadPdf, refresh }
+  function downloadAudio() {
+    window.open(getDownloadUrl(jobId, 'audio'), '_blank')
+  }
+
+  return { minutes, loading, error, downloadDocx, downloadPdf, downloadAudio, refresh }
 }

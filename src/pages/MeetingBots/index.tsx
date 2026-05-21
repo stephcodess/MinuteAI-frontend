@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  AlertCircle, Bot, CalendarPlus, Clock3, ExternalLink,
-  Loader2, Plus, ShieldAlert, Square, StopCircle, X,
+  AlertCircle, Bot, CalendarPlus, CheckCircle, Clock3, ExternalLink,
+  Loader2, Plus, ShieldAlert, ShieldCheck, Square, StopCircle, X,
   Activity, Radio, CheckCircle2, XCircle, Timer,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
@@ -51,6 +51,7 @@ function CreateBotModal({ workspaceId, onClose, onCreated }) {
   const [durationMinutes, setDurationMinutes] = useState(60)
   const [loading, setLoading]                 = useState(false)
   const [error, setError]                     = useState(null)
+  const [consentChecked, setConsentChecked]   = useState(false)
 
   useEffect(() => {
     const h = e => { if (e.key === 'Escape') onClose() }
@@ -60,7 +61,7 @@ function CreateBotModal({ workspaceId, onClose, onCreated }) {
 
   async function submit(e) {
     e.preventDefault()
-    if (!url.trim()) return
+    if (!url.trim() || !consentChecked) return
     setLoading(true); setError(null)
     try {
       const s = await createMeetingBotSession({
@@ -68,6 +69,7 @@ function CreateBotModal({ workspaceId, onClose, onCreated }) {
         workspace_id: workspaceId || undefined,
         scheduled_for: scheduledFor || undefined,
         duration_minutes: durationMinutes,
+        consent_acknowledged: true,
       })
       onCreated(s)
     } catch (err) { setError(err.message || 'Failed to create session.') }
@@ -136,6 +138,30 @@ function CreateBotModal({ workspaceId, onClose, onCreated }) {
               </div>
             </div>
 
+            {/* Consent notice */}
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: 'var(--input-bg)', border: '1px solid var(--card-border)' }}>
+              <div className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-2)' }}>
+                <ShieldCheck size={13} className="text-violet-400 shrink-0" />
+                Recording consent required
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>
+                The bot will appear as <strong style={{ color: 'var(--text-2)' }}>MinuteAI Recorder</strong> in the participant list. All attendees will see it and must be informed they are being recorded before it joins.
+              </p>
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <div
+                  onClick={() => setConsentChecked(c => !c)}
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                    consentChecked ? 'bg-violet-600 border-violet-600' : 'border-slate-600'
+                  }`}
+                >
+                  {consentChecked && <CheckCircle size={10} className="text-white" />}
+                </div>
+                <span className="text-xs" style={{ color: 'var(--text-2)' }}>
+                  All participants have consented to being recorded
+                </span>
+              </label>
+            </div>
+
             {error && (
               <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-sm text-rose-400">
                 <AlertCircle size={14} className="shrink-0" />{error}
@@ -148,7 +174,7 @@ function CreateBotModal({ workspaceId, onClose, onCreated }) {
                 style={{ background: 'var(--input-bg)', color: 'var(--text-2)', border: '1px solid var(--card-border)' }}>
                 Cancel
               </button>
-              <button type="submit" disabled={loading || !url.trim()}
+              <button type="submit" disabled={loading || !url.trim() || !consentChecked}
                 className="flex-1 py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 transition-all shadow-lg shadow-violet-500/30 flex items-center justify-center gap-2">
                 {loading ? <Loader2 size={14} className="animate-spin" /> : <Bot size={14} />}
                 {scheduledFor ? 'Schedule bot' : 'Deploy now'}
