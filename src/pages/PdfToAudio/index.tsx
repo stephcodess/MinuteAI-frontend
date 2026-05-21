@@ -340,7 +340,7 @@ export default function PdfToAudio() {
                     onDrop={onDrop}
                     onDragOver={onDragOver}
                     onDragLeave={onDragLeave}
-                    className={`relative flex flex-col items-center justify-center gap-3 px-6 py-10 !rounded-xl border-2 border-dashed cursor-pointer transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-3 px-6 py-10 rounded-xl border-2 border-dashed cursor-pointer transition-all ${
                       dragging
                         ? 'border-violet-500 bg-violet-500/10'
                         : file
@@ -405,7 +405,7 @@ export default function PdfToAudio() {
                       <button
                         key={p.id}
                         onClick={() => setPurpose(p.id)}
-                        className={`flex flex-col gap-1 p-4 !rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer ${
+                        className={`flex flex-col gap-1 p-4 rounded-lg border text-left transition-all relative overflow-hidden cursor-pointer ${
                           purpose === p.id
                             ? 'border-violet-500 bg-violet-500/5 ring-1 ring-violet-500/20'
                             : 'border-white/[0.08] hover:border-white/15 hover:bg-white/[0.02]'

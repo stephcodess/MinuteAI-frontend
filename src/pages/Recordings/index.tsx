@@ -328,30 +328,31 @@ export default function Recordings() {
           {/* Tabs */}
           <div className="flex items-center gap-1 p-1 rounded-2xl mb-6 w-fit"
             style={{ background: 'var(--input-bg)' }}>
-            {TABS.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => setTab(id)}
-                className="relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-                style={{ color: tab === id ? 'var(--text-1)' : 'var(--text-3)' }}
-              >
-                {tab === id && (
-                  <motion.div
-                    layoutId="tab-bg"
-                    className="absolute inset-0 rounded-xl"
-                    style={{ background: 'var(--card-bg)', boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-                  />
-                )}
-                <Icon size={14} className="relative z-10" />
-                <span className="relative z-10">{label}</span>
-                {withAudio.length > 0 && (
-                  <span className="relative z-10 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-300 ml-0.5">
-                    {tab === id ? filtered.length : meetings.filter(m => m.has_audio && m.audio_type === id).length}
-                  </span>
-                )}
-              </button>
-            ))}
+            {TABS.map(({ id, label, icon: Icon }) => {
+              const count = meetings.filter(m => m.has_audio && m.audio_type === id).length
+              return (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    tab === id
+                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
+                      : ''
+                  }`}
+                  style={{ color: tab === id ? undefined : 'var(--text-3)' }}
+                >
+                  <Icon size={14} />
+                  <span>{label}</span>
+                  {count > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      tab === id ? 'bg-white/20 text-white' : 'bg-violet-500/20 text-violet-300'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
           </div>
 
           {/* Search */}
