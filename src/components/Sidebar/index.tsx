@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, LayoutDashboard, Upload, CreditCard, Settings, LogOut,
   Zap, Plus, Users, ChevronsUpDown, Check, Pencil, Trash2, X, Loader2, CheckSquare,
-  Bell, CheckCircle2, ClipboardList, Bot, Menu, Languages, Sun, Moon, ChevronDown,
+  Bell, CheckCircle2, ClipboardList, Bot, Menu, Languages, Sun, Moon, ChevronDown, Disc,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -27,6 +27,7 @@ const NAV_GROUPS = [
     collapsible: true,
     items: [
       { key: 'upload',       icon: Upload,    label: 'New meeting',    to: '/upload',       badge: 'new' },
+      { key: 'recordings',   icon: Disc,      label: 'Recordings',     to: '/recordings' },
       { key: 'meeting-bots', icon: Bot,       label: 'Meeting Bots',   to: '/meeting-bots' },
       { key: 'translator',   icon: Languages, label: 'Live Translate', to: '/translator' },
     ],

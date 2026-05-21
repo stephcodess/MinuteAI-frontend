@@ -24,6 +24,7 @@ import MeetingBots from './pages/MeetingBots'
 import MeetingBotDetail from './pages/MeetingBotDetail'
 import LiveTranslator from './pages/LiveTranslator'
 import Onboarding from './pages/Onboarding'
+import Recordings from './pages/Recordings'
 import ActionFab from './components/ActionFab'
 import UpdateNotifier from './components/UpdateNotifier'
 
@@ -92,6 +93,7 @@ function AppRoutes() {
           <Route path="/meeting-bots" element={<MeetingBots />} />
           <Route path="/meeting-bots/:sessionId" element={<MeetingBotDetail />} />
           <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />
+          <Route path="/recordings" element={<RequireAuth><Recordings /></RequireAuth>} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/privacy" element={<Navigate to="/login" replace />} />
           <Route path="/terms" element={<Navigate to="/login" replace />} />
