@@ -421,7 +421,7 @@ export default function Sidebar({ active }) {
   const isMeetingActive = meetingKeys.includes(active)
 
   const [openGroups, setOpenGroups] = useState(() => ({
-    Meetings: isMeetingActive,
+    Meetings: true,
   }))
 
   // Auto-open meetings group when navigating to a meetings page
