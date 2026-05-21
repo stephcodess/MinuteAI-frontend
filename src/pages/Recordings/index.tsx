@@ -326,7 +326,7 @@ export default function Recordings() {
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 rounded-2xl mb-6 w-fit"
+          <div className="mb-6 inline-grid grid-cols-2 gap-1 rounded-xl p-1"
             style={{ background: 'var(--input-bg)' }}>
             {TABS.map(({ id, label, icon: Icon }) => {
               const count = meetings.filter(m => m.has_audio && m.audio_type === id).length
@@ -334,7 +334,7 @@ export default function Recordings() {
                 <button
                   key={id}
                   onClick={() => setTab(id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                     tab === id
                       ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
                       : ''

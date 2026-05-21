@@ -405,7 +405,7 @@ export default function PdfToAudio() {
                       <button
                         key={p.id}
                         onClick={() => setPurpose(p.id)}
-                        className={`flex flex-col gap-1 p-4 rounded-lg border text-left transition-all relative overflow-hidden cursor-pointer ${
+                        className={`flex flex-col gap-1 p-4 rounded-md border text-left transition-all relative overflow-hidden cursor-pointer ${
                           purpose === p.id
                             ? 'border-violet-500 bg-violet-500/5 ring-1 ring-violet-500/20'
                             : 'border-white/[0.08] hover:border-white/15 hover:bg-white/[0.02]'
