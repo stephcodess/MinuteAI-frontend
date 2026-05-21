@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { formRequest } from '../../lib/api'
 import { useWorkspace } from '../../context/WorkspaceContext'
+import { useAuth } from '../../context/AuthContext'
 import Sidebar from '../../components/Sidebar'
 
 const ACCEPTED_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/aac', 'audio/wav', 'audio/webm', 'video/mp4']
@@ -403,6 +404,8 @@ function ConsentModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
 // ── main component ────────────────────────────────────────────────────────────
 
 export default function Upload() {
+  const { user } = useAuth()
+  const preferredLanguage = OUTPUT_LANGUAGES.some(lang => lang.code === user?.language) ? user.language : 'en'
   const [file, setFile]                     = useState(null)
   const [dragging, setDragging]             = useState(false)
   const [error, setError]                   = useState(null)
@@ -416,7 +419,7 @@ export default function Upload() {
   const [meetingTitle, setMeetingTitle]           = useState('')
   const [attendees, setAttendees]                 = useState('')
   const [audioLanguage, setAudioLanguage]         = useState('')
-  const [outputLanguage, setOutputLanguage]       = useState('en')
+  const [outputLanguage, setOutputLanguage]       = useState(preferredLanguage)
   const [customInstructions, setCustomInstructions] = useState('')
   const [template, setTemplate]                   = useState('standard')
 

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import { formRequest, api } from '../../lib/api'
+import { useAuth } from '../../context/AuthContext'
 
 // ── Language registry ─────────────────────────────────────────────────────────
 
@@ -216,11 +217,13 @@ function EmptyPane({ label, icon }: { label: string; icon: React.ReactNode }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function LiveTranslator() {
+  const { user } = useAuth()
+  const preferredLanguage = LANGUAGES.some(lang => lang.code === user?.language) ? user.language : 'en'
   const [isRecording, setIsRecording]   = useState(false)
   const [isSpeaking, setIsSpeaking]     = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
   const [sourceLang, setSourceLang]     = useState('auto')
-  const [targetLang, setTargetLang]     = useState('en')
+  const [targetLang, setTargetLang]     = useState(preferredLanguage)
   const [segments, setSegments]         = useState<Segment[]>([])
   const [detectedLang, setDetectedLang] = useState<string | null>(null)
   const [error, setError]               = useState<string | null>(null)

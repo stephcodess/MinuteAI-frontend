@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plug, Link2, CheckCircle2, Loader2, X, ChevronDown, ChevronUp,
   Calendar, MessageSquare, Database, FolderOpen, Zap, BarChart3,
+  CalendarDays, ExternalLink,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
-import { getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration, updateIntegrationSettings, connectWebhook } from '../../lib/api'
+import { getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration, updateIntegrationSettings, connectWebhook, getUpcomingCalendarEvents, getUpcomingZoomMeetings } from '../../lib/api'
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
 
@@ -107,42 +108,160 @@ const GROUPS = [
   },
 ]
 
+// ── Upcoming meetings panel ───────────────────────────────────────────────────
+
+function formatMeetingDay(iso: string) {
+  if (!iso) return { day: '—', month: '', time: '' }
+  const d = new Date(iso)
+  return {
+    day:   d.getDate().toString(),
+    month: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+    time:  d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' }),
+  }
+}
+
+function UpcomingMeetingsPanel({ provider }: { provider: string }) {
+  const [meetings, setMeetings] = useState<any[]>([])
+  const [loading, setLoading]   = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data: any = provider === 'zoom'
+          ? await getUpcomingZoomMeetings()
+          : await getUpcomingCalendarEvents(14)
+        setMeetings(data?.meetings ?? data?.events ?? [])
+      } catch {
+        setMeetings([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [provider])
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-4 text-xs" style={{ color: 'var(--text-3)' }}>
+        <Loader2 size={12} className="animate-spin text-violet-400" /> Loading meetings…
+      </div>
+    )
+  }
+
+  if (!meetings.length) {
+    return (
+      <div className="flex flex-col items-center gap-1.5 py-6">
+        <CalendarDays size={22} className="opacity-20" style={{ color: 'var(--text-2)' }} />
+        <p className="text-xs" style={{ color: 'var(--text-3)' }}>No upcoming meetings found.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2 py-2">
+      {meetings.slice(0, 8).map((m: any, i: number) => {
+        const { day, month, time } = formatMeetingDay(m.start ?? m.start_time ?? m.scheduled_at ?? '')
+        const joinUrl = m.join_url ?? m.meet_url ?? m.html_link
+        return (
+          <div
+            key={m.id ?? i}
+            className="relative flex items-center gap-3 rounded-xl border overflow-hidden"
+            style={{ background: 'var(--input-bg)', borderColor: 'var(--card-border)' }}
+          >
+            {/* Left accent bar */}
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-violet-500 to-indigo-500" />
+
+            {/* Date column */}
+            <div className="shrink-0 flex flex-col items-center justify-center pl-4 pr-1 py-3 min-w-[36px]">
+              <span className="text-base font-black leading-none" style={{ color: 'var(--text-1)' }}>{day}</span>
+              <span className="text-[9px] font-bold tracking-wider mt-0.5" style={{ color: 'var(--text-3)' }}>{month}</span>
+            </div>
+
+            {/* Divider */}
+            <div className="w-px self-stretch my-2" style={{ background: 'var(--card-border)' }} />
+
+            {/* Meeting info */}
+            <div className="flex-1 min-w-0 py-3">
+              <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+                {m.title ?? m.summary ?? 'Untitled'}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[11px]" style={{ color: 'var(--text-3)' }}>{time}</span>
+                {m.duration && (
+                  <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-violet-500/10 text-violet-400">
+                    {m.duration} min
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Join button */}
+            {joinUrl && (
+              <a
+                href={joinUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 mr-3 flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-sm"
+              >
+                Join <ExternalLink size={9} />
+              </a>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Integration card ──────────────────────────────────────────────────────────
 
 function IntegrationCard({
   provider, icon, desc, autoJoin, comingSoon, config,
   info, connecting, disconnecting, configuring, configInputs, configSaving, webhookUrl,
+  meetingsOpen, onToggleMeetings,
   onConnect, onDisconnect, onToggleConfig, onSaveConfig, onConfigInput,
   onWebhookUrl, onConnectWebhook,
 }: any) {
-  const isConfiguring = configuring === provider && provider !== 'webhook'
-  const isWebhookForm = configuring === 'webhook' && provider === 'webhook'
-  const needsConfig   = config && info.connected && !info.settings?.[config.key]
+  const isConfiguring    = configuring === provider && provider !== 'webhook'
+  const isWebhookForm    = configuring === 'webhook' && provider === 'webhook'
+  const needsConfig      = config && info.connected && !info.settings?.[config.key]
+  const hasMeetingsPanel = (provider === 'google' || provider === 'zoom') && info.connected
 
   return (
-    <motion.div
-      layout
-      className="rounded-2xl border transition-all"
+    <div
+      className="rounded-2xl border overflow-hidden transition-colors"
       style={{
-        background: info.connected ? 'rgba(139,92,246,0.05)' : 'var(--card-bg)',
-        borderColor: info.connected ? 'rgba(139,92,246,0.25)' : 'var(--card-border)',
+        background:   info.connected ? 'rgba(139,92,246,0.06)' : 'var(--card-bg)',
+        borderColor:  info.connected ? 'rgba(139,92,246,0.28)' : 'var(--card-border)',
       }}
     >
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          {/* Emoji icon */}
-          <span className="text-2xl leading-none mt-0.5 shrink-0">{icon}</span>
+      {/* Connected accent strip */}
+      {info.connected && (
+        <div className="h-0.5 w-full bg-gradient-to-r from-violet-500 via-indigo-500 to-violet-500 opacity-60" />
+      )}
 
-          {/* Info */}
+      <div className="p-4">
+        {/* ── Header row: icon · name+desc · right action ── */}
+        <div className="flex items-center gap-3">
+
+          {/* Icon box */}
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl leading-none"
+            style={{ background: info.connected ? 'rgba(139,92,246,0.15)' : 'var(--input-bg)' }}
+          >
+            {icon}
+          </div>
+
+          {/* Name + description */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>
                 {PROVIDER_LABELS[provider] || provider}
-              </p>
+              </span>
               {comingSoon && (
-                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                <span className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide"
                   style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
-                  Coming soon
+                  Soon
                 </span>
               )}
               {info.connected && (
@@ -152,65 +271,105 @@ function IntegrationCard({
               )}
               {needsConfig && !isConfiguring && (
                 <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-amber-500/15 text-amber-400">
-                  Needs config
+                  Setup needed
                 </span>
               )}
             </div>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{desc}</p>
+            <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--text-3)' }}>{desc}</p>
             {info.connected && info.email && (
-              <p className="text-xs font-medium text-violet-400 mt-1">{info.email}</p>
+              <p className="text-[11px] font-medium text-violet-400 mt-0.5">{info.email}</p>
             )}
             {info.connected && config && info.settings?.[config.key] && (
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>
                 {config.label}: <span style={{ color: 'var(--text-2)' }}>{info.settings[config.key]}</span>
               </p>
             )}
           </div>
-        </div>
 
-        {/* Actions */}
-        {!comingSoon && (
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            {info.connected ? (
-              <>
-                {config && (
-                  <button
-                    onClick={() => onToggleConfig(isConfiguring ? null : provider)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-                    style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}
-                  >
-                    {isConfiguring ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                    Configure
-                  </button>
-                )}
+          {/* Right-side action */}
+          {!comingSoon && (
+            info.connected ? (
+              <div className="flex items-center gap-2 shrink-0">
                 {autoJoin && (
-                  <div className="flex items-center gap-2 ml-auto">
-                    <span className="text-xs" style={{ color: 'var(--text-3)' }}>Auto-join</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] hidden sm:block" style={{ color: 'var(--text-3)' }}>Auto-join</span>
                     <Toggle checked={info.auto_join ?? true} onChange={v => onConnect(provider, v)} />
                   </div>
                 )}
                 <button
                   onClick={() => onDisconnect(provider)}
                   disabled={disconnecting === provider}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50 ml-auto"
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                 >
-                  {disconnecting === provider ? <Loader2 size={11} className="animate-spin" /> : null}
-                  Disconnect
+                  {disconnecting === provider
+                    ? <Loader2 size={11} className="animate-spin" />
+                    : <X size={11} />}
+                  <span className="hidden sm:inline">Disconnect</span>
                 </button>
-              </>
+              </div>
             ) : (
               <button
                 onClick={() => onConnect(provider)}
-                disabled={!!connecting || comingSoon}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 transition-all shadow-sm"
+                disabled={!!connecting}
+                className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50 transition-all shadow-sm shadow-violet-500/20"
               >
-                {connecting === provider ? <Loader2 size={11} className="animate-spin" /> : <Link2 size={11} />}
+                {connecting === provider
+                  ? <Loader2 size={12} className="animate-spin" />
+                  : <Link2 size={12} />}
                 Connect
+              </button>
+            )
+          )}
+        </div>
+
+        {/* ── Secondary actions row (connected only) ── */}
+        {info.connected && (config || hasMeetingsPanel) && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--card-border)' }}>
+            {config && (
+              <button
+                onClick={() => onToggleConfig(isConfiguring ? null : provider)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors hover:bg-white/[0.04]"
+                style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}
+              >
+                {isConfiguring ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                Configure
+              </button>
+            )}
+            {hasMeetingsPanel && (
+              <button
+                onClick={() => onToggleMeetings(provider)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${meetingsOpen ? 'bg-violet-500/15 text-violet-400' : 'hover:bg-white/[0.04]'}`}
+                style={meetingsOpen ? {} : { background: 'var(--input-bg)', color: 'var(--text-2)' }}
+              >
+                <CalendarDays size={11} />
+                Upcoming
+                {meetingsOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
               </button>
             )}
           </div>
         )}
       </div>
+
+      {/* Upcoming meetings panel */}
+      <AnimatePresence>
+        {meetingsOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pt-0 border-t" style={{ borderColor: 'var(--divider)' }}>
+              <div className="flex items-center gap-1.5 pt-3 pb-1">
+                <CalendarDays size={12} className="text-violet-400" />
+                <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Upcoming meetings</p>
+              </div>
+              <UpcomingMeetingsPanel provider={provider} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Inline config panel */}
       <AnimatePresence>
@@ -279,7 +438,7 @@ function IntegrationCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   )
 }
 
@@ -297,6 +456,7 @@ export default function Integrations() {
   const [configSaving, setConfigSaving] = useState(false)
   const [webhookUrl, setWebhookUrl] = useState('')
   const [loading, setLoading] = useState(true)
+  const [openMeetingsProvider, setOpenMeetingsProvider] = useState<string | null>(null)
 
   async function loadIntegrations() {
     try {
@@ -490,7 +650,7 @@ export default function Integrations() {
               </div>
 
               {/* Cards grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                 {items.map((item: any) => {
                   const info = integrations[item.provider] || { connected: false, auto_join: true, settings: {} }
                   return (
@@ -504,6 +664,8 @@ export default function Integrations() {
                       configInputs={configInputs}
                       configSaving={configSaving}
                       webhookUrl={webhookUrl}
+                      meetingsOpen={openMeetingsProvider === item.provider}
+                      onToggleMeetings={(p: string) => setOpenMeetingsProvider(prev => prev === p ? null : p)}
                       onConnect={handleConnect}
                       onDisconnect={handleDisconnect}
                       onToggleConfig={(p: string | null) => {

@@ -1,0 +1,102 @@
+import { useState } from 'react'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { Loader2 } from 'lucide-react'
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '')
+
+const CARD_ELEMENT_OPTIONS = {
+  style: {
+    base: {
+      color: '#e2e8f0',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      fontSize: '14px',
+      fontSmoothing: 'antialiased',
+      '::placeholder': { color: '#475569' },
+    },
+    invalid: { color: '#f87171', iconColor: '#f87171' },
+  },
+  hidePostalCode: true,
+}
+
+interface InnerProps {
+  onSubmit: (pmId: string) => Promise<{ clientSecret?: string } | void>
+  onComplete: () => void
+  buttonLabel?: string
+}
+
+function CardFormInner({ onSubmit, onComplete, buttonLabel = 'Save card' }: InnerProps) {
+  const stripe   = useStripe()
+  const elements = useElements()
+  const [error, setError] = useState('')
+  const [busy,  setBusy]  = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!stripe || !elements) return
+    setError('')
+    setBusy(true)
+
+    const card = elements.getElement(CardElement)
+    if (!card) { setBusy(false); return }
+
+    const { error: pmErr, paymentMethod } = await stripe.createPaymentMethod({ type: 'card', card })
+    if (pmErr) {
+      setError(pmErr.message || 'Card error')
+      setBusy(false)
+      return
+    }
+
+    try {
+      const result = (await onSubmit(paymentMethod!.id)) as any
+
+      // Handle 3D Secure if the subscription requires additional auth
+      if (result?.clientSecret) {
+        const { error: confirmErr } = await stripe.confirmCardPayment(result.clientSecret)
+        if (confirmErr) {
+          setError(confirmErr.message || 'Card authentication failed. Please try again.')
+          setBusy(false)
+          return
+        }
+      }
+
+      onComplete()
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div
+        className="rounded-xl border px-4 py-4"
+        style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+      >
+        <CardElement options={CARD_ELEMENT_OPTIONS} />
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-400 px-1">{error}</p>
+      )}
+
+      <button
+        type="submit"
+        disabled={!stripe || busy}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-500/25"
+      >
+        {busy
+          ? <><Loader2 size={15} className="animate-spin" /> Processing…</>
+          : buttonLabel}
+      </button>
+    </form>
+  )
+}
+
+export default function StripeCardForm(props: InnerProps) {
+  return (
+    <Elements stripe={stripePromise}>
+      <CardFormInner {...props} />
+    </Elements>
+  )
+}

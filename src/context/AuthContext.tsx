@@ -163,6 +163,16 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
+    if (data.requires_2fa) return data
+    _persist(data)
+    return data
+  }
+
+  async function verifySignIn2FA(userId, code) {
+    const data = await apiFetch('/auth/login/2fa', {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, code }),
+    })
     _persist(data)
     return data
   }
@@ -200,6 +210,16 @@ export function AuthProvider({ children }) {
     return localStorage.getItem(ACCESS_KEY)
   }
 
+  async function refreshUser() {
+    const token = localStorage.getItem(ACCESS_KEY)
+    if (!token) return
+    try {
+      const u = await apiFetch('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      setUser(u)
+      localStorage.setItem(USER_KEY, JSON.stringify(u))
+    } catch {}
+  }
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -212,9 +232,11 @@ export function AuthProvider({ children }) {
       signOut,
       forgotPassword,
       resetPassword,
+      verifySignIn2FA,
       getAccessToken,
       updateUser,
       googleSignIn,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

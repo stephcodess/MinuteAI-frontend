@@ -4,10 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, CreditCard, Calendar, CheckCircle, AlertCircle,
   Loader2, ExternalLink, Receipt, FileText, Crown, Zap,
-  RefreshCw, XCircle, Shield, ChevronRight, Clock,
+  RefreshCw, XCircle, Shield, ChevronRight, Clock, Plus, X,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
-import { api } from '../../lib/api'
+import StripeCardForm from '../../components/StripeCardForm'
+import { api, attachPaymentMethod } from '../../lib/api'
 
 function fmtDate(unix) {
   if (!unix) return '—'
@@ -110,6 +111,10 @@ export default function Subscription() {
               statusMeta={statusMeta}
               onPortal={openPortal}
               onChangePlan={() => navigate('/billing')}
+              onCardUpdated={async () => {
+                const updated = await api.get('/billing/subscription').catch(() => null)
+                if (updated) setSub(updated)
+              }}
             />
           )}
         </div>
@@ -138,7 +143,19 @@ function FreePlanView({ onUpgrade }) {
   )
 }
 
-function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, statusMeta, onPortal, onChangePlan }) {
+function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, statusMeta, onPortal, onChangePlan, onCardUpdated }) {
+  const [showCardForm, setShowCardForm] = useState(false)
+  const isTrialing = sub.status === 'trialing'
+
+  async function handleCardSubmit(pmId: string) {
+    await attachPaymentMethod(pmId)
+  }
+
+  async function handleCardComplete() {
+    setShowCardForm(false)
+    await onCardUpdated()
+  }
+
   return (
     <div className="space-y-5">
 
@@ -178,7 +195,11 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
             </div>
             <p className="text-violet-200 text-sm mt-0.5">
               {fmtPrice(sub.amount, sub.currency)}/{sub.interval || 'month'} ·{' '}
-              {isCanceling ? `Ends ${fmtDate(sub.cancel_at || sub.current_period_end)}` : `Renews ${fmtDate(sub.current_period_end)}`}
+              {isCanceling
+                ? `Ends ${fmtDate(sub.cancel_at || sub.current_period_end)}`
+                : isTrialing
+                  ? `Trial ends ${fmtDate(sub.trial_end || sub.current_period_end)}`
+                  : `Renews ${fmtDate(sub.current_period_end)}`}
             </p>
           </div>
         </div>
@@ -208,17 +229,40 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
             </div>
             <div>
               <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
-                {sub.card?.last4 ? `•••• •••• •••• ${sub.card.last4}` : 'Managed by Stripe'}
+                {sub.card?.last4 ? `•••• •••• •••• ${sub.card.last4}` : 'No card on file'}
               </p>
-              <p className="text-xs" style={{ color: 'var(--text-3)' }}>Payment details stored securely on Stripe</p>
+              {sub.card?.brand && (
+                <p className="text-xs capitalize" style={{ color: 'var(--text-3)' }}>
+                  {sub.card.brand} · expires {sub.card.exp_month}/{sub.card.exp_year}
+                </p>
+              )}
             </div>
           </div>
-          <button onClick={() => onPortal('payment')} disabled={!!portalBusy}
-            className="mt-4 flex items-center justify-center gap-1.5 pt-4 text-xs font-semibold text-violet-400 transition-colors hover:text-violet-300 disabled:opacity-50 sm:justify-start"
-            style={{ borderTop: '1px solid var(--divider)' }}>
-            {portalBusy === 'payment' ? <Loader2 size={11} className="animate-spin" /> : <ExternalLink size={11} />}
-            Update payment method in Stripe
-          </button>
+
+          <div className="pt-4 mt-4" style={{ borderTop: '1px solid var(--divider)' }}>
+            {showCardForm ? (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>New card details</p>
+                  <button onClick={() => setShowCardForm(false)} className="text-xs flex items-center gap-1" style={{ color: 'var(--text-3)' }}>
+                    <X size={12} /> Cancel
+                  </button>
+                </div>
+                <StripeCardForm
+                  onSubmit={handleCardSubmit}
+                  onComplete={handleCardComplete}
+                  buttonLabel="Update card"
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowCardForm(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-violet-400 transition-colors hover:text-violet-300"
+              >
+                <Plus size={11} /> Update payment method
+              </button>
+            )}
+          </div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.12 }}
@@ -227,7 +271,7 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
           <div className="space-y-3">
             {[
               { icon: Calendar, label: 'Current period start', value: fmtDate(sub.current_period_start) },
-              { icon: Clock,    label: isCanceling ? 'Access ends' : 'Next renewal', value: fmtDate(sub.current_period_end) },
+              { icon: Clock,    label: isCanceling ? 'Access ends' : isTrialing ? 'Trial ends' : 'Next renewal', value: fmtDate(sub.trial_end || sub.current_period_end) },
             ].map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">

@@ -26,6 +26,7 @@ import Onboarding from './pages/Onboarding'
 import Recordings from './pages/Recordings'
 import Integrations from './pages/Integrations'
 import PdfToAudio from './pages/PdfToAudio'
+import ConnectCard from './pages/ConnectCard'
 import ActionFab from './components/ActionFab'
 import UpdateNotifier from './components/UpdateNotifier'
 
@@ -43,7 +44,7 @@ function RequireAuth({ children }) {
   return children
 }
 
-const AUTH_PATHS = ['/login', '/signup', '/verify-email', '/forgot-password', '/accept-invite', '/onboarding']
+const AUTH_PATHS = ['/login', '/signup', '/verify-email', '/forgot-password', '/accept-invite', '/onboarding', '/connect-card']
 
 function AppRoutes() {
   const { ready, isSignedIn, user } = useAuth()
@@ -58,6 +59,7 @@ function AppRoutes() {
     return () => window.removeEventListener('minuteai:session-expired', onExpired)
   }, [navigate])
 
+  // Gate 1: onboarding
   useEffect(() => {
     if (
       ready &&
@@ -68,6 +70,19 @@ function AppRoutes() {
       navigate('/onboarding', { replace: true })
     }
   }, [ready, isSignedIn, user?.onboarding_completed, location.pathname, navigate])
+
+  // Gate 2: payment card
+  useEffect(() => {
+    if (
+      ready &&
+      isSignedIn &&
+      user?.onboarding_completed &&
+      user?.has_payment_method === false &&
+      !AUTH_PATHS.includes(location.pathname)
+    ) {
+      navigate('/connect-card', { replace: true })
+    }
+  }, [ready, isSignedIn, user?.onboarding_completed, user?.has_payment_method, location.pathname, navigate])
 
   if (!ready) return <LoadingScreen />
   return (
@@ -96,6 +111,7 @@ function AppRoutes() {
           <Route path="/integrations" element={<RequireAuth><Integrations /></RequireAuth>} />
           <Route path="/pdf-to-audio" element={<RequireAuth><PdfToAudio /></RequireAuth>} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/connect-card" element={<ConnectCard />} />
           <Route path="/privacy" element={<Navigate to="/login" replace />} />
           <Route path="/terms" element={<Navigate to="/login" replace />} />
           <Route path="/contact" element={<Navigate to="/login" replace />} />

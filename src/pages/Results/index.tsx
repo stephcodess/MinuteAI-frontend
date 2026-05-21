@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download, Copy, CheckCheck, FileDown, Plus,
   Circle, CheckCircle2, Loader2, CalendarDays, User as UserIcon,
-  ChevronDown, ArrowLeft, TableProperties, FileText, Users,
+  ChevronDown, TableProperties, FileText, Users,
   Clock, Hash, AlignLeft, ChevronLeft, ChevronRight,
   X, Zap, BarChart2, Minimize2, Lightbulb, HelpCircle,
-  ArrowRight, MessageSquare, Target, List,
+  ArrowRight, MessageSquare, Target, List, ArrowLeft,
 } from 'lucide-react'
 import { useResults } from '../../hooks/useResults'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -17,9 +17,9 @@ import Sidebar from '../../components/Sidebar'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const STATUS_META = {
-  todo:        { label: 'To-do',       cls: 'bg-gray-100 text-gray-600',  icon: Circle       },
-  in_progress: { label: 'In progress', cls: 'bg-blue-50 text-blue-600',   icon: Loader2      },
-  done:        { label: 'Done',        cls: 'bg-green-50 text-green-700', icon: CheckCircle2 },
+  todo:        { label: 'To-do',       cls: 'bg-white/[0.06] text-slate-400',      icon: Circle       },
+  in_progress: { label: 'In progress', cls: 'bg-blue-500/15 text-blue-400',         icon: Loader2      },
+  done:        { label: 'Done',        cls: 'bg-emerald-500/15 text-emerald-400',   icon: CheckCircle2 },
 }
 const NEXT_STATUS = { todo: 'in_progress', in_progress: 'done', done: 'todo' }
 
@@ -44,9 +44,9 @@ function Avatar({ user, size = 7 }) {
   }
   return (
     <div className={`w-${size} h-${size} rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 ${
-      user ? 'bg-gradient-to-br from-violet-500 to-indigo-600' : 'bg-gray-200'
+      user ? 'bg-gradient-to-br from-violet-500 to-indigo-600' : 'bg-white/[0.08]'
     }`}>
-      {user ? initials : <UserIcon size={11} className="text-gray-400" />}
+      {user ? initials : <UserIcon size={11} style={{ color: 'var(--text-3)' }} />}
     </div>
   )
 }
@@ -73,7 +73,8 @@ function AssigneePicker({ task, members, onUpdated }) {
       <button
         onClick={() => setOpen(v => !v)}
         disabled={saving}
-        className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-violet-600 transition-colors"
+        className="flex items-center gap-1.5 text-xs transition-colors"
+        style={{ color: 'var(--text-3)' }}
       >
         <Avatar user={task.assignee} size={5} />
         <span className="max-w-[110px] truncate">{task.assignee?.name ?? 'Unassigned'}</span>
@@ -89,14 +90,16 @@ function AssigneePicker({ task, members, onUpdated }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -4 }}
               transition={{ duration: 0.12 }}
-              className="absolute left-0 top-full mt-1 z-20 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 overflow-hidden"
+              className="absolute left-0 top-full mt-1 z-20 w-52 rounded-xl shadow-2xl border py-1 overflow-hidden"
+              style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
             >
               <button
                 onClick={() => assign(null)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors hover:bg-white/[0.04]"
+                style={{ color: 'var(--text-2)' }}
               >
-                <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-                  <UserIcon size={10} className="text-gray-400" />
+                <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
+                  <UserIcon size={10} style={{ color: 'var(--text-3)' }} />
                 </div>
                 Unassigned
               </button>
@@ -104,13 +107,14 @@ function AssigneePicker({ task, members, onUpdated }) {
                 <button
                   key={m.user_id}
                   onClick={() => assign(m.user_id)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-violet-50 transition-colors ${
-                    task.assignee?.id === m.user_id ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700'
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs transition-colors ${
+                    task.assignee?.id === m.user_id ? 'bg-violet-500/10 text-violet-300' : 'hover:bg-white/[0.04]'
                   }`}
+                  style={{ color: task.assignee?.id === m.user_id ? undefined : 'var(--text-2)' }}
                 >
                   <Avatar user={{ name: m.name, avatar_url: m.avatar_url }} size={5} />
                   <span className="truncate flex-1 text-left">{m.name}</span>
-                  {task.assignee?.id === m.user_id && <CheckCircle2 size={11} className="text-violet-500 shrink-0" />}
+                  {task.assignee?.id === m.user_id && <CheckCircle2 size={11} className="text-violet-400 shrink-0" />}
                 </button>
               ))}
             </motion.div>
@@ -139,8 +143,8 @@ function TaskRow({ task, members, canManage, onUpdated }) {
   }
 
   return (
-    <tr className="group hover:bg-violet-50/30 transition-colors">
-      <td className="px-5 py-3.5 border-b border-gray-100">
+    <tr className="group transition-colors hover:bg-white/[0.03]" style={{ borderBottom: '1px solid var(--card-border)' }}>
+      <td className="px-5 py-3.5">
         <div className="flex items-start gap-3">
           <button
             onClick={cycleStatus}
@@ -153,35 +157,36 @@ function TaskRow({ task, members, canManage, onUpdated }) {
               : <Icon size={11} className={task.status === 'in_progress' ? 'animate-spin' : ''} />
             }
           </button>
-          <span className={`text-sm leading-snug ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+          <span className={`text-sm leading-snug ${task.status === 'done' ? 'line-through opacity-40' : ''}`}
+            style={{ color: 'var(--text-1)' }}>
             {task.title}
           </span>
         </div>
       </td>
-      <td className="px-5 py-3.5 border-b border-gray-100 w-40">
+      <td className="px-5 py-3.5 w-40">
         {canManage ? (
           <AssigneePicker task={task} members={members} onUpdated={onUpdated} />
         ) : (
           <div className="flex items-center gap-1.5">
             <Avatar user={task.assignee} size={5} />
-            <span className="text-xs text-gray-600">{task.assignee?.name ?? 'Unassigned'}</span>
+            <span className="text-xs" style={{ color: 'var(--text-3)' }}>{task.assignee?.name ?? 'Unassigned'}</span>
           </div>
         )}
       </td>
-      <td className="px-5 py-3.5 border-b border-gray-100 w-36">
+      <td className="px-5 py-3.5 w-36">
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${meta.cls}`}>
           <Icon size={10} className={task.status === 'in_progress' ? 'animate-spin' : ''} />
           {meta.label}
         </span>
       </td>
-      <td className="px-5 py-3.5 border-b border-gray-100 w-36">
+      <td className="px-5 py-3.5 w-36">
         {task.deadline ? (
-          <span className="flex items-center gap-1.5 text-xs text-gray-500">
+          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-3)' }}>
             <CalendarDays size={11} />
             {task.deadline}
           </span>
         ) : (
-          <span className="text-xs text-gray-300">—</span>
+          <span className="text-xs opacity-30" style={{ color: 'var(--text-3)' }}>—</span>
         )}
       </td>
     </tr>
@@ -204,7 +209,7 @@ function TaskCard({ task, members, canManage, onUpdated }) {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border p-4" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
       <div className="flex items-start gap-3">
         <button
           onClick={cycleStatus}
@@ -216,36 +221,37 @@ function TaskCard({ task, members, canManage, onUpdated }) {
             ? <Loader2 size={13} className="animate-spin" />
             : <Icon size={13} className={task.status === 'in_progress' ? 'animate-spin' : ''} />}
         </button>
-        <p className={`min-w-0 flex-1 text-sm leading-relaxed ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+        <p className={`min-w-0 flex-1 text-sm leading-relaxed ${task.status === 'done' ? 'line-through opacity-40' : ''}`}
+          style={{ color: 'var(--text-1)' }}>
           {task.title}
         </p>
       </div>
 
       <div className="mt-4 grid gap-3 text-xs">
         <div className="flex items-center justify-between gap-3">
-          <span className="font-semibold uppercase tracking-wide text-gray-400">Assignee</span>
+          <span className="font-semibold uppercase tracking-wide" style={{ color: 'var(--text-3)' }}>Assignee</span>
           {canManage ? (
             <AssigneePicker task={task} members={members} onUpdated={onUpdated} />
           ) : (
-            <span className="text-gray-600">{task.assignee?.name ?? 'Unassigned'}</span>
+            <span style={{ color: 'var(--text-2)' }}>{task.assignee?.name ?? 'Unassigned'}</span>
           )}
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="font-semibold uppercase tracking-wide text-gray-400">Status</span>
+          <span className="font-semibold uppercase tracking-wide" style={{ color: 'var(--text-3)' }}>Status</span>
           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.cls}`}>
             <Icon size={10} className={task.status === 'in_progress' ? 'animate-spin' : ''} />
             {meta.label}
           </span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="font-semibold uppercase tracking-wide text-gray-400">Deadline</span>
+          <span className="font-semibold uppercase tracking-wide" style={{ color: 'var(--text-3)' }}>Deadline</span>
           {task.deadline ? (
-            <span className="flex items-center gap-1.5 text-gray-500">
+            <span className="flex items-center gap-1.5" style={{ color: 'var(--text-2)' }}>
               <CalendarDays size={11} />
               {task.deadline}
             </span>
           ) : (
-            <span className="text-gray-300">-</span>
+            <span className="opacity-30" style={{ color: 'var(--text-3)' }}>—</span>
           )}
         </div>
       </div>
@@ -296,29 +302,32 @@ function TasksPagination({ page, totalPages, total, onPage }) {
 
   return (
     <div className="flex items-center justify-between py-3 px-1 mt-2">
-      <span className="text-xs text-gray-400">
-        Page <span className="font-medium text-gray-600">{page}</span> of <span className="font-medium text-gray-600">{totalPages}</span>
-        <span className="ml-1 text-gray-300">· {total} tasks</span>
+      <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+        Page <span className="font-medium" style={{ color: 'var(--text-2)' }}>{page}</span> of{' '}
+        <span className="font-medium" style={{ color: 'var(--text-2)' }}>{totalPages}</span>
+        <span className="ml-1 opacity-40"> · {total} tasks</span>
       </span>
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPage(page - 1)}
           disabled={page === 1}
-          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 hover:bg-gray-100 text-gray-500 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 transition-colors hover:bg-white/[0.06]"
+          style={{ color: 'var(--text-3)' }}
         >
           <ChevronLeft size={14} />
         </button>
         {pages.map((p, i) =>
           p === '…'
-            ? <span key={`e${i}`} className="px-1 text-gray-400 text-xs">…</span>
+            ? <span key={`e${i}`} className="px-1 text-xs opacity-40" style={{ color: 'var(--text-3)' }}>…</span>
             : <button
                 key={p}
                 onClick={() => onPage(p)}
                 className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all ${
                   page === p
-                    ? 'bg-violet-600 text-white shadow-sm shadow-violet-300/30'
-                    : 'text-gray-500 hover:bg-gray-100'
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
+                    : 'hover:bg-white/[0.06]'
                 }`}
+                style={{ color: page === p ? undefined : 'var(--text-3)' }}
               >
                 {p}
               </button>
@@ -326,7 +335,8 @@ function TasksPagination({ page, totalPages, total, onPage }) {
         <button
           onClick={() => onPage(page + 1)}
           disabled={page === totalPages}
-          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 hover:bg-gray-100 text-gray-500 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 transition-colors hover:bg-white/[0.06]"
+          style={{ color: 'var(--text-3)' }}
         >
           <ChevronRight size={14} />
         </button>
@@ -338,17 +348,15 @@ function TasksPagination({ page, totalPages, total, onPage }) {
 // ── Tasks tab ─────────────────────────────────────────────────────────────────
 
 function TasksTab({ jobId, canManage, meetingTitle }) {
-  const [tasks,      setTasks]      = useState([])
-  const [members,    setMembers]    = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [page,       setPage]       = useState(1)
+  const [tasks,   setTasks]   = useState([])
+  const [members, setMembers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [page,    setPage]    = useState(1)
   const { activeWorkspace } = useWorkspace()
 
   useEffect(() => {
     api.get(`/tasks/meeting/${jobId}`)
-      .then(setTasks)
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      .then(setTasks).catch(() => {}).finally(() => setLoading(false))
   }, [jobId])
 
   useEffect(() => {
@@ -369,18 +377,19 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center py-24 gap-2 text-gray-400 text-sm">
+    <div className="flex items-center justify-center py-24 gap-2 text-sm" style={{ color: 'var(--text-3)' }}>
       <Loader2 size={16} className="animate-spin" /> Loading tasks…
     </div>
   )
 
   if (!tasks.length) return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center mb-3">
-        <TableProperties size={22} className="text-gray-300" />
+      <div className="w-14 h-14 rounded-2xl border-2 border-dashed flex items-center justify-center mb-3"
+        style={{ background: 'var(--input-bg)', borderColor: 'var(--card-border)' }}>
+        <TableProperties size={22} style={{ color: 'var(--text-3)' }} />
       </div>
-      <p className="text-sm font-medium text-gray-500 mb-1">No tasks found for this meeting</p>
-      <p className="text-xs text-gray-400">Action items are extracted automatically from the minutes.</p>
+      <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-2)' }}>No tasks found for this meeting</p>
+      <p className="text-xs" style={{ color: 'var(--text-3)' }}>Action items are extracted automatically from the minutes.</p>
     </div>
   )
 
@@ -391,12 +400,11 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
 
   return (
     <div className="py-4 sm:py-6">
-      {/* summary row */}
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <span className="text-sm font-semibold text-gray-900">{total} tasks</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>{total} tasks</span>
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-gray-100 sm:w-40">
+            <div className="h-1.5 w-28 overflow-hidden rounded-full sm:w-40" style={{ background: 'var(--input-bg)' }}>
               <motion.div
                 className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full"
                 initial={{ width: 0 }}
@@ -404,38 +412,33 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
                 transition={{ duration: 0.5 }}
               />
             </div>
-            <span className="text-xs text-gray-400 font-medium">{done}/{total} done</span>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-3)' }}>{done}/{total} done</span>
           </div>
         </div>
         <button
           onClick={() => downloadCSV(tasks, meetingTitle)}
-          className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-violet-600 border border-gray-200 hover:border-violet-300 bg-white px-3 py-1.5 rounded-lg transition-all"
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all hover:bg-white/[0.04]"
+          style={{ color: 'var(--text-2)', borderColor: 'var(--card-border)' }}
         >
           <TableProperties size={12} />
           Export CSV
         </button>
       </div>
 
-      {/* table */}
-      <div className="hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white md:block">
+      <div className="hidden overflow-x-auto rounded-2xl border md:block"
+        style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
         <table className="min-w-[720px] w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Task</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-40">Assignee</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Status</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">Deadline</th>
+            <tr style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--input-bg)' }}>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-3)' }}>Task</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide w-40" style={{ color: 'var(--text-3)' }}>Assignee</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide w-36" style={{ color: 'var(--text-3)' }}>Status</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide w-36" style={{ color: 'var(--text-3)' }}>Deadline</th>
             </tr>
           </thead>
           <tbody>
             {paginated.map(task => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                members={members}
-                canManage={canManage}
-                onUpdated={handleUpdated}
-              />
+              <TaskRow key={task.id} task={task} members={members} canManage={canManage} onUpdated={handleUpdated} />
             ))}
           </tbody>
         </table>
@@ -443,51 +446,38 @@ function TasksTab({ jobId, canManage, meetingTitle }) {
 
       <div className="space-y-3 md:hidden">
         {paginated.map(task => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            members={members}
-            canManage={canManage}
-            onUpdated={handleUpdated}
-          />
+          <TaskCard key={task.id} task={task} members={members} canManage={canManage} onUpdated={handleUpdated} />
         ))}
       </div>
 
-      <TasksPagination
-        page={page}
-        totalPages={totalPages}
-        total={total}
-        onPage={setPage}
-      />
+      <TasksPagination page={page} totalPages={totalPages} total={total} onPage={setPage} />
     </div>
   )
 }
 
-// ── Priority badge ────────────────────────────────────────────────────────────
+// ── Priority / status badges ──────────────────────────────────────────────────
 
 function PriorityBadge({ priority }) {
   const cfg = {
-    high:   { cls: 'bg-rose-50 text-rose-600 ring-rose-100',   label: 'High'   },
-    medium: { cls: 'bg-amber-50 text-amber-600 ring-amber-100', label: 'Medium' },
-    low:    { cls: 'bg-gray-50 text-gray-500 ring-gray-100',    label: 'Low'    },
-  }[priority] ?? { cls: 'bg-gray-50 text-gray-400 ring-gray-100', label: priority }
+    high:   { cls: 'bg-rose-500/15 text-rose-400',   label: 'High'   },
+    medium: { cls: 'bg-amber-500/15 text-amber-400',  label: 'Medium' },
+    low:    { cls: 'bg-white/[0.06] text-slate-400',  label: 'Low'    },
+  }[priority] ?? { cls: 'bg-white/[0.06] text-slate-400', label: priority }
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cfg.cls}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cfg.cls}`}>
       {cfg.label}
     </span>
   )
 }
 
-// ── Question status badge ─────────────────────────────────────────────────────
-
 function StatusBadge({ status }) {
   const cfg = {
-    answered:   { cls: 'bg-emerald-50 text-emerald-700 ring-emerald-100', label: 'Answered'   },
-    unresolved: { cls: 'bg-rose-50 text-rose-600 ring-rose-100',          label: 'Unresolved' },
-    deferred:   { cls: 'bg-amber-50 text-amber-600 ring-amber-100',       label: 'Deferred'   },
-  }[status] ?? { cls: 'bg-gray-50 text-gray-400 ring-gray-100', label: status }
+    answered:   { cls: 'bg-emerald-500/15 text-emerald-400', label: 'Answered'   },
+    unresolved: { cls: 'bg-rose-500/15 text-rose-400',       label: 'Unresolved' },
+    deferred:   { cls: 'bg-amber-500/15 text-amber-400',     label: 'Deferred'   },
+  }[status] ?? { cls: 'bg-white/[0.06] text-slate-400', label: status }
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cfg.cls}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${cfg.cls}`}>
       {cfg.label}
     </span>
   )
@@ -497,25 +487,26 @@ function StatusBadge({ status }) {
 
 function SectionCard({ icon: Icon, title, accent = 'violet', children, delay = 0 }) {
   const colors = {
-    violet: { ring: 'bg-violet-100', text: 'text-violet-600', border: 'border-violet-100' },
-    indigo: { ring: 'bg-indigo-100', text: 'text-indigo-600', border: 'border-indigo-100' },
-    teal:   { ring: 'bg-teal-100',   text: 'text-teal-600',   border: 'border-teal-100'   },
-    rose:   { ring: 'bg-rose-100',   text: 'text-rose-600',   border: 'border-rose-100'   },
-    amber:  { ring: 'bg-amber-100',  text: 'text-amber-600',  border: 'border-amber-100'  },
-  }[accent] ?? { ring: 'bg-violet-100', text: 'text-violet-600', border: 'border-violet-100' }
+    violet: { bg: 'rgba(139,92,246,0.12)',  text: 'text-violet-400' },
+    indigo: { bg: 'rgba(99,102,241,0.12)',  text: 'text-indigo-400' },
+    teal:   { bg: 'rgba(20,184,166,0.12)',  text: 'text-teal-400'   },
+    rose:   { bg: 'rgba(244,63,94,0.12)',   text: 'text-rose-400'   },
+    amber:  { bg: 'rgba(245,158,11,0.12)',  text: 'text-amber-400'  },
+  }[accent] ?? { bg: 'rgba(139,92,246,0.12)', text: 'text-violet-400' }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay }}
-      className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+      className="rounded-2xl border overflow-hidden"
+      style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
     >
-      <div className={`flex items-center gap-3 px-6 py-4 border-b ${colors.border} bg-gray-50/60`}>
-        <div className={`w-7 h-7 rounded-lg ${colors.ring} flex items-center justify-center shrink-0`}>
+      <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: 'var(--card-border)', background: 'var(--input-bg)' }}>
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
           <Icon size={14} className={colors.text} />
         </div>
-        <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>{title}</h2>
       </div>
       <div className="px-6 py-5">{children}</div>
     </motion.div>
@@ -526,32 +517,29 @@ function SectionCard({ icon: Icon, title, accent = 'violet', children, delay = 0
 
 function MinutesTab({ minutes, copied, onCopy }) {
   if (!minutes?.sections?.length && !minutes?.overview) return (
-    <div className="py-20 text-center text-gray-400 text-sm">No content available.</div>
+    <div className="py-20 text-center text-sm" style={{ color: 'var(--text-3)' }}>No content available.</div>
   )
 
   return (
     <div className="py-6 space-y-4">
-
-      {/* Overview */}
       {minutes.overview && (
         <SectionCard icon={FileText} title="Overview" accent="violet" delay={0}>
-          <p className="text-gray-700 text-sm leading-relaxed">{minutes.overview}</p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>{minutes.overview}</p>
         </SectionCard>
       )}
 
-      {/* Key Decisions */}
       {minutes.keyDecisions?.length > 0 && (
         <SectionCard icon={Lightbulb} title="Key Decisions" accent="indigo" delay={0.04}>
           <ul className="space-y-3">
             {minutes.keyDecisions.map((d, i) => (
               <li key={i} className="flex gap-3">
-                <span className="mt-1 w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-[10px] font-bold text-indigo-600">
+                <span className="mt-1 w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0 text-[10px] font-bold text-indigo-400">
                   {i + 1}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-800">{d.decision}</p>
-                  {d.made_by && <p className="text-xs text-gray-400 mt-0.5">{d.made_by}</p>}
-                  {d.context && <p className="text-xs text-gray-500 mt-1 italic">{d.context}</p>}
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{d.decision}</p>
+                  {d.made_by && <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{d.made_by}</p>}
+                  {d.context && <p className="text-xs mt-1 italic" style={{ color: 'var(--text-3)' }}>{d.context}</p>}
                 </div>
               </li>
             ))}
@@ -559,20 +547,17 @@ function MinutesTab({ minutes, copied, onCopy }) {
         </SectionCard>
       )}
 
-      {/* Topics discussed */}
       {minutes.sections?.map((section, i) => {
         const Icon = sectionIcon(section.title)
         return (
           <SectionCard key={i} icon={Icon} title={section.title} accent="violet" delay={0.06 + i * 0.04}>
-            {/* prose summary */}
-            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap mb-4">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap mb-4" style={{ color: 'var(--text-2)' }}>
               {section.summary || section.content}
             </p>
-            {/* bullet key points */}
             {section.key_points?.length > 0 && (
-              <ul className="space-y-2 border-t border-gray-100 pt-4">
+              <ul className="space-y-2 border-t pt-4" style={{ borderColor: 'var(--card-border)' }}>
                 {section.key_points.map((point, j) => (
-                  <li key={j} className="flex gap-2.5 text-sm text-gray-600">
+                  <li key={j} className="flex gap-2.5 text-sm" style={{ color: 'var(--text-2)' }}>
                     <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
                     {point}
                   </li>
@@ -583,23 +568,22 @@ function MinutesTab({ minutes, copied, onCopy }) {
         )
       })}
 
-      {/* Action items (compact preview — full list in Tasks tab) */}
       {minutes.actionItems?.length > 0 && (
         <SectionCard icon={TableProperties} title="Action Items" accent="teal" delay={0.12}>
           <div className="space-y-2">
             {minutes.actionItems.map((item, i) => (
-              <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                <CheckCircle2 size={14} className="text-teal-500 mt-0.5 shrink-0" />
+              <div key={i} className="flex items-start gap-3 py-2 border-b last:border-0" style={{ borderColor: 'var(--card-border)' }}>
+                <CheckCircle2 size={14} className="text-teal-400 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800">{item.task}</p>
+                  <p className="text-sm" style={{ color: 'var(--text-1)' }}>{item.task}</p>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     {item.owner && (
-                      <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
                         <UserIcon size={10} /> {item.owner}
                       </span>
                     )}
                     {item.deadline && item.deadline !== 'TBD' && (
-                      <span className="flex items-center gap-1 text-[11px] text-gray-500">
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
                         <CalendarDays size={10} /> {item.deadline}
                       </span>
                     )}
@@ -609,32 +593,31 @@ function MinutesTab({ minutes, copied, onCopy }) {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-3 italic">
+          <p className="text-[11px] mt-3 italic" style={{ color: 'var(--text-3)' }}>
             Track and assign these in the Tasks tab →
           </p>
         </SectionCard>
       )}
 
-      {/* Speaker Summaries */}
       {minutes.speakerSummaries?.length > 0 && (
         <SectionCard icon={Users} title="Speaker Summaries" accent="indigo" delay={0.16}>
           <div className="space-y-5">
             {minutes.speakerSummaries.map((spk, i) => (
-              <div key={i} className={i > 0 ? 'pt-5 border-t border-gray-100' : ''}>
+              <div key={i} className={i > 0 ? 'pt-5 border-t' : ''} style={{ borderColor: 'var(--card-border)' }}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                     {(spk.speaker || 'S').charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">{spk.speaker}</p>
-                    {spk.role && <p className="text-[11px] text-gray-400">{spk.role}</p>}
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>{spk.speaker}</p>
+                    {spk.role && <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>{spk.role}</p>}
                   </div>
                 </div>
                 {spk.key_contributions?.length > 0 && (
                   <ul className="space-y-1.5 pl-9">
                     {spk.key_contributions.map((c, j) => (
-                      <li key={j} className="flex gap-2 text-sm text-gray-600">
-                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-300 shrink-0" />
+                      <li key={j} className="flex gap-2 text-sm" style={{ color: 'var(--text-2)' }}>
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                         {c}
                       </li>
                     ))}
@@ -646,40 +629,35 @@ function MinutesTab({ minutes, copied, onCopy }) {
         </SectionCard>
       )}
 
-      {/* Questions Raised */}
       {minutes.questionsRaised?.length > 0 && (
         <SectionCard icon={HelpCircle} title="Questions Raised" accent="amber" delay={0.20}>
           <ul className="space-y-4">
             {minutes.questionsRaised.map((q, i) => (
-              <li key={i} className={i > 0 ? 'pt-4 border-t border-gray-100' : ''}>
+              <li key={i} className={i > 0 ? 'pt-4 border-t' : ''} style={{ borderColor: 'var(--card-border)' }}>
                 <div className="flex items-start justify-between gap-3 mb-1">
-                  <p className="text-sm font-medium text-gray-800">{q.question}</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{q.question}</p>
                   <StatusBadge status={q.status} />
                 </div>
-                {q.asked_by && <p className="text-[11px] text-gray-400 mb-1">Asked by {q.asked_by}</p>}
-                {q.answer_summary && (
-                  <p className="text-sm text-gray-600 italic">{q.answer_summary}</p>
-                )}
+                {q.asked_by && <p className="text-[11px] mb-1" style={{ color: 'var(--text-3)' }}>Asked by {q.asked_by}</p>}
+                {q.answer_summary && <p className="text-sm italic" style={{ color: 'var(--text-2)' }}>{q.answer_summary}</p>}
               </li>
             ))}
           </ul>
         </SectionCard>
       )}
 
-      {/* Next Steps */}
       {minutes.nextSteps?.length > 0 && (
         <SectionCard icon={Target} title="Next Steps" accent="teal" delay={0.24}>
           <ul className="space-y-2">
             {minutes.nextSteps.map((step, i) => (
-              <li key={i} className="flex gap-2.5 text-sm text-gray-700">
-                <ArrowRight size={14} className="text-teal-500 mt-0.5 shrink-0" />
+              <li key={i} className="flex gap-2.5 text-sm" style={{ color: 'var(--text-2)' }}>
+                <ArrowRight size={14} className="text-teal-400 mt-0.5 shrink-0" />
                 {step}
               </li>
             ))}
           </ul>
         </SectionCard>
       )}
-
     </div>
   )
 }
@@ -695,85 +673,60 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
 
   useEffect(() => {
     api.get(`/results/${jobId}/speakers`)
-      .then(data => {
-        setSpeakers(data.speakers || [])
-        setNameMap(data.speaker_map || {})
-      })
+      .then(data => { setSpeakers(data.speakers || []); setNameMap(data.speaker_map || {}) })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [jobId])
 
   async function handleApply() {
-    setSaving(true)
-    setError(null)
-    try {
-      await api.post(`/results/${jobId}/speakers/apply`, { speaker_map: nameMap })
-      await onApplied()
-      onClose()
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setSaving(false)
-    }
+    setSaving(true); setError(null)
+    try { await api.post(`/results/${jobId}/speakers/apply`, { speaker_map: nameMap }); await onApplied(); onClose() }
+    catch (err: any) { setError(err.message) }
+    finally { setSaving(false) }
   }
 
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
-          onClick={onClose}
-        />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 12 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="relative z-10 w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden"
+          initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }} transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="relative z-10 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
         >
-          {/* header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: 'var(--card-border)' }}>
             <div>
-              <h2 className="text-base font-bold text-gray-900">Name Speakers</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Assign real names — minutes and transcript update instantly.
-              </p>
+              <h2 className="text-base font-bold" style={{ color: 'var(--text-1)' }}>Name Speakers</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Assign real names — minutes and transcript update instantly.</p>
             </div>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
-            >
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-white/[0.06]" style={{ color: 'var(--text-3)' }}>
               <X size={14} />
             </button>
           </div>
 
-          {/* body */}
           <div className="px-6 py-5 max-h-[58vh] overflow-y-auto">
             {loading ? (
-              <div className="flex items-center justify-center py-12 text-gray-400 gap-2 text-sm">
+              <div className="flex items-center justify-center py-12 gap-2 text-sm" style={{ color: 'var(--text-3)' }}>
                 <Loader2 size={15} className="animate-spin" /> Loading speakers…
               </div>
             ) : speakers.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-10">
-                No speakers detected in this transcript.
-              </p>
+              <p className="text-sm text-center py-10" style={{ color: 'var(--text-3)' }}>No speakers detected in this transcript.</p>
             ) : (
               <div className="space-y-4">
                 {speakers.map(spk => (
-                  <div key={spk.label} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                  <div key={spk.label} className="rounded-2xl border p-4" style={{ background: 'var(--input-bg)', borderColor: 'var(--card-border)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                         {spk.label.replace('Speaker ', '').trim().charAt(0)}
                       </div>
-                      <span className="text-xs font-semibold text-gray-600">{spk.label}</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>{spk.label}</span>
                     </div>
                     {spk.samples.length > 0 && (
                       <div className="mb-3 space-y-1.5">
                         {spk.samples.map((s, i) => (
-                          <p key={i} className="text-[11px] text-gray-400 italic leading-relaxed pl-2 border-l-2 border-gray-200">
+                          <p key={i} className="text-[11px] italic leading-relaxed pl-2 border-l-2 border-violet-500/30" style={{ color: 'var(--text-3)' }}>
                             "{s}"
                           </p>
                         ))}
@@ -784,31 +737,25 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
                       placeholder={`Real name for ${spk.label} (optional)`}
                       value={nameMap[spk.label] || ''}
                       onChange={e => setNameMap(m => ({ ...m, [spk.label]: e.target.value }))}
-                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition"
+                      className="w-full rounded-xl border px-3 py-2 text-sm placeholder-opacity-30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 transition"
+                      style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
                     />
                   </div>
                 ))}
               </div>
             )}
-            {error && <p className="text-xs text-red-500 mt-3">{error}</p>}
+            {error && <p className="text-xs text-red-400 mt-3">{error}</p>}
           </div>
 
-          {/* footer */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
-            <p className="text-xs text-gray-400">Leave blank to keep the original label.</p>
+          <div className="px-6 py-4 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--card-border)', background: 'var(--input-bg)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-3)' }}>Leave blank to keep the original label.</p>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
+              <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-xl transition-colors hover:bg-white/[0.04]" style={{ color: 'var(--text-2)' }}>Cancel</button>
               <motion.button
                 onClick={handleApply}
                 disabled={saving || loading || speakers.length === 0}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200 transition-all disabled:opacity-50"
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-sm transition-all disabled:opacity-50"
               >
                 {saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCheck size={13} />}
                 Apply Names
@@ -824,67 +771,20 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
 // ── Template Picker Modal ─────────────────────────────────────────────────────
 
 const EXPORT_TEMPLATES = [
-  {
-    id: 'standard',
-    name: 'Standard',
-    desc: 'Classic numbered sections with action items table',
-    icon: FileText,
-    gradient: 'from-violet-500 to-indigo-600',
-    ring: 'ring-violet-400',
-    accent: '#7c3aed',
-    headerBg: '#1e104f',
-    sectionBg: '#f5f3ff',
-    preview: { title: '#1e104f', heading: '#3c2878', tag: '#7c3aed', tagBg: '#f5f3ff' },
-  },
-  {
-    id: 'modern',
-    name: 'Modern',
-    desc: 'Clean teal design, active direct language',
-    icon: Zap,
-    gradient: 'from-teal-500 to-emerald-600',
-    ring: 'ring-teal-400',
-    accent: '#00897b',
-    headerBg: '#00695c',
-    sectionBg: '#e6f7f5',
-    preview: { title: '#00695c', heading: '#00897b', tag: '#009688', tagBg: '#e6f7f5' },
-  },
-  {
-    id: 'executive',
-    name: 'Executive',
-    desc: 'Action items first, concise summaries for leadership',
-    icon: BarChart2,
-    gradient: 'from-blue-700 to-blue-900',
-    ring: 'ring-blue-500',
-    accent: '#1d4ed8',
-    headerBg: '#0a2463',
-    sectionBg: '#ebf0ff',
-    preview: { title: '#0a2463', heading: '#1e40af', tag: '#1d4ed8', tagBg: '#ebf0ff' },
-  },
-  {
-    id: 'minimal',
-    name: 'Minimal',
-    desc: 'Understated grey layout, maximum whitespace',
-    icon: Minimize2,
-    gradient: 'from-gray-500 to-gray-700',
-    ring: 'ring-gray-400',
-    accent: '#6b7280',
-    headerBg: '#282828',
-    sectionBg: '#f5f5f5',
-    preview: { title: '#282828', heading: '#505050', tag: '#6b7280', tagBg: '#f5f5f5' },
-  },
+  { id: 'standard',  name: 'Standard',  desc: 'Classic numbered sections with action items table', icon: FileText,  gradient: 'from-violet-500 to-indigo-600', ring: 'ring-violet-400', headerBg: '#1e104f', preview: { heading: '#3c2878', tag: '#7c3aed', tagBg: '#f5f3ff' } },
+  { id: 'modern',    name: 'Modern',    desc: 'Clean teal design, active direct language',          icon: Zap,       gradient: 'from-teal-500 to-emerald-600',  ring: 'ring-teal-400',   headerBg: '#00695c', preview: { heading: '#00897b', tag: '#009688', tagBg: '#e6f7f5' } },
+  { id: 'executive', name: 'Executive', desc: 'Action items first, concise summaries for leadership',icon: BarChart2, gradient: 'from-blue-700 to-blue-900',    ring: 'ring-blue-500',   headerBg: '#0a2463', preview: { heading: '#1e40af', tag: '#1d4ed8', tagBg: '#ebf0ff' } },
+  { id: 'minimal',   name: 'Minimal',   desc: 'Understated grey layout, maximum whitespace',        icon: Minimize2, gradient: 'from-gray-500 to-gray-700',    ring: 'ring-gray-400',   headerBg: '#282828', preview: { heading: '#505050', tag: '#6b7280', tagBg: '#f5f5f5' } },
 ]
 
 function DocPreview({ tpl }) {
   return (
-    <div className="w-full rounded-lg overflow-hidden border border-gray-100 shadow-sm select-none pointer-events-none">
-      {/* doc header */}
+    <div className="w-full rounded-lg overflow-hidden border border-white/[0.08] shadow-sm select-none pointer-events-none">
       <div className="px-3 pt-3 pb-2" style={{ backgroundColor: tpl.headerBg }}>
         <div className="h-2 w-16 rounded-full bg-white/80 mb-1.5" />
         <div className="h-1 w-10 rounded-full bg-white/40" />
       </div>
-      {/* body */}
-      <div className="bg-white px-3 py-2 space-y-2">
-        {/* section row */}
+      <div className="px-3 py-2 space-y-2" style={{ background: 'var(--card-bg)' }}>
         {[1, 2, 3].map(i => (
           <div key={i}>
             <div className="flex items-center gap-1.5 mb-1">
@@ -892,19 +792,17 @@ function DocPreview({ tpl }) {
               <div className="h-1.5 rounded-full" style={{ width: `${40 + i * 10}%`, backgroundColor: tpl.preview.heading }} />
             </div>
             <div className="space-y-0.5 pl-3.5">
-              <div className="h-1 rounded-full bg-gray-100" style={{ width: '90%' }} />
-              <div className="h-1 rounded-full bg-gray-100" style={{ width: '75%' }} />
+              <div className="h-1 rounded-full bg-white/[0.06]" style={{ width: '90%' }} />
+              <div className="h-1 rounded-full bg-white/[0.06]" style={{ width: '75%' }} />
             </div>
           </div>
         ))}
-        {/* action items chip */}
         <div className="flex items-center gap-1 mt-1">
-          <div className="h-4 rounded px-1.5 flex items-center" style={{ backgroundColor: tpl.preview.tagBg }}>
-            <div className="h-1 w-8 rounded-full" style={{ backgroundColor: tpl.preview.tag }} />
-          </div>
-          <div className="h-4 rounded px-1.5 flex items-center" style={{ backgroundColor: tpl.preview.tagBg }}>
-            <div className="h-1 w-6 rounded-full" style={{ backgroundColor: tpl.preview.tag }} />
-          </div>
+          {[8, 6].map((w, i) => (
+            <div key={i} className="h-4 rounded px-1.5 flex items-center" style={{ backgroundColor: tpl.preview.tagBg }}>
+              <div className={`h-1 w-${w} rounded-full`} style={{ backgroundColor: tpl.preview.tag }} />
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -918,37 +816,24 @@ function TemplatePickerModal({ format, onClose, onDownload }) {
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        {/* backdrop */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm"
-          onClick={onClose}
-        />
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 12 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="relative z-10 w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden"
+          initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }} transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="relative z-10 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
         >
-          {/* header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: 'var(--card-border)' }}>
             <div>
-              <h2 className="text-base font-bold text-gray-900">Choose a template</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Select a style for your {formatLabel} document</p>
+              <h2 className="text-base font-bold" style={{ color: 'var(--text-1)' }}>Choose a template</h2>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Select a style for your {formatLabel} document</p>
             </div>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors"
-            >
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-white/[0.06]" style={{ color: 'var(--text-3)' }}>
               <X size={14} />
             </button>
           </div>
 
-          {/* template grid */}
           <div className="px-6 py-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {EXPORT_TEMPLATES.map(tpl => {
               const Icon = tpl.icon
@@ -957,22 +842,20 @@ function TemplatePickerModal({ format, onClose, onDownload }) {
                 <motion.button
                   key={tpl.id}
                   onClick={() => setSelected(tpl.id)}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}
                   className={`relative flex flex-col gap-2 p-3 rounded-2xl border-2 text-left transition-all duration-200 ${
-                    isSelected
-                      ? `border-transparent ring-2 ${tpl.ring} bg-gray-50 shadow-md`
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                    isSelected ? `border-transparent ring-2 ${tpl.ring}` : 'border-white/[0.08] hover:border-white/20'
                   }`}
+                  style={{ background: isSelected ? 'var(--input-bg)' : 'var(--card-bg)' }}
                 >
                   <DocPreview tpl={tpl} />
                   <div className="flex items-center gap-1.5 mt-1">
                     <div className={`w-5 h-5 rounded-lg bg-gradient-to-br ${tpl.gradient} flex items-center justify-center shrink-0`}>
                       <Icon size={11} className="text-white" />
                     </div>
-                    <p className="text-xs font-bold text-gray-800">{tpl.name}</p>
+                    <p className="text-xs font-bold" style={{ color: 'var(--text-1)' }}>{tpl.name}</p>
                   </div>
-                  <p className="text-[10px] text-gray-400 leading-snug">{tpl.desc}</p>
+                  <p className="text-[10px] leading-snug" style={{ color: 'var(--text-3)' }}>{tpl.desc}</p>
                   {isSelected && (
                     <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
                       <CheckCircle2 size={10} className="text-white" />
@@ -983,23 +866,14 @@ function TemplatePickerModal({ format, onClose, onDownload }) {
             })}
           </div>
 
-          {/* footer */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-3">
-            <p className="text-xs text-gray-400">
-              Template applies colors and layout — content stays the same
-            </p>
+          <div className="px-6 py-4 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--card-border)', background: 'var(--input-bg)' }}>
+            <p className="text-xs" style={{ color: 'var(--text-3)' }}>Template applies colors and layout — content stays the same</p>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
+              <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-xl transition-colors hover:bg-white/[0.04]" style={{ color: 'var(--text-2)' }}>Cancel</button>
               <motion.button
                 onClick={() => { onDownload(selected); onClose() }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-sm shadow-violet-200 transition-all"
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-sm transition-all"
               >
                 {format === 'pdf' ? <FileDown size={14} /> : <Download size={14} />}
                 Download {formatLabel}
@@ -1026,6 +900,7 @@ export default function Results() {
   const [activeTab,     setActiveTab]     = useState('minutes')
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
   const [speakerModal,  setSpeakerModal]  = useState(false)
+  const [headerExpanded, setHeaderExpanded] = useState(false)
 
   async function copyText() {
     if (!minutes?.plainText) return
@@ -1036,10 +911,10 @@ export default function Results() {
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
         <Sidebar active={null} />
-        <div className="flex-1 flex items-center justify-center text-gray-400">
-          <Loader2 size={18} className="animate-spin mr-2" /> Loading results…
+        <div className="flex-1 flex items-center justify-center gap-2" style={{ color: 'var(--text-3)' }}>
+          <Loader2 size={18} className="animate-spin" /> Loading results…
         </div>
       </div>
     )
@@ -1047,11 +922,11 @@ export default function Results() {
 
   if (error) {
     return (
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
         <Sidebar active={null} />
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Link to="/upload" className="text-violet-600 hover:underline text-sm">Try again</Link>
+          <p className="text-red-400 mb-4">{error}</p>
+          <Link to="/upload" className="text-violet-400 hover:underline text-sm">Try again</Link>
         </div>
       </div>
     )
@@ -1061,160 +936,157 @@ export default function Results() {
   const metaParts = [meta?.date, meta?.duration].filter(Boolean)
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
       <Sidebar active={null} />
 
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden">
 
-        {/* ── sticky header ── */}
-        <div className="shrink-0 bg-white border-b border-gray-100 px-4 pl-16 pt-5 pb-0 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-4 pb-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-            <div className="min-w-0">
-              <Link
-                to="/dashboard"
-                className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 mb-2 transition-colors"
-              >
-                <ArrowLeft size={13} /> Back to dashboard
-              </Link>
-              <h1 className="text-xl font-bold text-gray-900 leading-tight sm:truncate">
-                {minutes?.title ?? 'Meeting Minutes'}
-              </h1>
-              {(metaParts.length > 0 || meta?.participants?.length > 0) && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {metaParts.map((p, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2.5 py-1 text-xs text-gray-500 ring-1 ring-gray-100">
-                      {i === 0 ? <CalendarDays size={11} /> : <Clock size={11} />}
-                      {p}
-                    </span>
-                  ))}
-                  {meta?.participants?.length > 0 && (
-                    <>
-                      {meta.participants.slice(0, 12).map((participant) => (
-                        <span
-                          key={participant}
-                          className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 ring-1 ring-violet-100"
-                        >
-                          <Users size={11} className="shrink-0" />
-                          <span className="truncate">{participant}</span>
-                        </span>
-                      ))}
-                      {meta.participants.length > 12 && (
-                        <span className="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500 ring-1 ring-gray-100">
-                          +{meta.participants.length - 12} more
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+        {/* ── header ── */}
+        <div className="shrink-0 border-b px-4 pt-4 pb-4 sm:px-8 sm:pt-5 sm:pb-5"
+          style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
 
-            {/* action buttons */}
-            <div className="flex shrink-0 flex-wrap items-center gap-2 lg:pt-6">
-              <button
-                onClick={copyText}
-                className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
-              >
-                {copied ? <CheckCheck size={14} className="text-green-500" /> : <Copy size={14} />}
-                {copied ? 'Copied!' : 'Copy text'}
-              </button>
-              <button
-                onClick={() => setSpeakerModal(true)}
-                className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
-              >
-                <Users size={14} />
-                Name Speakers
-              </button>
-              <button
-                onClick={() => setTemplateModal('pdf')}
-                className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
-              >
-                <FileDown size={14} />
-                PDF
-              </button>
+          {/* always-visible row: back + title + expand toggle (mobile only) */}
+          <div className="flex items-center gap-3">
+            <Link
+              to="/dashboard"
+              className="flex items-center gap-1 text-xs shrink-0 transition-colors hover:opacity-80"
+              style={{ color: 'var(--text-3)' }}
+            >
+              <ArrowLeft size={14} />
+              <span className="hidden sm:inline">Back</span>
+            </Link>
+            <h1 className="flex-1 min-w-0 text-base sm:text-xl font-bold truncate" style={{ color: 'var(--text-1)' }}>
+              {minutes?.title ?? 'Meeting Minutes'}
+            </h1>
+            {/* mobile: primary action + expand toggle */}
+            <div className="flex items-center gap-2 sm:hidden">
               <button
                 onClick={() => setTemplateModal('docx')}
-                className="flex items-center gap-1.5 text-sm bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-xl font-medium transition-colors shadow-sm shadow-violet-200"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium bg-gradient-to-r from-violet-600 to-indigo-600 text-white"
               >
-                <Download size={14} />
-                Download .docx
+                <Download size={12} /> .docx
               </button>
-              {minutes?.has_audio && (
-                <button
-                  onClick={downloadAudio}
-                  className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-xl transition-colors"
-                  title="Download original recording"
-                >
-                  <Download size={14} />
-                  Recording
-                </button>
-              )}
+              <button
+                onClick={() => setHeaderExpanded(v => !v)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}
+              >
+                <ChevronDown size={15} className={`transition-transform duration-200 ${headerExpanded ? 'rotate-180' : ''}`} />
+              </button>
             </div>
           </div>
 
-          {/* tab strip */}
-          <div className="flex gap-1">
-            {TABS.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
-                  activeTab === tab.key
-                    ? 'text-violet-700'
-                    : 'text-gray-500 hover:text-gray-800'
-                }`}
-              >
-                {tab.label}
-                {activeTab === tab.key && (
-                  <motion.div
-                    layoutId="tab-underline"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 rounded-full"
-                  />
+          {/* collapsible on mobile, always visible on sm+ */}
+          <div className={`${headerExpanded ? 'block' : 'hidden'} sm:block`}>
+            <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:pt-4">
+              <div className="min-w-0">
+                {(metaParts.length > 0 || meta?.participants?.length > 0) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {metaParts.map((p, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1"
+                        style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
+                        {i === 0 ? <CalendarDays size={11} /> : <Clock size={11} />}
+                        {p}
+                      </span>
+                    ))}
+                    {meta?.participants?.slice(0, 12).map(participant => (
+                      <span key={participant}
+                        className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 ring-1 ring-violet-500/20">
+                        <Users size={11} className="shrink-0" />
+                        <span className="truncate">{participant}</span>
+                      </span>
+                    ))}
+                    {meta?.participants?.length > 12 && (
+                      <span className="rounded-full px-2.5 py-1 text-xs font-medium ring-1"
+                        style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
+                        +{meta.participants.length - 12} more
+                      </span>
+                    )}
+                  </div>
                 )}
-              </button>
-            ))}
+              </div>
+
+              {/* action buttons */}
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <button onClick={copyText}
+                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+                  {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  {copied ? 'Copied!' : 'Copy text'}
+                </button>
+                <button onClick={() => setSpeakerModal(true)}
+                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+                  <Users size={14} /> Name Speakers
+                </button>
+                <button onClick={() => setTemplateModal('pdf')}
+                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+                  <FileDown size={14} /> PDF
+                </button>
+                <button onClick={() => setTemplateModal('docx')}
+                  className="hidden sm:flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl font-medium transition-colors shadow-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white">
+                  <Download size={14} /> Download .docx
+                </button>
+                {minutes?.has_audio && (
+                  <button onClick={downloadAudio}
+                    className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+                    style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+                    title="Download original recording">
+                    <Download size={14} /> Recording
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* ── scrollable content ── */}
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+
+            {/* tab strip */}
+            <div className="pt-6 mb-6 grid w-fit grid-cols-2 gap-1 rounded-xl p-1" style={{ background: 'var(--input-bg)' }}>
+              {TABS.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === tab.key
+                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
+                      : ''
+                  }`}
+                  style={{ color: activeTab === tab.key ? undefined : 'var(--text-3)' }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             <AnimatePresence mode="wait">
               {activeTab === 'minutes' ? (
-                <motion.div
-                  key="minutes"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18 }}
-                >
+                <motion.div key="minutes"
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18 }}>
                   <MinutesTab minutes={minutes} copied={copied} onCopy={copyText} />
                 </motion.div>
               ) : (
-                <motion.div
-                  key="tasks"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18 }}
-                >
+                <motion.div key="tasks"
+                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.18 }}>
                   <TasksTab jobId={jobId} canManage={true} meetingTitle={minutes?.title} />
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <div className="py-8 text-center border-t border-gray-100 mt-4">
-              <Link
-                to="/upload"
-                className="inline-flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700 font-medium"
-              >
-                <Plus size={14} />
-                Process another meeting
+            <div className="py-8 text-center border-t mt-4" style={{ borderColor: 'var(--card-border)' }}>
+              <Link to="/upload"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors">
+                <Plus size={14} /> Process another meeting
               </Link>
             </div>
           </div>
         </div>
-
       </main>
 
       {templateModal && (
@@ -1229,11 +1101,7 @@ export default function Results() {
       )}
 
       {speakerModal && (
-        <SpeakerNamesModal
-          jobId={jobId}
-          onClose={() => setSpeakerModal(false)}
-          onApplied={refresh}
-        />
+        <SpeakerNamesModal jobId={jobId} onClose={() => setSpeakerModal(false)} onApplied={refresh} />
       )}
     </div>
   )

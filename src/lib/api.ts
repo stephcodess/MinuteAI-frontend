@@ -251,6 +251,10 @@ export function getUpcomingCalendarEvents(days = 7) {
   return api.get(`/integrations/calendar/upcoming?days=${days}`)
 }
 
+export function getUpcomingZoomMeetings() {
+  return api.get('/integrations/zoom/upcoming')
+}
+
 export function updateIntegrationSettings(provider: string, settings: Record<string, string>) {
   return api.patch(`/integrations/${provider}/settings`, settings)
 }
@@ -261,4 +265,17 @@ export function getIntegrationResources(provider: string) {
 
 export function connectWebhook(url: string) {
   return api.post('/integrations/webhook/connect', { url })
+}
+
+export function attachPaymentMethod(paymentMethodId: string) {
+  return api.post('/billing/attach-payment-method', { payment_method_id: paymentMethodId })
+}
+
+export function subscribeToPlan(paymentMethodId: string | null | undefined, plan: string, interval: string, promoCode?: string) {
+  return api.post('/billing/subscribe', {
+    payment_method_id: paymentMethodId || undefined,
+    plan,
+    interval,
+    promo_code: promoCode || undefined,
+  })
 }

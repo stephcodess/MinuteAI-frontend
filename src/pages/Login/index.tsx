@@ -115,7 +115,9 @@ export default function Login() {
   const [error, setError]               = useState<string | null>(null)
   const [success, setSuccess]           = useState(false)
   const [shake, setShake]               = useState(false)
-  const { signIn, googleSignIn }        = useAuth()
+  const [twoFactor, setTwoFactor]       = useState<{ userId: string; email: string } | null>(null)
+  const [twoFactorCode, setTwoFactorCode] = useState('')
+  const { signIn, googleSignIn, verifySignIn2FA, resendOTP } = useAuth()
   const navigate                        = useNavigate()
 
   const handleGoogle = useGoogleLogin({
@@ -143,6 +145,11 @@ export default function Login() {
     setLoading(true); setError(null)
     try {
       const data = await signIn(email, password)
+      if (data?.requires_2fa) {
+        setTwoFactor({ userId: data.user_id, email: data.email || email })
+        setTwoFactorCode('')
+        return
+      }
       setSuccess(true)
       const dest = data?.user?.onboarding_completed ? '/dashboard' : '/onboarding'
       setTimeout(() => navigate(dest), 1600)
@@ -152,6 +159,35 @@ export default function Login() {
       }
       setError(err.message || 'Sign in failed.')
       setShake(true); setTimeout(() => setShake(false), 500)
+    } finally { setLoading(false) }
+  }
+
+  async function handleTwoFactorSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!twoFactorCode || twoFactorCode.length !== 6 || !twoFactor) {
+      setError('Enter the 6-digit code from your email.')
+      setShake(true); setTimeout(() => setShake(false), 500); return
+    }
+    setLoading(true); setError(null)
+    try {
+      const data = await verifySignIn2FA(twoFactor.userId, twoFactorCode)
+      setSuccess(true)
+      const dest = data?.user?.onboarding_completed ? '/dashboard' : '/onboarding'
+      setTimeout(() => navigate(dest), 1600)
+    } catch (err: any) {
+      setError(err.message || 'Could not verify that code.')
+      setShake(true); setTimeout(() => setShake(false), 500)
+    } finally { setLoading(false) }
+  }
+
+  async function resendTwoFactorCode() {
+    if (!twoFactor) return
+    setLoading(true); setError(null)
+    try {
+      await resendOTP(twoFactor.userId, 'login_2fa')
+      setError('A new code has been sent to your email.')
+    } catch (err: any) {
+      setError(err.message || 'Could not send a new code.')
     } finally { setLoading(false) }
   }
 
@@ -267,61 +303,82 @@ export default function Login() {
                   </div>
 
                   <div className="mb-7">
-                    <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
-                    <p className="text-slate-500 text-sm">Sign in to your MinuteAI account</p>
+                    <h2 className="text-2xl font-bold text-white mb-1">
+                      {twoFactor ? 'Check your email' : 'Welcome back'}
+                    </h2>
+                    <p className="text-slate-500 text-sm">
+                      {twoFactor ? `Enter the security code sent to ${twoFactor.email}` : 'Sign in to your MinuteAI account'}
+                    </p>
                   </div>
 
-                  {/* Google */}
-                  <motion.button
-                    onClick={() => handleGoogle()}
-                    disabled={loading}
-                    whileHover={{ y: -1, boxShadow: '0 6px 24px rgba(0,0,0,0.3)' }}
-                    whileTap={{ scale: 0.99 }}
-                    className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl border border-white/10 bg-white/[0.06] text-slate-200 font-semibold text-sm transition-all mb-5 hover:border-white/20 hover:bg-white/10 disabled:opacity-60"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 18 18">
-                      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-                      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-                      <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
-                      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
-                    </svg>
-                    Continue with Google
-                  </motion.button>
+                  {!twoFactor && (
+                    <>
+                      <motion.button
+                        onClick={() => handleGoogle()}
+                        disabled={loading}
+                        whileHover={{ y: -1, boxShadow: '0 6px 24px rgba(0,0,0,0.3)' }}
+                        whileTap={{ scale: 0.99 }}
+                        className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl border border-white/10 bg-white/[0.06] text-slate-200 font-semibold text-sm transition-all mb-5 hover:border-white/20 hover:bg-white/10 disabled:opacity-60"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+                          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+                          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Continue with Google
+                      </motion.button>
 
-                  <div className="relative flex items-center gap-3 mb-5">
-                    <div className="flex-1 h-px bg-white/[0.08]" />
-                    <span className="text-xs text-slate-600 font-medium px-1">or continue with email</span>
-                    <div className="flex-1 h-px bg-white/[0.08]" />
-                  </div>
+                      <div className="relative flex items-center gap-3 mb-5">
+                        <div className="flex-1 h-px bg-white/[0.08]" />
+                        <span className="text-xs text-slate-600 font-medium px-1">or continue with email</span>
+                        <div className="flex-1 h-px bg-white/[0.08]" />
+                      </div>
+                    </>
+                  )}
 
                   {/* Form */}
                   <motion.form
-                    onSubmit={handleSubmit}
+                    onSubmit={twoFactor ? handleTwoFactorSubmit : handleSubmit}
                     animate={shake ? { x: [-10, 10, -8, 8, -5, 5, 0] } : {}}
                     transition={{ duration: 0.4 }}
                     className="space-y-3"
                   >
-                    <FloatingInput label="Email address" type="email" value={email}
-                      onChange={(e: any) => setEmail(e.target.value)} autoComplete="email" />
+                    {twoFactor ? (
+                      <FloatingInput label="Security code" type="text" value={twoFactorCode}
+                        onChange={(e: any) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        autoComplete="one-time-code" />
+                    ) : (
+                      <>
+                        <FloatingInput label="Email address" type="email" value={email}
+                          onChange={(e: any) => setEmail(e.target.value)} autoComplete="email" />
 
-                    <FloatingInput
-                      label="Password"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e: any) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                      right={
-                        <button type="button" onClick={() => setShowPassword(v => !v)}
-                          className="text-slate-500 hover:text-slate-300 transition p-1">
-                          {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                        </button>
-                      }
-                    />
+                        <FloatingInput
+                          label="Password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e: any) => setPassword(e.target.value)}
+                          autoComplete="current-password"
+                          right={
+                            <button type="button" onClick={() => setShowPassword(v => !v)}
+                              className="text-slate-500 hover:text-slate-300 transition p-1">
+                              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                            </button>
+                          }
+                        />
+                      </>
+                    )}
 
                     <div className="flex justify-end">
-                      <Link to="/forgot-password" className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
-                        Forgot password?
-                      </Link>
+                      {twoFactor ? (
+                        <button type="button" onClick={resendTwoFactorCode} className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
+                          Send a new code
+                        </button>
+                      ) : (
+                        <Link to="/forgot-password" className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
+                          Forgot password?
+                        </Link>
+                      )}
                     </div>
 
                     <AnimatePresence>
@@ -351,16 +408,26 @@ export default function Login() {
                         {loading
                           ? <motion.div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
                               animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
-                          : <>Sign in <ArrowRight size={15} /></>
+                          : <>{twoFactor ? 'Verify code' : 'Sign in'} <ArrowRight size={15} /></>
                         }
                       </span>
                     </motion.button>
                   </motion.form>
 
-                  <p className="text-center text-sm text-slate-500 mt-5">
-                    Don't have an account?{' '}
-                    <Link to="/signup" className="text-violet-400 hover:text-violet-300 font-semibold">Sign up free</Link>
-                  </p>
+                  {twoFactor ? (
+                    <button
+                      type="button"
+                      onClick={() => { setTwoFactor(null); setTwoFactorCode(''); setPassword(''); setError(null) }}
+                      className="mt-5 w-full text-center text-sm text-slate-500 hover:text-slate-300"
+                    >
+                      Use a different account
+                    </button>
+                  ) : (
+                    <p className="text-center text-sm text-slate-500 mt-5">
+                      Don't have an account?{' '}
+                      <Link to="/signup" className="text-violet-400 hover:text-violet-300 font-semibold">Sign up free</Link>
+                    </p>
+                  )}
 
                 </motion.div>
               )}

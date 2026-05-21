@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Eye, EyeOff, ArrowRight, CheckCircle, Zap } from 'lucide-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../../context/AuthContext'
+import disposableDomains from 'disposable-email-domains'
 
 function Orb({ className }: { className: string }) {
   return <div className={`absolute rounded-full blur-3xl pointer-events-none ${className}`} />
@@ -143,6 +144,11 @@ export default function Signup() {
     }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
+      setShake(true); setTimeout(() => setShake(false), 500); return
+    }
+    const domain = email.split('@')[1]?.toLowerCase()
+    if (!domain || (disposableDomains as string[]).includes(domain)) {
+      setError('Disposable email addresses are not allowed. Please use a real email.')
       setShake(true); setTimeout(() => setShake(false), 500); return
     }
     setLoading(true); setError(null)

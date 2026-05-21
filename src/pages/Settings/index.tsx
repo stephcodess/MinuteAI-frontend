@@ -166,6 +166,15 @@ export default function Settings() {
   const [pwError, setPwError]     = useState(null)
   const [pwSaved, setPwSaved]     = useState(false)
 
+  // two-factor authentication
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(!!user?.two_factor_enabled)
+  const [twoFactorPw, setTwoFactorPw]           = useState('')
+  const [twoFactorCode, setTwoFactorCode]       = useState('')
+  const [twoFactorPending, setTwoFactorPending] = useState(false)
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false)
+  const [twoFactorError, setTwoFactorError]     = useState(null)
+  const [twoFactorSaved, setTwoFactorSaved]     = useState(false)
+
   // notifications — persisted in localStorage
   const [notifs, setNotifs] = useState(() => {
     try {
@@ -190,6 +199,10 @@ export default function Settings() {
   useEffect(() => {
     api.get('/users/me/usage').then(setUsage).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    setTwoFactorEnabled(!!user?.two_factor_enabled)
+  }, [user?.two_factor_enabled])
 
   async function handleExport() {
     setExporting(true)
@@ -265,6 +278,60 @@ export default function Settings() {
       setTimeout(() => setPwSaved(false), 2500)
     } catch (err) {
       setPwError(err.message)
+    }
+  }
+
+  async function startTwoFactor() {
+    setTwoFactorError(null)
+    if (!twoFactorPw) { setTwoFactorError('Enter your current password first.'); return }
+    setTwoFactorLoading(true)
+    try {
+      await api.post('/auth/2fa/start', { current_password: twoFactorPw })
+      setTwoFactorPending(true)
+    } catch (err) {
+      setTwoFactorError(err.message)
+    } finally {
+      setTwoFactorLoading(false)
+    }
+  }
+
+  async function confirmTwoFactor() {
+    setTwoFactorError(null)
+    if (twoFactorCode.length !== 6) { setTwoFactorError('Enter the 6-digit code from your email.'); return }
+    setTwoFactorLoading(true)
+    try {
+      const data = await api.post('/auth/2fa/confirm', { code: twoFactorCode })
+      setTwoFactorEnabled(!!data.two_factor_enabled)
+      updateUser({ two_factor_enabled: !!data.two_factor_enabled })
+      setTwoFactorPending(false)
+      setTwoFactorPw('')
+      setTwoFactorCode('')
+      setTwoFactorSaved(true)
+      setTimeout(() => setTwoFactorSaved(false), 2500)
+    } catch (err) {
+      setTwoFactorError(err.message)
+    } finally {
+      setTwoFactorLoading(false)
+    }
+  }
+
+  async function disableTwoFactor() {
+    setTwoFactorError(null)
+    if (!twoFactorPw) { setTwoFactorError('Enter your current password first.'); return }
+    setTwoFactorLoading(true)
+    try {
+      const data = await api.post('/auth/2fa/disable', { current_password: twoFactorPw })
+      setTwoFactorEnabled(!!data.two_factor_enabled)
+      updateUser({ two_factor_enabled: !!data.two_factor_enabled })
+      setTwoFactorPw('')
+      setTwoFactorCode('')
+      setTwoFactorPending(false)
+      setTwoFactorSaved(true)
+      setTimeout(() => setTwoFactorSaved(false), 2500)
+    } catch (err) {
+      setTwoFactorError(err.message)
+    } finally {
+      setTwoFactorLoading(false)
     }
   }
 
@@ -410,8 +477,110 @@ export default function Settings() {
               </form>
             </Section>
 
+            {/* Two-factor authentication */}
+            <Section icon={Shield} title="Two-factor authentication" desc="Require a security code when signing in" index={2}>
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                  <div>
+                    <p className="text-sm font-semibold text-white">Email security code</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {twoFactorEnabled
+                        ? 'Enabled. Password sign-ins require a code sent to your email.'
+                        : 'Add a second step to password sign-ins.'}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                    twoFactorEnabled
+                      ? 'border-green-500/20 bg-green-500/10 text-green-400'
+                      : 'border-white/10 bg-white/[0.04] text-slate-500'
+                  }`}>
+                    {twoFactorEnabled ? 'Enabled' : 'Off'}
+                  </span>
+                </div>
+
+                <Field
+                  label="Current password"
+                  type={showPw ? 'text' : 'password'}
+                  value={twoFactorPw}
+                  onChange={e => setTwoFactorPw(e.target.value)}
+                  right={eyeBtn}
+                />
+
+                {twoFactorPending && (
+                  <Field
+                    label="Security code"
+                    value={twoFactorCode}
+                    onChange={e => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    hint="Check your email for a 6-digit code."
+                  />
+                )}
+
+                <AnimatePresence>
+                  {twoFactorError && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-red-500 text-xs bg-red-500/10 border border-red-100 rounded-xl px-4 py-2.5"
+                    >
+                      {twoFactorError}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+
+                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  {!twoFactorEnabled && !twoFactorPending && (
+                    <button
+                      type="button"
+                      onClick={startTwoFactor}
+                      disabled={twoFactorLoading}
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,58,237,0.35)] transition-all disabled:opacity-60 sm:w-auto"
+                    >
+                      {twoFactorLoading ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
+                      Send code
+                    </button>
+                  )}
+                  {!twoFactorEnabled && twoFactorPending && (
+                    <button
+                      type="button"
+                      onClick={confirmTwoFactor}
+                      disabled={twoFactorLoading}
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,58,237,0.35)] transition-all disabled:opacity-60 sm:w-auto"
+                    >
+                      {twoFactorLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                      Enable 2FA
+                    </button>
+                  )}
+                  {twoFactorEnabled && (
+                    <button
+                      type="button"
+                      onClick={disableTwoFactor}
+                      disabled={twoFactorLoading}
+                      className="flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 px-6 py-2.5 text-sm font-semibold text-red-500 transition-colors hover:bg-red-500/10 disabled:opacity-60 sm:w-auto"
+                    >
+                      {twoFactorLoading ? <Loader2 size={14} className="animate-spin" /> : <Lock size={14} />}
+                      Disable 2FA
+                    </button>
+                  )}
+                  <AnimatePresence>
+                    {twoFactorSaved && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center gap-1.5 text-green-400 text-sm font-medium"
+                      >
+                        <CheckCircle size={15} />
+                        Updated!
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </Section>
+
             {/* Notifications */}
-            <Section icon={Bell} title="Notifications" desc="Choose which emails you receive" index={2}>
+            <Section icon={Bell} title="Notifications" desc="Choose which emails you receive" index={3}>
               <div className="space-y-5">
                 {NOTIF_OPTIONS.map(({ key, label, desc }) => (
                   <div key={key} className="flex items-start justify-between gap-4">
@@ -426,7 +595,7 @@ export default function Settings() {
             </Section>
 
             {/* Preferences */}
-            <Section icon={Globe} title="Preferences" desc="Language, timezone, and appearance" index={3}>
+            <Section icon={Globe} title="Preferences" desc="Language, timezone, and appearance" index={4}>
               <form onSubmit={savePrefs} className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
@@ -485,7 +654,7 @@ export default function Settings() {
             </Section>
 
             {/* Integrations */}
-            <Section icon={Link2} title="Integrations" desc="Connect your tools — notes auto-sync after every meeting" index={4}>
+            <Section icon={Link2} title="Integrations" desc="Connect your tools — notes auto-sync after every meeting" index={5}>
               <Link to="/integrations"
                 className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.06] bg-white/[0.04] px-5 py-4 hover:bg-violet-500/5 hover:border-violet-500/20 transition-all group">
                 <div>
@@ -497,7 +666,7 @@ export default function Settings() {
             </Section>
 
             {/* Privacy & data */}
-            <Section icon={Shield} title="Privacy & data" desc="How your recordings and transcripts are processed" index={5}>
+            <Section icon={Shield} title="Privacy & data" desc="How your recordings and transcripts are processed" index={6}>
               <div className="space-y-5">
                 <div>
                   <p className="text-sm font-semibold text-white mb-2">Third-party AI processors</p>
@@ -532,7 +701,7 @@ export default function Settings() {
             </Section>
 
             {/* Danger zone */}
-            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={6} danger>
+            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={7} danger>
               {!showDelete ? (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
@@ -662,7 +831,9 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Two-factor auth</span>
-                  <span className="text-slate-500">Not enabled</span>
+                  <span className={twoFactorEnabled ? 'text-green-400 font-semibold flex items-center gap-1' : 'text-slate-500'}>
+                    {twoFactorEnabled ? <><CheckCircle size={11} />Enabled</> : 'Not enabled'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Last sign-in</span>

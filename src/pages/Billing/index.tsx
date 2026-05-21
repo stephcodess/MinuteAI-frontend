@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { loadStripe } from '@stripe/stripe-js'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap, CheckCircle, ArrowRight, CreditCard, Receipt,
   Shield, Crown, Sparkles, HelpCircle, FileText, Clock,
   ExternalLink, AlertCircle, Loader2, X, ChevronLeft, ChevronRight, TicketPercent,
+  Trash2,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
-import { api } from '../../lib/api'
+import StripeCardForm from '../../components/StripeCardForm'
+import { api, subscribeToPlan } from '../../lib/api'
+import { useAuth } from '../../context/AuthContext'
 
 const INVOICES_PAGE_SIZE = 10
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '')
 
 function Pagination({ page, totalPages, total, onPage }) {
   if (totalPages <= 1) return null
@@ -93,11 +98,10 @@ function fmtMoney(amount, currency = 'GBP') {
   }).format(amount / 100)
 }
 
-function PlanCard({ plan, idx, currentPlan, onUpgrade, upgrading, promoCode, billing }) {
+function PlanCard({ plan, idx, currentPlan, onUpgrade, promoCode, billing }) {
   const isCurrent   = plan.key === currentPlan
   const isHighlight = Boolean(plan.is_popular)
   const isDowngrade = plan.key === 'free' && currentPlan !== 'free'
-  const busy        = upgrading === plan.key
   const isYearly    = billing === 'year'
 
   // Derive yearly price (20% off) if plan has a monthly amount
@@ -188,15 +192,14 @@ function PlanCard({ plan, idx, currentPlan, onUpgrade, upgrading, promoCode, bil
       ) : (
         <button
           onClick={() => onUpgrade(plan.key)}
-          disabled={busy}
-          className={`w-full py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-70 ${
+          className={`w-full py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
             isHighlight
               ? 'bg-white text-violet-700 hover:bg-violet-50 shadow-lg'
               : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 shadow-md shadow-violet-500/30'
           }`}
         >
-          {busy ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-          {busy ? 'Redirecting…' : `Upgrade to ${plan.name}`}
+          <ArrowRight size={14} />
+          {`Upgrade to ${plan.name}`}
         </button>
       )}
     </motion.div>
@@ -206,13 +209,20 @@ function PlanCard({ plan, idx, currentPlan, onUpgrade, upgrading, promoCode, bil
 export default function Billing() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
   const [tab,           setTab]           = useState('plan')
   const [usage,         setUsage]         = useState(null)
   const [plans,         setPlans]         = useState(null)
   const [invoices,      setInvoices]      = useState([])
   const [invoicesPage,  setInvoicesPage]  = useState(1)
   const [loadingInvoices, setLoadingInvoices] = useState(false)
-  const [upgrading, setUpgrading] = useState(null)
+  const [paymentMethod, setPaymentMethod] = useState<any>(null)
+  const [loadingPaymentMethod, setLoadingPaymentMethod] = useState(false)
+  const [paymentActionBusy, setPaymentActionBusy] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
+  const [upgradeModal,  setUpgradeModal]  = useState<any>(null)
+  const [upgradeWithSavedBusy, setUpgradeWithSavedBusy] = useState(false)
+  const [upgradeError, setUpgradeError] = useState('')
   const [portalBusy, setPortalBusy] = useState(false)
   const [promoInput, setPromoInput] = useState('')
   const [promoDraft, setPromoDraft] = useState(null)
@@ -245,6 +255,8 @@ export default function Billing() {
       })
       .catch(() => setPlans([{ ...FALLBACK_FREE }]))
 
+    loadPaymentMethod()
+
     if (searchParams.get('success') || searchParams.get('canceled')) {
       setSearchParams({}, { replace: true })
     }
@@ -260,20 +272,80 @@ export default function Billing() {
   const invoicesTotalPages = Math.max(1, Math.ceil(invoices.length / INVOICES_PAGE_SIZE))
   const paginatedInvoices  = invoices.slice((invoicesPage - 1) * INVOICES_PAGE_SIZE, invoicesPage * INVOICES_PAGE_SIZE)
 
-  async function handleUpgrade(planKey) {
-    setUpgrading(planKey)
+  function handleUpgrade(planKey: string) {
+    const plan = (plans ?? []).find((p: any) => p.key === planKey)
+    if (!plan) return
+    setUpgradeError('')
+    setUpgradeModal({ plan, planKey })
+  }
+
+  async function loadPaymentMethod() {
+    setLoadingPaymentMethod(true)
+    setPaymentError('')
     try {
-      const { url } = await api.post('/billing/checkout', {
-        plan: planKey,
-        interval: billing,
-        origin: window.location.origin,
-        promo_code: promoDraft?.code || undefined,
-      })
-      window.location.href = url
+      const result = await api.get('/billing/payment-method')
+      setPaymentMethod(result?.card || null)
     } catch (err) {
-      alert(err.message || 'Failed to open checkout.')
-      setUpgrading(null)
+      setPaymentError(err.message || 'Unable to load payment method.')
+    } finally {
+      setLoadingPaymentMethod(false)
     }
+  }
+
+  async function removePaymentMethod() {
+    if (!confirm('Remove the saved card from your account?')) return
+    setPaymentActionBusy(true)
+    setPaymentError('')
+    try {
+      await api.delete('/billing/payment-method')
+      setPaymentMethod(null)
+      await refreshUser()
+    } catch (err) {
+      setPaymentError(err.message || 'Unable to remove payment method.')
+    } finally {
+      setPaymentActionBusy(false)
+    }
+  }
+
+  async function handleSubscribeSubmit(paymentMethodId: string | null) {
+    const result: any = await subscribeToPlan(
+      paymentMethodId,
+      upgradeModal.planKey,
+      billing,
+      promoDraft?.code || undefined,
+    )
+    if (result?.client_secret) {
+      return { clientSecret: result.client_secret }
+    }
+  }
+
+  async function handleSubscribeWithSavedCard() {
+    setUpgradeWithSavedBusy(true)
+    setUpgradeError('')
+    try {
+      const result: any = await handleSubscribeSubmit(null)
+      if (result?.clientSecret) {
+        const stripe = await stripePromise
+        if (!stripe) throw new Error('Stripe could not be loaded. Please try again.')
+        const { error } = await stripe.confirmCardPayment(result.clientSecret)
+        if (error) throw new Error(error.message || 'Card authentication failed. Please try again.')
+      }
+      await handleSubscribeComplete()
+    } catch (err) {
+      setUpgradeError(err.message || 'Unable to upgrade with your saved card.')
+    } finally {
+      setUpgradeWithSavedBusy(false)
+    }
+  }
+
+  async function handleSubscribeComplete() {
+    setUpgradeModal(null)
+    await api.post('/billing/sync', {}).catch(() => {})
+    const u = await api.get('/users/me/usage').catch(() => null)
+    if (u) setUsage(u)
+    await loadPaymentMethod()
+    await refreshUser()
+    setBanner('success')
   }
 
   async function handlePortal() {
@@ -479,7 +551,6 @@ export default function Billing() {
                       idx={i}
                       currentPlan={plan}
                       onUpgrade={handleUpgrade}
-                      upgrading={upgrading}
                       promoCode={promoDraft}
                       billing={billing}
                     />
@@ -591,6 +662,42 @@ export default function Billing() {
                       Secured by Stripe — we never store card details
                     </p>
                   </div>
+                ) : loadingPaymentMethod ? (
+                  <div className="flex flex-col items-center gap-3 glass-card border rounded-2xl p-8 sm:p-10">
+                    <Loader2 size={22} className="text-violet-400 animate-spin" />
+                    <p className="text-sm text-gray-400">Loading payment method...</p>
+                  </div>
+                ) : paymentMethod ? (
+                  <div className="glass-card border rounded-2xl p-5 sm:p-6">
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-violet-500/10 flex items-center justify-center shrink-0">
+                          <CreditCard size={21} className="text-violet-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold t1 mb-0.5">Saved payment method</h3>
+                          <p className="text-sm t2">
+                            {paymentMethod.brand ? `${paymentMethod.brand.toUpperCase()} ` : ''}ending in {paymentMethod.last4}
+                          </p>
+                          <p className="text-xs t3">
+                            Expires {paymentMethod.exp_month}/{paymentMethod.exp_year}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={removePaymentMethod}
+                        disabled={paymentActionBusy}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 disabled:opacity-60 sm:w-auto"
+                      >
+                        {paymentActionBusy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        Remove card
+                      </button>
+                    </div>
+                    {paymentError ? <p className="mt-4 text-sm font-medium text-red-400">{paymentError}</p> : null}
+                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                      <p className="text-sm t2">This card will be used automatically when you upgrade.</p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center glass-card border rounded-2xl p-6 text-center sm:p-10">
                     <div className="w-16 h-16 rounded-2xl bg-white/[0.06] border border-white/10 flex items-center justify-center mb-4">
@@ -610,6 +717,7 @@ export default function Billing() {
                       <Shield size={11} className="t3" />
                       Payments processed securely via Stripe
                     </p>
+                    {paymentError ? <p className="mt-4 text-sm font-medium text-red-400">{paymentError}</p> : null}
                   </div>
                 )}
               </motion.div>
@@ -741,11 +849,10 @@ export default function Billing() {
                   </p>
                   <button
                     onClick={() => handleUpgrade(nextPlan.key)}
-                    disabled={!!upgrading}
-                    className="w-full py-2.5 rounded-full bg-white text-violet-700 text-sm font-bold hover:bg-violet-50 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-full bg-white text-violet-700 text-sm font-bold hover:bg-violet-50 transition-colors flex items-center justify-center gap-2"
                   >
-                    {upgrading ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-                    {upgrading ? 'Redirecting…' : 'Upgrade now'}
+                    <Zap size={13} />
+                    Upgrade now
                   </button>
                   {promoDraft ? <p className="mt-3 text-xs text-violet-200">{promoDraft.code} will be applied automatically.</p> : null}
                 </motion.div>
@@ -774,6 +881,109 @@ export default function Billing() {
           </div>
         </div>
       </main>
+
+      {/* ── Upgrade modal ── */}
+      <AnimatePresence>
+        {upgradeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.7)' }}
+            onClick={e => { if (e.target === e.currentTarget) setUpgradeModal(null) }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-md rounded-2xl border overflow-hidden"
+              style={{ background: '#0c0f1a', borderColor: 'rgba(255,255,255,0.1)' }}
+            >
+              {/* Modal header */}
+              <div className="flex items-start justify-between gap-3 px-6 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-violet-400 mb-0.5">Subscribe</p>
+                  <h2 className="text-lg font-bold text-white">{upgradeModal.plan.name}</h2>
+                  <p className="text-sm text-slate-400 mt-0.5">
+                    {upgradeModal.plan.price}
+                    {upgradeModal.plan.period && <span className="text-slate-500">{upgradeModal.plan.period}</span>}
+                    {billing === 'year' && upgradeModal.plan.amount > 0 && (
+                      <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">Save 20%</span>
+                    )}
+                  </p>
+                </div>
+                <button onClick={() => setUpgradeModal(null)} className="p-1 text-slate-500 hover:text-white transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Promo */}
+              {promoDraft && (
+                <div className="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2.5">
+                  <TicketPercent size={13} className="text-emerald-400 shrink-0" />
+                  <p className="text-xs font-semibold text-emerald-400">{promoDraft.code} — {promoDraft.display_discount} applied</p>
+                </div>
+              )}
+
+              {upgradeError ? (
+                <div className="mx-6 mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5">
+                  <p className="text-xs font-semibold text-red-400">{upgradeError}</p>
+                </div>
+              ) : null}
+
+              {paymentMethod ? (
+                <div className="px-6 pt-5">
+                  <p className="text-xs font-semibold text-slate-400 mb-3">Saved card</p>
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+                        <CreditCard size={15} className="text-violet-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-white">
+                          {paymentMethod.brand ? `${paymentMethod.brand.toUpperCase()} ` : ''}ending in {paymentMethod.last4}
+                        </p>
+                        <p className="text-xs text-slate-500">Expires {paymentMethod.exp_month}/{paymentMethod.exp_year}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleSubscribeWithSavedCard}
+                      disabled={upgradeWithSavedBusy}
+                      className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-500/25"
+                    >
+                      {upgradeWithSavedBusy
+                        ? <><Loader2 size={15} className="animate-spin" /> Processing...</>
+                        : `Subscribe with saved card · ${upgradeModal.plan.price}${upgradeModal.plan.period}`}
+                    </button>
+                  </div>
+
+                  <div className="my-5 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-white/[0.08]" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-600">or use a different card</span>
+                    <div className="h-px flex-1 bg-white/[0.08]" />
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Card form */}
+              <div className="px-6 py-5">
+                <p className="text-xs font-semibold text-slate-400 mb-3">Card details</p>
+                <StripeCardForm
+                  onSubmit={handleSubscribeSubmit}
+                  onComplete={handleSubscribeComplete}
+                  buttonLabel={`Subscribe · ${upgradeModal.plan.price}${upgradeModal.plan.period}`}
+                />
+              </div>
+
+              <div className="px-6 pb-5 flex items-center justify-center gap-1.5 text-xs text-slate-600">
+                <Shield size={10} /> Secured by Stripe · 256-bit encryption
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
