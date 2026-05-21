@@ -4,7 +4,6 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { WorkspaceProvider } from './context/WorkspaceContext'
 import { ThemeProvider } from './context/ThemeContext'
-import Navbar from './components/Navbar'
 import LoadingScreen from './components/LoadingScreen'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -25,6 +24,7 @@ import MeetingBotDetail from './pages/MeetingBotDetail'
 import LiveTranslator from './pages/LiveTranslator'
 import Onboarding from './pages/Onboarding'
 import Recordings from './pages/Recordings'
+import Integrations from './pages/Integrations'
 import ActionFab from './components/ActionFab'
 import UpdateNotifier from './components/UpdateNotifier'
 
@@ -71,9 +71,7 @@ function AppRoutes() {
   if (!ready) return <LoadingScreen />
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">
-        <Routes>
+      <Routes>
           <Route path="/" element={isSignedIn ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -94,12 +92,12 @@ function AppRoutes() {
           <Route path="/meeting-bots/:sessionId" element={<MeetingBotDetail />} />
           <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />
           <Route path="/recordings" element={<RequireAuth><Recordings /></RequireAuth>} />
+          <Route path="/integrations" element={<RequireAuth><Integrations /></RequireAuth>} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/privacy" element={<Navigate to="/login" replace />} />
           <Route path="/terms" element={<Navigate to="/login" replace />} />
           <Route path="/contact" element={<Navigate to="/login" replace />} />
         </Routes>
-      </main>
       <ActionFab />
       <UpdateNotifier />
     </div>

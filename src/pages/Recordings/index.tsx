@@ -171,7 +171,7 @@ export default function Recordings() {
       <Sidebar active="recordings" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <div className="max-w-4xl mx-auto w-full px-6 py-8">
+        <div className="w-full px-6 py-8">
 
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
