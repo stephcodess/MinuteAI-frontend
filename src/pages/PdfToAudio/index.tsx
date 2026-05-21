@@ -206,7 +206,7 @@ export default function PdfToAudio() {
       <Sidebar active="pdf-to-audio" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <div className="w-full px-6 py-8 max-w-3xl">
+        <div className="mx-auto w-full px-6 py-8 max-w-2xl">
 
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
