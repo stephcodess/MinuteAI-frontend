@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Disc, Music, Film, Download, Calendar, Clock,
-  Search, Loader2, AlertCircle, FolderOpen,
+  Search, Loader2, AlertCircle, FolderOpen, Play, Pause, Trash2, X,
 } from 'lucide-react'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import Sidebar from '../../components/Sidebar'
@@ -61,76 +61,212 @@ function EmptyState({ tab }: { tab: 'audio' | 'video' }) {
 
 // ── Recording row ─────────────────────────────────────────────────────────────
 
-function RecordingRow({ meeting }: { meeting: Meeting }) {
-  const [downloading, setDownloading] = useState(false)
+function RecordingRow({ meeting, onDelete }: { meeting: Meeting; onDelete: (id: string) => void }) {
+  const [showPlayer, setShowPlayer]       = useState(false)
+  const [playing, setPlaying]             = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting]           = useState(false)
+  const [downloading, setDownloading]     = useState(false)
+  const mediaRef = useRef<HTMLAudioElement & HTMLVideoElement>(null)
+
+  const isVideo = meeting.audio_type === 'video'
+  const src     = getDownloadUrl(meeting.id, 'audio')
+
+  function togglePlayer() {
+    if (showPlayer && mediaRef.current) {
+      mediaRef.current.pause()
+      setPlaying(false)
+    }
+    setShowPlayer(v => !v)
+    setConfirmDelete(false)
+  }
+
+  function handleMediaPlay()  { setPlaying(true) }
+  function handleMediaPause() { setPlaying(false) }
 
   function handleDownload() {
     setDownloading(true)
-    window.open(getDownloadUrl(meeting.id, 'audio'), '_blank')
+    window.open(src, '_blank')
     setTimeout(() => setDownloading(false), 1500)
   }
 
-  const isVideo = meeting.audio_type === 'video'
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      await api.delete(`/meetings/${meeting.id}/recording`)
+      onDelete(meeting.id)
+    } catch {
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
+      exit={{ opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.18 }}
-      className="flex items-center gap-4 px-5 py-4 rounded-2xl border transition-colors group"
-      style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
+      className="rounded-2xl border overflow-hidden"
+      style={{
+        background: 'var(--card-bg)',
+        borderColor: showPlayer ? 'rgba(139,92,246,0.35)' : 'var(--card-border)',
+        transition: 'border-color 0.2s',
+      }}
     >
-      {/* Icon */}
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: isVideo ? 'rgba(59,130,246,0.12)' : 'rgba(139,92,246,0.12)' }}>
-        {isVideo
-          ? <Film size={18} className="text-blue-400" />
-          : <Music size={18} className="text-violet-400" />}
-      </div>
+      {/* ── Main row ── */}
+      <div className="flex items-center gap-4 px-5 py-4">
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>
-          {meeting.title}
-        </p>
-        <div className="flex items-center gap-3 mt-0.5">
-          <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-3)' }}>
-            <Calendar size={11} />
-            {fmtDate(meeting.date)}
-          </span>
-          {meeting.date && (
+        {/* Type icon */}
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: isVideo ? 'rgba(59,130,246,0.12)' : 'rgba(139,92,246,0.12)' }}>
+          {isVideo
+            ? <Film size={18} className="text-blue-400" />
+            : <Music size={18} className="text-violet-400" />}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+            {meeting.title}
+          </p>
+          <div className="flex items-center gap-3 mt-0.5">
             <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-3)' }}>
-              <Clock size={11} />
-              {fmtTime(meeting.date)}
+              <Calendar size={11} />
+              {fmtDate(meeting.date)}
             </span>
-          )}
-          {meeting.duration && meeting.duration !== '—' && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-              style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}>
-              {meeting.duration}
-            </span>
-          )}
+            {meeting.date && (
+              <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-3)' }}>
+                <Clock size={11} />
+                {fmtTime(meeting.date)}
+              </span>
+            )}
+            {meeting.duration && meeting.duration !== '—' && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}>
+                {meeting.duration}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+
+          {/* Play / Pause */}
+          <button
+            onClick={togglePlayer}
+            title={showPlayer ? 'Close player' : 'Play'}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+            style={{
+              background: showPlayer ? 'rgba(139,92,246,0.2)' : 'var(--input-bg)',
+              color: showPlayer ? 'rgb(167,139,250)' : 'var(--text-2)',
+            }}
+          >
+            {showPlayer
+              ? (playing ? <Pause size={15} /> : <X size={15} />)
+              : <Play size={15} />}
+          </button>
+
+          {/* Download */}
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            title="Download"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+            style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}
+          >
+            {downloading
+              ? <Loader2 size={14} className="animate-spin" />
+              : <Download size={14} />}
+          </button>
+
+          {/* Delete / confirm */}
+          <AnimatePresence mode="wait">
+            {confirmDelete ? (
+              <motion.div
+                key="confirm"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 8 }}
+                className="flex items-center gap-1.5"
+              >
+                <span className="text-xs font-medium" style={{ color: 'var(--text-3)' }}>
+                  Remove recording?
+                </span>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? <Loader2 size={11} className="animate-spin" /> : null}
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
+                  style={{ color: 'var(--text-3)' }}
+                >
+                  Cancel
+                </button>
+              </motion.div>
+            ) : (
+              <motion.button
+                key="trash"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => { setConfirmDelete(true); setShowPlayer(false) }}
+                title="Delete recording"
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:bg-red-500/10 hover:text-red-400"
+                style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}
+              >
+                <Trash2 size={14} />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* Download */}
-      <button
-        onClick={handleDownload}
-        disabled={downloading}
-        className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shrink-0"
-        style={{
-          background: 'rgba(139,92,246,0.12)',
-          color: 'rgb(167,139,250)',
-          border: '1px solid rgba(139,92,246,0.2)',
-        }}
-      >
-        {downloading
-          ? <Loader2 size={13} className="animate-spin" />
-          : <Download size={13} />}
-        {downloading ? 'Opening…' : 'Download'}
-      </button>
+      {/* ── Inline player ── */}
+      <AnimatePresence>
+        {showPlayer && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="px-5 pb-5 pt-1 border-t" style={{ borderColor: 'rgba(139,92,246,0.15)' }}>
+              {isVideo ? (
+                <video
+                  ref={mediaRef}
+                  src={src}
+                  controls
+                  autoPlay
+                  onPlay={handleMediaPlay}
+                  onPause={handleMediaPause}
+                  className="w-full rounded-xl"
+                  style={{ maxHeight: 360, background: '#000' }}
+                />
+              ) : (
+                <audio
+                  ref={mediaRef}
+                  src={src}
+                  controls
+                  autoPlay
+                  onPlay={handleMediaPlay}
+                  onPause={handleMediaPause}
+                  className="w-full"
+                  style={{ accentColor: '#7c3aed' }}
+                />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
@@ -145,10 +281,10 @@ const TABS = [
 export default function Recordings() {
   const { activeWorkspace } = useWorkspace()
   const [meetings, setMeetings] = useState<Meeting[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<'audio' | 'video'>('audio')
-  const [search, setSearch] = useState('')
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState<string | null>(null)
+  const [tab, setTab]           = useState<'audio' | 'video'>('audio')
+  const [search, setSearch]     = useState('')
 
   useEffect(() => {
     setLoading(true)
@@ -160,9 +296,12 @@ export default function Recordings() {
       .finally(() => setLoading(false))
   }, [activeWorkspace?.id])
 
-  const withAudio = meetings.filter(m => m.has_audio && m.audio_type === tab)
+  function handleDelete(id: string) {
+    setMeetings(prev => prev.map(m => m.id === id ? { ...m, has_audio: false } : m))
+  }
 
-  const filtered = search.trim()
+  const withAudio = meetings.filter(m => m.has_audio && m.audio_type === tab)
+  const filtered  = search.trim()
     ? withAudio.filter(m => m.title.toLowerCase().includes(search.toLowerCase()))
     : withAudio
 
@@ -181,7 +320,7 @@ export default function Recordings() {
             <div>
               <h1 className="text-xl font-bold" style={{ color: 'var(--text-1)' }}>Recordings</h1>
               <p className="text-sm" style={{ color: 'var(--text-3)' }}>
-                Download your original audio and video files
+                Play, download or remove your original audio and video files
               </p>
             </div>
           </div>
@@ -206,9 +345,9 @@ export default function Recordings() {
                 )}
                 <Icon size={14} className="relative z-10" />
                 <span className="relative z-10">{label}</span>
-                {withAudio.length > 0 && tab === id && (
+                {withAudio.length > 0 && (
                   <span className="relative z-10 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-300 ml-0.5">
-                    {filtered.length}
+                    {tab === id ? filtered.length : meetings.filter(m => m.has_audio && m.audio_type === id).length}
                   </span>
                 )}
               </button>
@@ -254,7 +393,7 @@ export default function Recordings() {
             <AnimatePresence mode="popLayout">
               <div className="space-y-2">
                 {filtered.map(m => (
-                  <RecordingRow key={m.id} meeting={m} />
+                  <RecordingRow key={m.id} meeting={m} onDelete={handleDelete} />
                 ))}
               </div>
             </AnimatePresence>
