@@ -25,6 +25,7 @@ import LiveTranslator from './pages/LiveTranslator'
 import Onboarding from './pages/Onboarding'
 import Recordings from './pages/Recordings'
 import Integrations from './pages/Integrations'
+import PdfToAudio from './pages/PdfToAudio'
 import ActionFab from './components/ActionFab'
 import UpdateNotifier from './components/UpdateNotifier'
 
@@ -93,6 +94,7 @@ function AppRoutes() {
           <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />
           <Route path="/recordings" element={<RequireAuth><Recordings /></RequireAuth>} />
           <Route path="/integrations" element={<RequireAuth><Integrations /></RequireAuth>} />
+          <Route path="/pdf-to-audio" element={<RequireAuth><PdfToAudio /></RequireAuth>} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/privacy" element={<Navigate to="/login" replace />} />
           <Route path="/terms" element={<Navigate to="/login" replace />} />
