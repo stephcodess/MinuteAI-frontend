@@ -2,8 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Headphones, Upload, FileText, Clock, Mic2, CheckCircle2,
-  Loader2, AlertCircle, Download, Play, Pause, ChevronRight,
-  X, RotateCcw,
+  Loader2, AlertCircle, Download, Play, ChevronRight,
+  X, RotateCcw, Check, RefreshCw,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import { formRequest, apiFetch } from '../../lib/api'
@@ -64,8 +64,38 @@ function ProgressSteps({ step }: { step: string }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 type Phase = 'form' | 'processing' | 'done' | 'error'
+type Tab = 'generate' | 'audios'
+
+type GeneratedAudio = {
+  job_id: string
+  status: 'processing' | 'done' | 'error'
+  step?: string
+  filename?: string
+  purpose?: string
+  duration_minutes?: number
+  voice?: 'female' | 'male'
+  created_at?: string
+  completed_at?: string
+  word_count?: number
+  estimated_duration?: number
+  error?: string
+  has_audio?: boolean
+}
+
+function formatDate(value?: string) {
+  if (!value) return 'Just now'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return 'Just now'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function titleFromFilename(filename?: string) {
+  return filename?.replace(/\.pdf$/i, '') || 'Presentation audio'
+}
 
 export default function PdfToAudio() {
+  const [activeTab, setActiveTab]   = useState<Tab>('generate')
+
   // Form
   const [file, setFile]             = useState<File | null>(null)
   const [dragging, setDragging]     = useState(false)
@@ -86,13 +116,22 @@ export default function PdfToAudio() {
   const [wordCount, setWordCount]   = useState(0)
   const [estDuration, setEstDuration] = useState(0)
   const [audioUrl, setAudioUrl]     = useState('')
-  const [playing, setPlaying]       = useState(false)
-  const audioRef                    = useRef<HTMLAudioElement>(null)
   const [showScript, setShowScript] = useState(false)
   const [downloading, setDownloading] = useState(false)
 
+  // Generated audios
+  const [generatedAudios, setGeneratedAudios] = useState<GeneratedAudio[]>([])
+  const [loadingAudios, setLoadingAudios] = useState(false)
+  const [audioUrls, setAudioUrls] = useState<Record<string, string>>({})
+  const [loadingAudioId, setLoadingAudioId] = useState<string | null>(null)
+  const [downloadingAudioId, setDownloadingAudioId] = useState<string | null>(null)
+
   // Cleanup blob URL on unmount
   useEffect(() => () => { if (audioUrl) URL.revokeObjectURL(audioUrl) }, [audioUrl])
+
+  useEffect(() => {
+    loadGeneratedAudios()
+  }, [])
 
   // ── File handling ────────────────────────────────────────────────────────────
 
@@ -110,6 +149,56 @@ export default function PdfToAudio() {
 
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true) }
   const onDragLeave = () => setDragging(false)
+
+  async function loadGeneratedAudios() {
+    setLoadingAudios(true)
+    try {
+      const res = await apiFetch('/pdf-to-audio')
+      setGeneratedAudios(res.items || [])
+    } catch {
+      setGeneratedAudios([])
+    } finally {
+      setLoadingAudios(false)
+    }
+  }
+
+  async function fetchAudioBlob(jobId: string) {
+    const tok = localStorage.getItem('minuteai_access')
+    const r = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/pdf-to-audio/${jobId}/audio`, {
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    })
+    if (!r.ok) throw new Error('Could not fetch audio.')
+    return r.blob()
+  }
+
+  async function handleLoadGeneratedAudio(item: GeneratedAudio) {
+    if (audioUrls[item.job_id] || item.status !== 'done') return
+    setLoadingAudioId(item.job_id)
+    try {
+      const blob = await fetchAudioBlob(item.job_id)
+      setAudioUrls(prev => ({ ...prev, [item.job_id]: URL.createObjectURL(blob) }))
+    } finally {
+      setLoadingAudioId(null)
+    }
+  }
+
+  async function handleDownloadGeneratedAudio(item: GeneratedAudio) {
+    if (item.status !== 'done') return
+    setDownloadingAudioId(item.job_id)
+    try {
+      const blob = await fetchAudioBlob(item.job_id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${titleFromFilename(item.filename)}.mp3`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setDownloadingAudioId(null)
+    }
+  }
 
   // ── Submit ───────────────────────────────────────────────────────────────────
 
@@ -148,14 +237,9 @@ export default function PdfToAudio() {
           setWordCount(status.word_count || 0)
           setEstDuration(status.estimated_duration || 0)
 
-          // Fetch audio as blob
-          const tok = localStorage.getItem('minuteai_access')
-          const r = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/pdf-to-audio/${jobId}/audio`, {
-            headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-          })
-          if (!r.ok) throw new Error('Could not fetch audio.')
-          const blob = await r.blob()
+          const blob = await fetchAudioBlob(jobId)
           setAudioUrl(URL.createObjectURL(blob))
+          loadGeneratedAudios()
           setPhase('done')
         } else if (status.status === 'error') {
           clearInterval(pollRef.current!)
@@ -182,7 +266,6 @@ export default function PdfToAudio() {
     setError('')
     setScript('')
     setAudioUrl('')
-    setPlaying(false)
     setShowScript(false)
     jobIdRef.current = null
   }
@@ -205,23 +288,42 @@ export default function PdfToAudio() {
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
       <Sidebar active="pdf-to-audio" />
 
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <div className="mx-auto w-full px-6 py-8 max-w-2xl">
-
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25">
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Full-width header bar */}
+        <header className="flex items-center justify-between px-8 py-5 border-b shrink-0" style={{ borderColor: 'var(--divider)', background: 'var(--sidebar-bg)' }}>
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20 shrink-0">
               <Headphones size={18} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold" style={{ color: 'var(--text-1)' }}>PDF to Audio</h1>
-              <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+              <h1 className="text-lg font-bold tracking-tight" style={{ color: 'var(--text-1)' }}>PDF to Audio</h1>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
                 Turn any PDF into a natural spoken presentation
               </p>
             </div>
           </div>
+          <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--input-bg)' }}>
+            {(['generate', 'audios'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === tab ? 'bg-violet-600 text-white shadow-sm' : 'hover:bg-white/[0.06]'
+                }`}
+                style={activeTab === tab ? {} : { color: 'var(--text-3)' }}
+              >
+                {tab === 'generate' ? 'Generate' : 'Generated Audios'}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        {/* Scrollable content container */}
+        <div className="flex-1 overflow-y-auto px-6 py-8">
+          <div className="mx-auto w-full max-w-2xl">
 
           {/* ── FORM ── */}
+          {activeTab === 'generate' && (
           <AnimatePresence mode="wait">
             {phase === 'form' && (
               <motion.div key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
@@ -238,7 +340,7 @@ export default function PdfToAudio() {
                     onDrop={onDrop}
                     onDragOver={onDragOver}
                     onDragLeave={onDragLeave}
-                    className={`relative flex flex-col items-center justify-center gap-3 px-6 py-10 rounded-2xl border-2 border-dashed cursor-pointer transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-3 px-6 py-10 !rounded-xl border-2 border-dashed cursor-pointer transition-all ${
                       dragging
                         ? 'border-violet-500 bg-violet-500/10'
                         : file
@@ -256,7 +358,7 @@ export default function PdfToAudio() {
 
                     {file ? (
                       <>
-                        <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center">
+                        <div className="w-12 h-12 !rounded-xl bg-violet-500/15 flex items-center justify-center">
                           <FileText size={22} className="text-violet-400" />
                         </div>
                         <div className="text-center">
@@ -267,7 +369,7 @@ export default function PdfToAudio() {
                         </div>
                         <button
                           onClick={e => { e.stopPropagation(); setFile(null) }}
-                          className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/[0.08] transition-colors"
+                          className="absolute top-3 right-3 w-7 h-7 !rounded-lg flex items-center justify-center hover:bg-white/[0.08] transition-colors cursor-pointer"
                           style={{ color: 'var(--text-3)' }}
                         >
                           <X size={14} />
@@ -275,7 +377,7 @@ export default function PdfToAudio() {
                       </>
                     ) : (
                       <>
-                        <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
+                        <div className="w-12 h-12 !rounded-xl flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
                           <Upload size={22} style={{ color: 'var(--text-3)' }} />
                         </div>
                         <div className="text-center">
@@ -298,31 +400,34 @@ export default function PdfToAudio() {
                     What's this presentation for?
                   </h2>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {PURPOSES.map(p => (
                       <button
                         key={p.id}
                         onClick={() => setPurpose(p.id)}
-                        className={`flex flex-col gap-1.5 p-3.5 rounded-2xl border text-left transition-all ${
+                        className={`flex flex-col gap-1 p-4 !rounded-xl border text-left transition-all relative overflow-hidden cursor-pointer ${
                           purpose === p.id
-                            ? 'border-violet-500/60 bg-violet-500/10'
-                            : 'border-white/[0.08] hover:border-white/20 hover:bg-white/[0.03]'
+                            ? 'border-violet-500 bg-violet-500/5 ring-1 ring-violet-500/20'
+                            : 'border-white/[0.08] hover:border-white/15 hover:bg-white/[0.02]'
                         }`}
                         style={{ background: purpose === p.id ? undefined : 'var(--card-bg)' }}
                       >
-                        <span className="text-xl">{p.emoji}</span>
-                        <p className={`text-xs font-semibold leading-tight ${purpose === p.id ? 'text-violet-200' : ''}`}
-                          style={{ color: purpose === p.id ? undefined : 'var(--text-1)' }}>
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="text-xl">{p.emoji}</span>
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                            purpose === p.id
+                              ? 'border-violet-500 bg-violet-500 text-white'
+                              : 'border-white/15 bg-white/[0.02]'
+                          }`}>
+                            {purpose === p.id && <Check size={10} className="stroke-[3]" />}
+                          </div>
+                        </div>
+                        <p className={`text-xs font-bold leading-snug mt-1 ${purpose === p.id ? 'text-violet-200' : 'text-slate-200'}`}>
                           {p.label}
                         </p>
-                        <p className="text-[10px] leading-snug" style={{ color: 'var(--text-3)' }}>
+                        <p className="text-[10px] leading-normal mt-0.5 text-slate-400">
                           {p.desc}
                         </p>
-                        {purpose === p.id && (
-                          <div className="mt-1 self-start w-4 h-4 rounded-full bg-violet-600 flex items-center justify-center">
-                            <CheckCircle2 size={10} className="text-white" />
-                          </div>
-                        )}
                       </button>
                     ))}
                   </div>
@@ -387,7 +492,7 @@ export default function PdfToAudio() {
                   disabled={!file}
                   whileHover={file ? { scale: 1.01 } : {}}
                   whileTap={file ? { scale: 0.98 } : {}}
-                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2.5 py-3.5 !rounded-xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   style={{
                     background: !file ? 'var(--input-bg)' : 'linear-gradient(135deg, #7c3aed, #4f46e5)',
                     color: !file ? 'var(--text-3)' : 'white',
@@ -405,7 +510,7 @@ export default function PdfToAudio() {
             {/* ── PROCESSING ── */}
             {phase === 'processing' && (
               <motion.div key="processing" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                <div className="rounded-2xl border p-8 flex flex-col items-center gap-8" style={{ background: 'var(--card-bg)', borderColor: 'rgba(139,92,246,0.25)' }}>
+                <div className="!rounded-xl border p-8 flex flex-col items-center gap-8" style={{ background: 'var(--card-bg)', borderColor: 'rgba(139,92,246,0.25)' }}>
                   <div className="relative w-20 h-20">
                     <div className="absolute inset-0 rounded-full bg-violet-600/20 animate-ping" />
                     <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-violet-600/30 to-indigo-600/30 flex items-center justify-center border border-violet-500/30">
@@ -437,7 +542,7 @@ export default function PdfToAudio() {
               <motion.div key="done" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
 
                 {/* Success header */}
-                <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl border border-emerald-500/25 bg-emerald-500/5">
+                <div className="flex items-center gap-3 mb-6 p-4 !rounded-xl border border-emerald-500/25 bg-emerald-500/5">
                   <div className="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
                     <CheckCircle2 size={18} className="text-emerald-400" />
                   </div>
@@ -449,7 +554,7 @@ export default function PdfToAudio() {
                   </div>
                   <button
                     onClick={handleReset}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:bg-white/[0.06]"
+                    className="flex items-center gap-1.5 px-3 py-1.5 !rounded-lg text-xs font-semibold transition-colors hover:bg-white/[0.06] cursor-pointer"
                     style={{ color: 'var(--text-3)' }}
                   >
                     <RotateCcw size={12} />
@@ -458,9 +563,9 @@ export default function PdfToAudio() {
                 </div>
 
                 {/* Audio player */}
-                <div className="rounded-2xl border p-5 mb-4" style={{ background: 'var(--card-bg)', borderColor: 'rgba(139,92,246,0.25)' }}>
+                <div className="!rounded-xl border p-5 mb-4" style={{ background: 'var(--card-bg)', borderColor: 'rgba(139,92,246,0.25)' }}>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 shrink-0">
                       <Headphones size={16} className="text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -474,7 +579,7 @@ export default function PdfToAudio() {
                     <button
                       onClick={handleDownload}
                       disabled={downloading}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all"
+                      className="flex items-center gap-1.5 px-3.5 py-2 !rounded-lg text-xs font-semibold transition-all cursor-pointer"
                       style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}
                     >
                       {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
@@ -483,21 +588,18 @@ export default function PdfToAudio() {
                   </div>
 
                   <audio
-                    ref={audioRef}
                     src={audioUrl}
                     controls
-                    onPlay={() => setPlaying(true)}
-                    onPause={() => setPlaying(false)}
                     className="w-full"
                     style={{ accentColor: '#7c3aed' }}
                   />
                 </div>
 
                 {/* Script preview */}
-                <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                <div className="!rounded-xl border overflow-hidden" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
                   <button
                     onClick={() => setShowScript(v => !v)}
-                    className="w-full flex items-center justify-between px-5 py-3.5 text-left"
+                    className="w-full flex items-center justify-between px-5 py-3.5 text-left !rounded-none cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5">
                       <FileText size={15} style={{ color: 'var(--text-3)' }} />
@@ -539,8 +641,8 @@ export default function PdfToAudio() {
             {/* ── ERROR ── */}
             {phase === 'error' && (
               <motion.div key="error" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 flex flex-col items-center gap-5 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center">
+                <div className="!rounded-xl border border-red-500/20 bg-red-500/5 p-6 flex flex-col items-center gap-5 text-center">
+                  <div className="w-14 h-14 !rounded-xl bg-red-500/10 flex items-center justify-center">
                     <AlertCircle size={24} className="text-red-400" />
                   </div>
                   <div>
@@ -549,7 +651,7 @@ export default function PdfToAudio() {
                   </div>
                   <button
                     onClick={handleReset}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.1] transition-colors"
+                    className="flex items-center gap-2 px-5 py-2.5 !rounded-lg text-sm font-semibold bg-white/[0.06] hover:bg-white/[0.1] transition-colors cursor-pointer"
                     style={{ color: 'var(--text-2)' }}
                   >
                     <RotateCcw size={14} />
@@ -559,8 +661,115 @@ export default function PdfToAudio() {
               </motion.div>
             )}
           </AnimatePresence>
+          )}
+
+          {activeTab === 'audios' && (
+            <motion.div key="audios" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-base font-bold" style={{ color: 'var(--text-1)' }}>Generated audios</h2>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Your PDF presentation audio jobs from this server session.</p>
+                </div>
+                <button
+                  onClick={loadGeneratedAudios}
+                  disabled={loadingAudios}
+                  className="flex items-center gap-2 px-3.5 py-2 !rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
+                  style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}
+                >
+                  <RefreshCw size={13} className={loadingAudios ? 'animate-spin' : ''} />
+                  Refresh
+                </button>
+              </div>
+
+              {loadingAudios ? (
+                <div className="!rounded-xl border p-8 flex items-center justify-center gap-3" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)', color: 'var(--text-3)' }}>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span className="text-sm font-medium">Loading audios…</span>
+                </div>
+              ) : generatedAudios.length === 0 ? (
+                <div className="!rounded-xl border p-8 text-center" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                  <div className="w-12 h-12 mx-auto mb-3 !rounded-xl flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
+                    <Headphones size={22} style={{ color: 'var(--text-3)' }} />
+                  </div>
+                  <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>No generated audios yet</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Generate one from a PDF and it will show up here.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {generatedAudios.map(item => {
+                    const purposeLabel = PURPOSES.find(p => p.id === item.purpose)?.label || 'Presentation'
+                    const isDone = item.status === 'done' && item.has_audio
+                    const isLoadingAudio = loadingAudioId === item.job_id
+                    const isDownloadingAudio = downloadingAudioId === item.job_id
+                    return (
+                      <div key={item.job_id} className="!rounded-xl border p-4" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                            item.status === 'done' ? 'bg-emerald-500/15' : item.status === 'error' ? 'bg-red-500/15' : 'bg-violet-500/15'
+                          }`}>
+                            {item.status === 'processing' ? <Loader2 size={16} className="animate-spin text-violet-400" /> : <Headphones size={16} className={item.status === 'error' ? 'text-red-400' : 'text-emerald-400'} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold truncate" style={{ color: 'var(--text-1)' }}>{titleFromFilename(item.filename)}</p>
+                                <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>
+                                  {purposeLabel} · {item.duration_minutes || '?'} min target · {item.voice === 'male' ? 'Male' : 'Female'} voice · {formatDate(item.completed_at || item.created_at)}
+                                </p>
+                              </div>
+                              <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full ${
+                                item.status === 'done' ? 'bg-emerald-500/10 text-emerald-300'
+                                : item.status === 'error' ? 'bg-red-500/10 text-red-300'
+                                : 'bg-violet-500/10 text-violet-300'
+                              }`}>
+                                {item.status}
+                              </span>
+                            </div>
+
+                            {item.status === 'error' && (
+                              <p className="text-xs mt-3 text-red-400/80">{item.error || 'Audio generation failed.'}</p>
+                            )}
+
+                            {isDone && (
+                              <div className="mt-4">
+                                {audioUrls[item.job_id] ? (
+                                  <audio src={audioUrls[item.job_id]} controls className="w-full" style={{ accentColor: '#7c3aed' }} />
+                                ) : (
+                                  <div className="flex flex-wrap gap-2">
+                                    <button
+                                      onClick={() => handleLoadGeneratedAudio(item)}
+                                      disabled={isLoadingAudio}
+                                      className="flex items-center gap-1.5 px-3.5 py-2 !rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
+                                      style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}
+                                    >
+                                      {isLoadingAudio ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
+                                      {isLoadingAudio ? 'Loading…' : 'Load player'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownloadGeneratedAudio(item)}
+                                      disabled={isDownloadingAudio}
+                                      className="flex items-center gap-1.5 px-3.5 py-2 !rounded-lg text-xs font-semibold transition-colors cursor-pointer disabled:opacity-60"
+                                      style={{ background: 'var(--input-bg)', color: 'var(--text-2)' }}
+                                    >
+                                      {isDownloadingAudio ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                                      {isDownloadingAudio ? 'Saving…' : 'Download'}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
       </div>
     </div>
-  )
+  </div>
+)
 }
