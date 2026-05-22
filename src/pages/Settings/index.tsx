@@ -283,10 +283,11 @@ export default function Settings() {
 
   async function startTwoFactor() {
     setTwoFactorError(null)
-    if (!twoFactorPw) { setTwoFactorError('Enter your current password first.'); return }
+    const isGoogle = user?.source === 'google'
+    if (!isGoogle && !twoFactorPw) { setTwoFactorError('Enter your current password first.'); return }
     setTwoFactorLoading(true)
     try {
-      await api.post('/auth/2fa/start', { current_password: twoFactorPw })
+      await api.post('/auth/2fa/start', isGoogle ? {} : { current_password: twoFactorPw })
       setTwoFactorPending(true)
     } catch (err) {
       setTwoFactorError(err.message)
@@ -317,10 +318,11 @@ export default function Settings() {
 
   async function disableTwoFactor() {
     setTwoFactorError(null)
-    if (!twoFactorPw) { setTwoFactorError('Enter your current password first.'); return }
+    const isGoogle = user?.source === 'google'
+    if (!isGoogle && !twoFactorPw) { setTwoFactorError('Enter your current password first.'); return }
     setTwoFactorLoading(true)
     try {
-      const data = await api.post('/auth/2fa/disable', { current_password: twoFactorPw })
+      const data = await api.post('/auth/2fa/disable', isGoogle ? {} : { current_password: twoFactorPw })
       setTwoFactorEnabled(!!data.two_factor_enabled)
       updateUser({ two_factor_enabled: !!data.two_factor_enabled })
       setTwoFactorPw('')
@@ -485,8 +487,10 @@ export default function Settings() {
                     <p className="text-sm font-semibold text-white">Email security code</p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {twoFactorEnabled
-                        ? 'Enabled. Password sign-ins require a code sent to your email.'
-                        : 'Add a second step to password sign-ins.'}
+                        ? 'Enabled. Sign-ins require a code sent to your email.'
+                        : user?.source === 'google'
+                          ? 'Add a second step to your Google sign-ins.'
+                          : 'Add a second step to password sign-ins.'}
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
@@ -498,13 +502,19 @@ export default function Settings() {
                   </span>
                 </div>
 
-                <Field
-                  label="Current password"
-                  type={showPw ? 'text' : 'password'}
-                  value={twoFactorPw}
-                  onChange={e => setTwoFactorPw(e.target.value)}
-                  right={eyeBtn}
-                />
+                {user?.source === 'google' ? (
+                  <p className="text-xs text-slate-400 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                    You signed in with Google — no password needed to manage 2FA.
+                  </p>
+                ) : (
+                  <Field
+                    label="Current password"
+                    type={showPw ? 'text' : 'password'}
+                    value={twoFactorPw}
+                    onChange={e => setTwoFactorPw(e.target.value)}
+                    right={eyeBtn}
+                  />
+                )}
 
                 {twoFactorPending && (
                   <Field
