@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, LayoutDashboard, Upload, CreditCard, Settings, LogOut,
   Zap, Plus, Users, ChevronsUpDown, Check, Pencil, Trash2, X, Loader2, CheckSquare,
-  Bell, CheckCircle2, ClipboardList, Bot, Menu, Languages, Sun, Moon, ChevronDown, Disc, Plug, Headphones,
+  Bell, CheckCircle2, ClipboardList, Bot, Menu, Languages, Sun, Moon, ChevronDown, Disc, Plug, Headphones, GitBranch,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -26,19 +26,20 @@ const NAV_GROUPS = [
     label: 'Meetings',
     collapsible: true,
     items: [
-      { key: 'upload',       icon: Upload,    label: 'New meeting',    to: '/upload',       badge: 'new' },
-      { key: 'recordings',   icon: Disc,      label: 'Recordings',     to: '/recordings' },
-      { key: 'meeting-bots', icon: Bot,       label: 'Meeting Bots',   to: '/meeting-bots' },
-      { key: 'translator',   icon: Languages, label: 'Live Translate', to: '/translator' },
+      { key: 'upload', icon: Upload, label: 'New meeting', to: '/upload', badge: 'new' },
+      { key: 'recordings', icon: Disc, label: 'Recordings', to: '/recordings' },
+      { key: 'meeting-bots', icon: Bot, label: 'Meeting Bots', to: '/meeting-bots' },
+      { key: 'translator', icon: Languages, label: 'Live Translate', to: '/translator' },
     ],
   },
   {
     label: 'Workspace',
     collapsible: false,
     items: [
-      { key: 'tasks',        icon: CheckSquare, label: 'My Tasks',     to: '/tasks' },
-      { key: 'team',         icon: Users,       label: 'Team',         to: '/team' },
-      { key: 'integrations', icon: Plug,        label: 'Integrations', to: '/integrations' },
+      { key: 'tasks', icon: CheckSquare, label: 'My Tasks', to: '/tasks' },
+      { key: 'threads', icon: GitBranch, label: 'Meeting Threads', to: '/threads' },
+      { key: 'team', icon: Users, label: 'Team', to: '/team' },
+      { key: 'integrations', icon: Plug, label: 'Integrations', to: '/integrations' },
     ],
   },
   {
@@ -53,7 +54,7 @@ const NAV_GROUPS = [
     collapsible: false,
     items: [
       { key: 'upgrade plan', icon: CreditCard, label: 'Upgrade Access', to: '/billing', accent: 'zap' },
-      { key: 'settings',     icon: Settings,   label: 'Settings',       to: '/settings' },
+      { key: 'settings', icon: Settings, label: 'Settings', to: '/settings' },
     ],
   },
 ]
@@ -284,7 +285,7 @@ function NotificationBell() {
   const btnRef = useRef(null)
   const unread = notifications.filter(n => !n.read).length
 
-  function load() { api.get('/notifications').then(setNotifications).catch(() => {}) }
+  function load() { api.get('/notifications').then(setNotifications).catch(() => { }) }
 
   useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id) }, [])
 
@@ -300,7 +301,7 @@ function NotificationBell() {
   function handleClick(n) {
     if (!n.read) {
       setNotifications(ns => ns.map(x => x.id === n.id ? { ...x, read: true } : x))
-      api.post(`/notifications/${n.id}/read`, {}).catch(() => {})
+      api.post(`/notifications/${n.id}/read`, {}).catch(() => { })
     }
     setOpen(false)
     if (n.link) navigate(n.link)
@@ -308,7 +309,7 @@ function NotificationBell() {
 
   function markAllRead() {
     setNotifications(ns => ns.map(n => ({ ...n, read: true })))
-    api.post('/notifications/read-all', {}).catch(() => {})
+    api.post('/notifications/read-all', {}).catch(() => { })
   }
 
   return (
@@ -368,17 +369,17 @@ function NotificationBell() {
                         const Icon = NOTIF_ICONS[n.type] || Bell
                         const isGreen = n.type === 'meeting_done'
                         return (
-                          <button key={n.id} onClick={() => handleClick(n)}
-                            className={`w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-white/[0.03] transition-colors ${!n.read ? 'bg-violet-500/5' : ''}`}>
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${isGreen ? 'bg-emerald-500/10' : 'bg-violet-500/10'}`}>
-                              <Icon size={14} className={isGreen ? 'text-emerald-400' : 'text-violet-400'} />
+                          <button style={{ borderRadius: 2 }} key={n.id} onClick={() => handleClick(n)}
+                            className={`w-full flex items-start gap-2.5 px-4 py-2.5 text-left hover:bg-white/[0.03] transition-colors ${!n.read ? 'bg-violet-500/5' : ''}`}>
+                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${isGreen ? 'bg-emerald-500/10' : 'bg-violet-500/10'}`}>
+                              <Icon size={12} className={isGreen ? 'text-emerald-400' : 'text-violet-400'} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className={`text-xs font-semibold leading-snug ${n.read ? 'text-slate-400' : 'text-white'}`}>{n.title}</p>
-                              {n.body && <p className="text-[11px] text-slate-500 mt-0.5 leading-snug line-clamp-2">{n.body}</p>}
-                              <p className="text-[10px] text-slate-600 mt-1">{timeAgo(n.created_at)}</p>
+                              {n.body && <p className="text-[11px] text-slate-500 mt-0.5 leading-snug line-clamp-1">{n.body}</p>}
+                              <p className="text-[10px] text-slate-600 mt-0.5">{timeAgo(n.created_at)}</p>
                             </div>
-                            {!n.read && <div className="w-2 h-2 rounded-full bg-violet-500 shrink-0 mt-2" />}
+                            {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0 mt-1.5" />}
                           </button>
                         )
                       })}
@@ -405,13 +406,13 @@ export default function Sidebar({ active }) {
   const [usage, setUsage] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  useEffect(() => { api.get('/users/me/usage').then(setUsage).catch(() => {}) }, [])
+  useEffect(() => { api.get('/users/me/usage').then(setUsage).catch(() => { }) }, [])
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
-  const plan      = usage?.plan ?? 'free'
-  const used      = usage?.meetings_used ?? 0
-  const limit     = usage?.meetings_limit ?? 3
-  const pct       = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
+  const plan = usage?.plan ?? 'free'
+  const used = usage?.meetings_used ?? 0
+  const limit = usage?.meetings_limit ?? 3
+  const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
   const planLabel = plan === 'free' ? 'Free plan' : plan === 'pro' ? 'Pro plan' : 'Team plan'
 
   function closeMobileSidebar() { setMobileOpen(false) }
@@ -454,9 +455,8 @@ export default function Sidebar({ active }) {
         )}
       </AnimatePresence>
 
-      <aside className={`fixed inset-y-0 left-0 z-[90] w-72 max-w-[86vw] shrink-0 flex flex-col h-screen transition-transform duration-300 md:sticky md:top-0 md:z-auto md:w-60 md:max-w-none md:translate-x-0 ${
-        mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
-      }`} style={{ backgroundColor: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}>
+      <aside className={`fixed inset-y-0 left-0 z-[90] w-72 max-w-[86vw] shrink-0 flex flex-col h-screen transition-transform duration-300 md:sticky md:top-0 md:z-auto md:w-60 md:max-w-none md:translate-x-0 ${mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
+        }`} style={{ backgroundColor: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}>
 
         {/* Logo */}
         <div className="px-5 py-4 flex items-center" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
@@ -528,9 +528,8 @@ export default function Sidebar({ active }) {
                           const isActive = active === key
                           return (
                             <Link key={key} to={to} onClick={closeMobileSidebar}
-                              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                                isActive ? 'nav-active' : 'nav-idle'
-                              }`}>
+                              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive ? 'nav-active' : 'nav-idle'
+                                }`}>
                               {isActive && <span className="absolute left-0 inset-y-1.5 w-0.5 rounded-full bg-violet-400" />}
                               <Icon size={16} />
                               <span className="flex-1">{label}</span>

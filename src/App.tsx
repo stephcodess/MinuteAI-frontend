@@ -27,6 +27,7 @@ import Recordings from './pages/Recordings'
 import Integrations from './pages/Integrations'
 import PdfToAudio from './pages/PdfToAudio'
 import ConnectCard from './pages/ConnectCard'
+import Threads from './pages/Threads'
 import ActionFab from './components/ActionFab'
 import UpdateNotifier from './components/UpdateNotifier'
 
@@ -104,6 +105,7 @@ function AppRoutes() {
           <Route path="/accept-invite" element={<AcceptInvite />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/threads" element={<RequireAuth><Threads /></RequireAuth>} />
           <Route path="/meeting-bots" element={<MeetingBots />} />
           <Route path="/meeting-bots/:sessionId" element={<MeetingBotDetail />} />
           <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />

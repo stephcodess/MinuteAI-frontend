@@ -267,6 +267,10 @@ export function connectWebhook(url: string) {
   return api.post('/integrations/webhook/connect', { url })
 }
 
+export function updateRoutingDestinations(provider: string, destinations: any[]) {
+  return api.put(`/integrations/${provider}/routing`, { destinations })
+}
+
 export function attachPaymentMethod(paymentMethodId: string) {
   return api.post('/billing/attach-payment-method', { payment_method_id: paymentMethodId })
 }
@@ -278,4 +282,32 @@ export function subscribeToPlan(paymentMethodId: string | null | undefined, plan
     interval,
     promo_code: promoCode || undefined,
   })
+}
+
+// ── Meeting Threads ───────────────────────────────────────────────────────────
+
+export function getThreads(workspaceId?: string) {
+  const qs = workspaceId ? `?workspace_id=${workspaceId}` : ''
+  return api.get(`/threads${qs}`)
+}
+
+export function getThread(threadId: string) {
+  return api.get(`/threads/${threadId}`)
+}
+
+export function getThreadForJob(jobId: string) {
+  return api.get(`/threads/for-job/${jobId}`)
+}
+
+export function getThreadContinuity(threadId: string, beforeJobId?: string) {
+  const qs = beforeJobId ? `?before_job_id=${beforeJobId}` : ''
+  return api.get(`/threads/${threadId}/continuity${qs}`)
+}
+
+export function updateThread(threadId: string, body: { name?: string; is_locked?: boolean; category?: string }) {
+  return api.patch(`/threads/${threadId}`, body)
+}
+
+export function deleteThread(threadId: string) {
+  return api.delete(`/threads/${threadId}`)
 }

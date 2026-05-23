@@ -182,6 +182,32 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
         <div className="flex items-center gap-2 mb-0.5">
           <p className="text-sm font-semibold text-white truncate">{meeting.title || 'Untitled meeting'}</p>
           {meeting.starred && <Star size={11} className="text-amber-400 fill-amber-400 shrink-0" />}
+          {meeting.thread_category && (() => {
+            const CAT_COLORS: Record<string, { color: string; bg: string }> = {
+              engineering: { color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' },
+              product:     { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
+              design:      { color: '#f472b6', bg: 'rgba(244,114,182,0.15)' },
+              sales:       { color: '#34d399', bg: 'rgba(52,211,153,0.15)' },
+              marketing:   { color: '#fb923c', bg: 'rgba(251,146,60,0.15)' },
+              client:      { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
+              leadership:  { color: '#e879f9', bg: 'rgba(232,121,249,0.15)' },
+              all_hands:   { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' },
+              one_on_one:  { color: '#38bdf8', bg: 'rgba(56,189,248,0.15)' },
+              other:       { color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
+            }
+            const CAT_LABELS: Record<string, string> = {
+              engineering: 'Engineering', product: 'Product', design: 'Design',
+              sales: 'Sales', marketing: 'Marketing', client: 'Client',
+              leadership: 'Leadership', all_hands: 'All-Hands', one_on_one: '1:1', other: 'Other',
+            }
+            const c = CAT_COLORS[meeting.thread_category] || { color: '#6b7280', bg: 'rgba(107,114,128,0.15)' }
+            return (
+              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md"
+                style={{ background: c.bg, color: c.color }}>
+                {CAT_LABELS[meeting.thread_category] || meeting.thread_category}
+              </span>
+            )
+          })()}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
           <span className="flex items-center gap-1"><Calendar size={9} />{fmtDate(meeting.date)}</span>

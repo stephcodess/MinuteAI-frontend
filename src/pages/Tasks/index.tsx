@@ -115,12 +115,17 @@ function TaskCard({ task, onDragStart, onClick }) {
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
-            {task.deadline && (
-              <span className="flex items-center gap-0.5 text-[10px]" style={{ color: 'var(--text-3)' }}>
-                <CalendarDays size={9} />
-                {task.deadline}
-              </span>
-            )}
+            {task.deadline && (() => {
+              const isOverdue = task.status !== 'done' && task.deadline < new Date().toISOString().slice(0, 10)
+              return (
+                <span className={`flex items-center gap-0.5 text-[10px] ${isOverdue ? 'text-red-400 font-semibold' : ''}`}
+                  style={isOverdue ? undefined : { color: 'var(--text-3)' }}>
+                  <CalendarDays size={9} />
+                  {task.deadline}
+                  {isOverdue && <span className="ml-0.5 px-1 py-0.5 rounded bg-red-500/15 text-[9px] font-bold">overdue</span>}
+                </span>
+              )
+            })()}
             <Avatar user={task.assignee} size={5} />
           </div>
         </div>

@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plug, Link2, CheckCircle2, Loader2, X, ChevronDown, ChevronUp,
   Calendar, MessageSquare, Database, FolderOpen, Zap, BarChart3,
-  CalendarDays, ExternalLink,
+  CalendarDays, ExternalLink, Plus, Trash2, GitBranch, Tag,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
-import { getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration, updateIntegrationSettings, connectWebhook, getUpcomingCalendarEvents, getUpcomingZoomMeetings } from '../../lib/api'
+import { getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration, updateIntegrationSettings, connectWebhook, getUpcomingCalendarEvents, getUpcomingZoomMeetings, updateRoutingDestinations } from '../../lib/api'
+import { CATEGORIES } from '../Threads'
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ const GROUPS = [
     color: 'text-green-400',
     bg: 'bg-green-500/10',
     items: [
-      { provider: 'slack', icon: '💬', desc: 'Post meeting recap to a Slack channel after each session' },
+      { provider: 'slack', icon: '💬', desc: 'Post meeting recap to Slack — route to different channels by meeting category', routing: true },
     ],
   },
   {
@@ -213,17 +214,220 @@ function UpcomingMeetingsPanel({ provider }: { provider: string }) {
   )
 }
 
+// ── Slack routing panel ───────────────────────────────────────────────────────
+
+interface SlackDest {
+  id: string
+  name: string
+  webhook_url: string
+  categories: string[]
+  keywords: string[]
+  is_default: boolean
+}
+
+function SlackRoutingPanel({ settings, onSaved }: { settings: any; onSaved: (dests: SlackDest[]) => void }) {
+  const existingDests: SlackDest[] = settings?.destinations || []
+  const primaryWebhookUrl: string = settings?.webhook_url || ''
+  const primaryChannel: string = settings?.channel || '#general'
+
+  const [dests, setDests] = useState<SlackDest[]>(() => {
+    if (existingDests.length > 0) return existingDests
+    // Seed with the primary channel from OAuth as default
+    if (primaryWebhookUrl) {
+      return [{
+        id: 'primary',
+        name: primaryChannel,
+        webhook_url: primaryWebhookUrl,
+        categories: [],
+        keywords: [],
+        is_default: true,
+      }]
+    }
+    return []
+  })
+  const [saving, setSaving] = useState(false)
+  const [catOpen, setCatOpen] = useState<string | null>(null)
+
+  function addDest() {
+    const id = crypto.randomUUID()
+    setDests(ds => [...ds, { id, name: '', webhook_url: '', categories: [], keywords: [], is_default: false }])
+  }
+
+  function removeDest(id: string) {
+    setDests(ds => {
+      const next = ds.filter(d => d.id !== id)
+      if (next.length > 0 && !next.some(d => d.is_default)) {
+        next[0].is_default = true
+      }
+      return next
+    })
+  }
+
+  function updateDest(id: string, patch: Partial<SlackDest>) {
+    setDests(ds => ds.map(d => d.id === id ? { ...d, ...patch } : d))
+  }
+
+  function setDefault(id: string) {
+    setDests(ds => ds.map(d => ({ ...d, is_default: d.id === id })))
+  }
+
+  function toggleCategory(destId: string, cat: string) {
+    setDests(ds => ds.map(d => {
+      if (d.id !== destId) return d
+      const has = d.categories.includes(cat)
+      return { ...d, categories: has ? d.categories.filter(c => c !== cat) : [...d.categories, cat] }
+    }))
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      await updateRoutingDestinations('slack', dests)
+      onSaved(dests)
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="space-y-3 py-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <GitBranch size={11} className="text-violet-400" />
+          <p className="text-xs font-bold" style={{ color: 'var(--text-1)' }}>Channel Routing</p>
+        </div>
+        <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>Route meetings to different channels by category</p>
+      </div>
+
+      {dests.length === 0 && (
+        <div className="rounded-xl border px-3 py-4 text-center"
+          style={{ borderColor: 'var(--divider)', background: 'var(--input-bg)' }}>
+          <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+            No routing rules yet. Add a channel below.
+          </p>
+        </div>
+      )}
+
+      {dests.map((dest, idx) => (
+        <div key={dest.id} className="rounded-xl border p-3 space-y-2.5"
+          style={{ borderColor: dest.is_default ? 'rgba(139,92,246,0.4)' : 'var(--divider)', background: dest.is_default ? 'rgba(139,92,246,0.05)' : 'var(--input-bg)' }}>
+
+          {/* Row 1: name + default badge + delete */}
+          <div className="flex items-center gap-2">
+            <input
+              value={dest.name}
+              onChange={e => updateDest(dest.id, { name: e.target.value })}
+              placeholder="Channel name (e.g. #engineering)"
+              className="flex-1 rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+              style={{ background: 'var(--card-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+            />
+            {!dest.is_default ? (
+              <button
+                onClick={() => setDefault(dest.id)}
+                className="text-[10px] font-semibold px-2 py-1 rounded-lg transition-colors"
+                style={{ background: 'var(--input-bg)', color: 'var(--text-3)', border: '1px solid var(--divider)' }}>
+                Set default
+              </button>
+            ) : (
+              <span className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-violet-500/15 text-violet-400 shrink-0">
+                Default
+              </span>
+            )}
+            {dests.length > 1 && (
+              <button onClick={() => removeDest(dest.id)} className="p-1 rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-colors shrink-0" style={{ color: 'var(--text-3)' }}>
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+
+          {/* Row 2: webhook URL */}
+          <input
+            value={dest.webhook_url}
+            onChange={e => updateDest(dest.id, { webhook_url: e.target.value })}
+            placeholder="Slack Incoming Webhook URL"
+            type="url"
+            className="w-full rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+            style={{ background: 'var(--card-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+          />
+
+          {/* Row 3: category filter */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Tag size={9} style={{ color: 'var(--text-3)' }} />
+              <p className="text-[10px] font-semibold" style={{ color: 'var(--text-3)' }}>
+                Post here when meeting category is…
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {CATEGORIES.map(cat => {
+                const active = dest.categories.includes(cat.value)
+                return (
+                  <button
+                    key={cat.value}
+                    onClick={() => toggleCategory(dest.id, cat.value)}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all"
+                    style={{
+                      background: active ? cat.bg : 'var(--input-bg)',
+                      color: active ? cat.color : 'var(--text-3)',
+                      border: `1px solid ${active ? cat.color + '40' : 'var(--divider)'}`,
+                    }}>
+                    {cat.label}
+                  </button>
+                )
+              })}
+            </div>
+            {dest.categories.length === 0 && (
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>
+                {dest.is_default ? 'All meetings (fallback default)' : 'Select categories to match'}
+              </p>
+            )}
+          </div>
+
+          {/* Row 4: keywords */}
+          <div>
+            <p className="text-[10px] font-semibold mb-1" style={{ color: 'var(--text-3)' }}>Keywords (comma-separated, optional)</p>
+            <input
+              value={(dest.keywords || []).join(', ')}
+              onChange={e => updateDest(dest.id, { keywords: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+              placeholder="e.g. standup, sprint, review"
+              className="w-full rounded-lg border px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+              style={{ background: 'var(--card-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+            />
+          </div>
+        </div>
+      ))}
+
+      <button
+        onClick={addDest}
+        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition-colors w-full justify-center"
+        style={{ background: 'var(--input-bg)', color: 'var(--text-2)', border: '1px dashed var(--divider)' }}>
+        <Plus size={12} /> Add channel
+      </button>
+
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={save}
+          disabled={saving || dests.some(d => !d.webhook_url.trim())}
+          className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors">
+          {saving ? <Loader2 size={11} className="animate-spin" /> : null}
+          Save routing
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Integration card ──────────────────────────────────────────────────────────
 
 function IntegrationCard({
-  provider, icon, desc, autoJoin, comingSoon, config,
+  provider, icon, desc, autoJoin, comingSoon, config, routing,
   info, connecting, disconnecting, configuring, configInputs, configSaving, webhookUrl,
   meetingsOpen, onToggleMeetings,
   onConnect, onDisconnect, onToggleConfig, onSaveConfig, onConfigInput,
-  onWebhookUrl, onConnectWebhook,
+  onWebhookUrl, onConnectWebhook, onRoutingSaved,
 }: any) {
   const isConfiguring    = configuring === provider && provider !== 'webhook'
   const isWebhookForm    = configuring === 'webhook' && provider === 'webhook'
+  const isRoutingPanel   = routing && configuring === `routing:${provider}`
   const needsConfig      = config && info.connected && !info.settings?.[config.key]
   const hasMeetingsPanel = (provider === 'google' || provider === 'zoom') && info.connected
 
@@ -323,7 +527,7 @@ function IntegrationCard({
         </div>
 
         {/* ── Secondary actions row (connected only) ── */}
-        {info.connected && (config || hasMeetingsPanel) && (
+        {info.connected && (config || routing || hasMeetingsPanel) && (
           <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--card-border)' }}>
             {config && (
               <button
@@ -333,6 +537,17 @@ function IntegrationCard({
               >
                 {isConfiguring ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                 Configure
+              </button>
+            )}
+            {routing && (
+              <button
+                onClick={() => onToggleConfig(isRoutingPanel ? null : `routing:${provider}`)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${isRoutingPanel ? 'bg-violet-500/15 text-violet-400' : 'hover:bg-white/[0.04]'}`}
+                style={isRoutingPanel ? {} : { background: 'var(--input-bg)', color: 'var(--text-2)' }}
+              >
+                <GitBranch size={11} />
+                Routing
+                {isRoutingPanel ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
               </button>
             )}
             {hasMeetingsPanel && (
@@ -373,7 +588,7 @@ function IntegrationCard({
 
       {/* Inline config panel */}
       <AnimatePresence>
-        {(isConfiguring || isWebhookForm) && (
+        {(isConfiguring || isWebhookForm || isRoutingPanel) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -383,7 +598,12 @@ function IntegrationCard({
           >
             <div className="px-4 pb-4 pt-0 space-y-3 border-t" style={{ borderColor: 'var(--divider)' }}>
               <div className="pt-3">
-                {isWebhookForm ? (
+                {isRoutingPanel ? (
+                  <SlackRoutingPanel
+                    settings={info.settings || {}}
+                    onSaved={(dests) => { onRoutingSaved(provider, dests); onToggleConfig(null) }}
+                  />
+                ) : isWebhookForm ? (
                   <>
                     <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-2)' }}>Webhook / Zapier URL</p>
                     <p className="text-xs mb-2" style={{ color: 'var(--text-3)' }}>
@@ -670,7 +890,7 @@ export default function Integrations() {
                       onDisconnect={handleDisconnect}
                       onToggleConfig={(p: string | null) => {
                         setConfiguring(p)
-                        if (p && p !== 'webhook') {
+                        if (p && p !== 'webhook' && !p.startsWith('routing:')) {
                           setConfigInputs(info.settings || {})
                         }
                       }}
@@ -678,6 +898,13 @@ export default function Integrations() {
                       onConfigInput={(key: string, val: string) => setConfigInputs(prev => ({ ...prev, [key]: val }))}
                       onWebhookUrl={setWebhookUrl}
                       onConnectWebhook={handleConnectWebhook}
+                      onRoutingSaved={(provider: string, dests: any[]) => {
+                        setIntegrations(prev => ({
+                          ...prev,
+                          [provider]: { ...prev[provider], settings: { ...(prev[provider]?.settings || {}), destinations: dests } },
+                        }))
+                        setBanner({ type: 'success', msg: 'Routing rules saved.' })
+                      }}
                     />
                   )
                 })}

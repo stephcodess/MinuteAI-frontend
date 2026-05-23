@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { Loader2 } from 'lucide-react'
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '')
 
-const CARD_ELEMENT_OPTIONS = {
+const ELEMENT_OPTIONS = {
   style: {
     base: {
       color: '#e2e8f0',
@@ -13,10 +13,13 @@ const CARD_ELEMENT_OPTIONS = {
       fontSize: '14px',
       fontSmoothing: 'antialiased',
       '::placeholder': { color: '#475569' },
+      ':-webkit-autofill': {
+        color: '#e2e8f0',
+        transition: 'background-color 5000s ease-in-out 0s',
+      },
     },
     invalid: { color: '#f87171', iconColor: '#f87171' },
   },
-  hidePostalCode: true,
 }
 
 interface InnerProps {
@@ -37,7 +40,7 @@ function CardFormInner({ onSubmit, onComplete, buttonLabel = 'Save card' }: Inne
     setError('')
     setBusy(true)
 
-    const card = elements.getElement(CardElement)
+    const card = elements.getElement(CardNumberElement)
     if (!card) { setBusy(false); return }
 
     const { error: pmErr, paymentMethod } = await stripe.createPaymentMethod({ type: 'card', card })
@@ -69,11 +72,28 @@ function CardFormInner({ onSubmit, onComplete, buttonLabel = 'Save card' }: Inne
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div
-        className="rounded-xl border px-4 py-4"
-        style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
-      >
-        <CardElement options={CARD_ELEMENT_OPTIONS} />
+      <div className="space-y-3">
+        <div
+          className="rounded-xl border px-4 py-4"
+          style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+        >
+          <CardNumberElement options={{ ...ELEMENT_OPTIONS, showIcon: true }} />
+        </div>
+        
+        <div className="flex gap-3">
+          <div
+            className="flex-1 rounded-xl border px-4 py-4"
+            style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+          >
+            <CardExpiryElement options={ELEMENT_OPTIONS} />
+          </div>
+          <div
+            className="flex-1 rounded-xl border px-4 py-4"
+            style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+          >
+            <CardCvcElement options={ELEMENT_OPTIONS} />
+          </div>
+        </div>
       </div>
 
       {error && (

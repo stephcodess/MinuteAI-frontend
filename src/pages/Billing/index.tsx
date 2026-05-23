@@ -637,32 +637,8 @@ export default function Billing() {
 
             {/* ── Payment tab ── */}
             {tab === 'payment' && (
-              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-                {isPaid ? (
-                  <div className="flex flex-col items-center gap-5 glass-card border rounded-2xl p-6 text-center sm:p-8">
-                    <div className="w-14 h-14 rounded-2xl bg-violet-500/10 flex items-center justify-center">
-                      <CreditCard size={24} className="text-violet-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold t1 mb-1">Manage your payment method</h3>
-                      <p className="text-sm t3 max-w-xs">
-                        Update your card, billing address, or cancel your subscription via the Stripe customer portal.
-                      </p>
-                    </div>
-                    <button
-                      onClick={handlePortal}
-                      disabled={portalBusy}
-                      className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 disabled:opacity-60 sm:w-auto"
-                    >
-                      {portalBusy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
-                      Open billing portal
-                    </button>
-                    <p className="flex items-center justify-center gap-1.5 text-xs t3">
-                      <Shield size={11} className="t3" />
-                      Secured by Stripe — we never store card details
-                    </p>
-                  </div>
-                ) : loadingPaymentMethod ? (
+              <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-4">
+                {loadingPaymentMethod ? (
                   <div className="flex flex-col items-center gap-3 glass-card border rounded-2xl p-8 sm:p-10">
                     <Loader2 size={22} className="text-violet-400 animate-spin" />
                     <p className="text-sm text-gray-400">Loading payment method...</p>
@@ -684,19 +660,32 @@ export default function Billing() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={removePaymentMethod}
-                        disabled={paymentActionBusy}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 disabled:opacity-60 sm:w-auto"
-                      >
-                        {paymentActionBusy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                        Remove card
-                      </button>
+                      {isPaid ? (
+                        <button
+                          onClick={handlePortal}
+                          disabled={portalBusy}
+                          className="flex w-full items-center justify-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-60 sm:w-auto"
+                        >
+                          {portalBusy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
+                          Manage in Portal
+                        </button>
+                      ) : (
+                        <button
+                          onClick={removePaymentMethod}
+                          disabled={paymentActionBusy}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 disabled:opacity-60 sm:w-auto"
+                        >
+                          {paymentActionBusy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          Remove card
+                        </button>
+                      )}
                     </div>
                     {paymentError ? <p className="mt-4 text-sm font-medium text-red-400">{paymentError}</p> : null}
-                    <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                      <p className="text-sm t2">This card will be used automatically when you upgrade.</p>
-                    </div>
+                    {!isPaid && (
+                      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                        <p className="text-sm t2">This card will be used automatically when you upgrade.</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center glass-card border rounded-2xl p-6 text-center sm:p-10">
@@ -704,15 +693,26 @@ export default function Billing() {
                       <CreditCard size={28} className="text-slate-500" />
                     </div>
                     <h3 className="font-bold t1 mb-1">No payment method on file</h3>
-                    <p className="text-sm text-gray-400 mb-6 max-w-xs">
-                      You're on the free plan — no card required. Add one when you're ready to upgrade.
+                    <p className="text-sm text-gray-400 mb-6 max-w-sm">
+                      {isPaid ? "You have an active subscription, but we couldn't load your card details." : "You're on the free plan — no card required. Add one when you're ready to upgrade."}
                     </p>
-                    <button
-                      onClick={() => setTab('plan')}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 sm:w-auto"
-                    >
-                      <Zap size={14} /> View upgrade options
-                    </button>
+                    {isPaid ? (
+                      <button
+                        onClick={handlePortal}
+                        disabled={portalBusy}
+                        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 disabled:opacity-60 sm:w-auto"
+                      >
+                        {portalBusy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
+                        Open billing portal
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setTab('plan')}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 sm:w-auto"
+                      >
+                        <Zap size={14} /> View upgrade options
+                      </button>
+                    )}
                     <p className="mt-4 flex items-center justify-center gap-1.5 text-xs t3">
                       <Shield size={11} className="t3" />
                       Payments processed securely via Stripe

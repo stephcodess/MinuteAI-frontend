@@ -8,10 +8,11 @@ import {
   Clock, Hash, AlignLeft, ChevronLeft, ChevronRight,
   X, Zap, BarChart2, Minimize2, Lightbulb, HelpCircle,
   ArrowRight, MessageSquare, Target, List, ArrowLeft,
+  GitBranch, AlertCircle, Share2,
 } from 'lucide-react'
 import { useResults } from '../../hooks/useResults'
 import { useWorkspace } from '../../context/WorkspaceContext'
-import { api } from '../../lib/api'
+import { api, getThreadForJob, getThreadContinuity, updateThread } from '../../lib/api'
 import Sidebar from '../../components/Sidebar'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -886,6 +887,382 @@ function TemplatePickerModal({ format, onClose, onDownload }) {
   )
 }
 
+// ── Share modal ───────────────────────────────────────────────────────────────
+
+const SHAREABLE_PROVIDERS: Record<string, { label: string; icon: string }> = {
+  slack:        { label: 'Slack',        icon: '💬' },
+  notion:       { label: 'Notion',       icon: '⬜' },
+  hubspot:      { label: 'HubSpot',      icon: '🟠' },
+  linear:       { label: 'Linear',       icon: '🔷' },
+  google_drive: { label: 'Google Drive', icon: '📁' },
+  webhook:      { label: 'Webhook',      icon: '🔗' },
+}
+
+function ShareModal({ jobId, onClose }: { jobId: string; onClose: () => void }) {
+  const [integrations, setIntegrations] = useState<any>({})
+  const [selected,     setSelected]     = useState<Set<string>>(new Set())
+  const [loading,      setLoading]      = useState(true)
+  const [sharing,      setSharing]      = useState(false)
+  const [results,      setResults]      = useState<Record<string, string> | null>(null)
+
+  useEffect(() => {
+    api.get('/integrations')
+      .then(setIntegrations)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const connected = Object.entries(SHAREABLE_PROVIDERS).filter(
+    ([provider]) => integrations[provider]?.connected
+  )
+
+  function toggle(provider: string) {
+    setSelected(s => {
+      const next = new Set(s)
+      next.has(provider) ? next.delete(provider) : next.add(provider)
+      return next
+    })
+  }
+
+  async function handleShare() {
+    if (!selected.size) return
+    setSharing(true)
+    try {
+      const data: any = await api.post(`/results/${jobId}/share`, { providers: [...selected] })
+      setResults(data.results)
+    } catch (err: any) {
+      setResults({ error: err.message })
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 12 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }}
+          transition={{ duration: 0.18 }}
+          className="relative z-10 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden"
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+        >
+          {/* header */}
+          <div className="flex items-center justify-between px-5 py-4 border-b"
+            style={{ borderColor: 'var(--card-border)' }}>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-violet-500/15 flex items-center justify-center">
+                <Share2 size={13} className="text-violet-400" />
+              </div>
+              <h2 className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Share meeting</h2>
+            </div>
+            <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[0.08]"
+              style={{ color: 'var(--text-3)' }}>
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="px-5 py-4">
+            {loading ? (
+              <div className="flex items-center justify-center py-8 gap-2" style={{ color: 'var(--text-3)' }}>
+                <Loader2 size={15} className="animate-spin" />
+                <span className="text-sm">Loading integrations…</span>
+              </div>
+            ) : results ? (
+              /* results view */
+              <div className="space-y-2 py-2">
+                {Object.entries(results).map(([provider, status]) => {
+                  const meta = SHAREABLE_PROVIDERS[provider]
+                  const ok = status === 'ok'
+                  return (
+                    <div key={provider} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
+                      style={{ background: 'var(--input-bg)' }}>
+                      <span className="text-lg">{meta?.icon ?? '🔗'}</span>
+                      <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                        {meta?.label ?? provider}
+                      </span>
+                      {ok
+                        ? <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1"><CheckCircle2 size={13} /> Sent</span>
+                        : <span className="text-xs text-red-400">{status}</span>
+                      }
+                    </div>
+                  )
+                })}
+                <button onClick={onClose}
+                  className="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all">
+                  Done
+                </button>
+              </div>
+            ) : connected.length === 0 ? (
+              /* no connected apps */
+              <div className="text-center py-8">
+                <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-1)' }}>No apps connected</p>
+                <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Connect an integration first to share meetings.</p>
+                <button onClick={onClose}
+                  className="text-xs text-violet-400 hover:text-violet-300 font-semibold transition-colors">
+                  Go to Integrations →
+                </button>
+              </div>
+            ) : (
+              /* provider selection */
+              <>
+                <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
+                  Select where to share this meeting:
+                </p>
+                <div className="space-y-2 mb-4">
+                  {connected.map(([provider, meta]) => {
+                    const isSelected = selected.has(provider)
+                    return (
+                      <button
+                        key={provider}
+                        onClick={() => toggle(provider)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${
+                          isSelected ? 'border-violet-500/50 bg-violet-500/10' : 'hover:border-violet-500/20'
+                        }`}
+                        style={{ borderColor: isSelected ? undefined : 'var(--divider)', background: isSelected ? undefined : 'var(--input-bg)' }}
+                      >
+                        <span className="text-lg">{meta.icon}</span>
+                        <span className="flex-1 text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                          {meta.label}
+                        </span>
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                          isSelected ? 'bg-violet-500 border-violet-500' : ''
+                        }`} style={{ borderColor: isSelected ? undefined : 'var(--divider)' }}>
+                          {isSelected && <CheckCircle2 size={10} className="text-white" />}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={handleShare}
+                  disabled={sharing || !selected.size}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold bg-violet-600 hover:bg-violet-700 disabled:opacity-40 text-white transition-all"
+                >
+                  {sharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                  {sharing ? 'Sharing…' : `Share to ${selected.size || ''} app${selected.size !== 1 ? 's' : ''}`}
+                </button>
+              </>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </>
+  )
+}
+
+// ── Thread banner ─────────────────────────────────────────────────────────────
+
+const CATEGORIES = [
+  { value: 'engineering',  label: 'Engineering',   color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
+  { value: 'product',      label: 'Product',        color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+  { value: 'design',       label: 'Design',         color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
+  { value: 'sales',        label: 'Sales',          color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
+  { value: 'marketing',    label: 'Marketing',      color: '#fb923c', bg: 'rgba(251,146,60,0.12)'  },
+  { value: 'client',       label: 'Client',         color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+  { value: 'leadership',   label: 'Leadership',     color: '#e879f9', bg: 'rgba(232,121,249,0.12)' },
+  { value: 'all_hands',    label: 'All-Hands',      color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
+  { value: 'one_on_one',   label: '1:1',            color: '#38bdf8', bg: 'rgba(56,189,248,0.12)' },
+  { value: 'other',        label: 'Other',          color: '#6b7280', bg: 'rgba(107,114,128,0.12)' },
+]
+
+function getCategoryMeta(value: string | null | undefined) {
+  return CATEGORIES.find(c => c.value === value) ?? null
+}
+
+function ThreadBanner({ thread, onCategoryChanged }: { thread: any; onCategoryChanged?: (cat: string | null) => void }) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const catMeta = getCategoryMeta(thread.category)
+
+  async function setCategory(value: string | null) {
+    if (value === (thread.category ?? null)) { setPickerOpen(false); return }
+    setSaving(true)
+    setPickerOpen(false)
+    try {
+      await updateThread(thread.id, { category: value ?? '' })
+      onCategoryChanged?.(value)
+    } catch {}
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border mb-4 relative"
+      style={{ background: 'var(--input-bg)', borderColor: 'var(--divider)' }}>
+
+      {/* Thread icon */}
+      <div className="w-6 h-6 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
+        <GitBranch size={12} className="text-violet-400" />
+      </div>
+
+      {/* Thread info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-1)' }}>
+          <Link to="/threads" className="text-violet-400 hover:underline">{thread.name}</Link>
+          <span style={{ color: 'var(--text-3)' }}> · Session {thread.session_number} of {thread.session_count}</span>
+        </p>
+        <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
+          Recurring meeting series
+        </p>
+      </div>
+
+      {/* Category badge / picker */}
+      <div className="relative shrink-0">
+        <button
+          onClick={() => setPickerOpen(o => !o)}
+          disabled={saving}
+          className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors"
+          style={catMeta
+            ? { background: catMeta.bg, color: catMeta.color }
+            : { background: 'var(--card-bg)', color: 'var(--text-3)', border: '1px dashed var(--divider)' }}
+        >
+          {saving && <Loader2 size={10} className="animate-spin" />}
+          {catMeta ? catMeta.label : 'Set type…'}
+        </button>
+
+        <AnimatePresence>
+          {pickerOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setPickerOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.1 }}
+                className="absolute right-0 top-full mt-1 z-50 rounded-xl shadow-xl p-1.5 grid grid-cols-2 gap-0.5 w-52"
+                style={{ background: 'var(--card-bg)', border: '1px solid var(--divider)' }}>
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.value}
+                    onClick={() => setCategory(cat.value)}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg text-left transition-all"
+                    style={{
+                      background: thread.category === cat.value ? cat.bg : 'transparent',
+                      color: cat.color,
+                    }}>
+                    {cat.label}
+                  </button>
+                ))}
+                {thread.category && (
+                  <button
+                    onClick={() => setCategory(null)}
+                    className="col-span-2 text-[10px] font-medium py-1 text-center rounded-lg transition-colors"
+                    style={{ color: 'var(--text-3)' }}>
+                    Clear type
+                  </button>
+                )}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
+// ── Continuity panel ──────────────────────────────────────────────────────────
+
+function ContinuityPanel({ data }: { data: any }) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  if (!data?.has_previous) return null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border mb-4 overflow-hidden"
+      style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
+    >
+      <button
+        onClick={() => setCollapsed(v => !v)}
+        className="w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-white/[0.02]"
+        style={{ borderBottom: collapsed ? 'none' : '1px solid var(--card-border)' }}
+      >
+        <div className="w-7 h-7 rounded-lg bg-indigo-500/15 flex items-center justify-center shrink-0">
+          <GitBranch size={13} className="text-indigo-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
+            Last time in this series
+          </p>
+          <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
+            Session {data.session_number}
+            {data.title ? ` · ${data.title}` : ''}
+            {data.date ? ` · ${new Date(data.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}
+          </p>
+        </div>
+        <ChevronDown size={14} className={`shrink-0 transition-transform duration-200 ${collapsed ? '' : 'rotate-180'}`}
+          style={{ color: 'var(--text-3)' }} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="px-5 py-4 space-y-4">
+              {data.overview && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-3)' }}>Overview</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>{data.overview}</p>
+                </div>
+              )}
+
+              {data.key_decisions?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-3)' }}>Key Decisions</p>
+                  <ul className="space-y-1.5">
+                    {data.key_decisions.map((d: any, i: number) => (
+                      <li key={i} className="flex gap-2 text-sm" style={{ color: 'var(--text-2)' }}>
+                        <CheckCircle2 size={13} className="text-indigo-400 mt-0.5 shrink-0" />
+                        {typeof d === 'string' ? d : d.decision}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {data.open_action_items?.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-3)' }}>
+                    Open Action Items from Last Session
+                  </p>
+                  <div className="space-y-1.5">
+                    {data.open_action_items.map((item: any) => (
+                      <div key={item.id} className="flex items-start gap-2.5 py-1.5 px-3 rounded-lg"
+                        style={{ background: 'var(--input-bg)' }}>
+                        <AlertCircle size={12} className="text-amber-400 mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs leading-snug" style={{ color: 'var(--text-1)' }}>{item.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {item.owner_name && (
+                              <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{item.owner_name}</span>
+                            )}
+                            {item.deadline && (
+                              <span className="flex items-center gap-1 text-[10px] text-amber-400">
+                                <CalendarDays size={9} /> {item.deadline}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
 // ── Results page ──────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -900,7 +1277,26 @@ export default function Results() {
   const [activeTab,     setActiveTab]     = useState('minutes')
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
   const [speakerModal,  setSpeakerModal]  = useState(false)
+  const [shareModal,    setShareModal]    = useState(false)
   const [headerExpanded, setHeaderExpanded] = useState(false)
+  const [threadInfo,    setThreadInfo]    = useState<any | null>(null)
+  const [continuity,    setContinuity]    = useState<any | null>(null)
+
+  useEffect(() => {
+    if (!jobId) return
+    getThreadForJob(jobId)
+      .then((data: any) => {
+        if (data?.id) {
+          setThreadInfo(data)
+          if (data.current_session?.session_number > 1) {
+            getThreadContinuity(data.id, jobId)
+              .then(setContinuity)
+              .catch(() => {})
+          }
+        }
+      })
+      .catch(() => {})
+  }, [jobId])
 
   async function copyText() {
     if (!minutes?.plainText) return
@@ -1019,6 +1415,11 @@ export default function Results() {
                   style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
                   <Users size={14} /> Name Speakers
                 </button>
+                <button onClick={() => setShareModal(true)}
+                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
+                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+                  <Share2 size={14} /> Share
+                </button>
                 <button onClick={() => setTemplateModal('pdf')}
                   className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
                   style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
@@ -1045,8 +1446,21 @@ export default function Results() {
         <div className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
 
+            {/* thread banner */}
+            {threadInfo?.id && (
+              <div className="pt-5">
+                <ThreadBanner
+                  thread={{
+                    ...threadInfo,
+                    session_number: threadInfo.current_session?.session_number,
+                  }}
+                  onCategoryChanged={(cat) => setThreadInfo((t: any) => ({ ...t, category: cat }))}
+                />
+              </div>
+            )}
+
             {/* tab strip */}
-            <div className="pt-6 mb-6 grid w-fit grid-cols-2 gap-1 rounded-xl p-1" style={{ background: 'var(--input-bg)' }}>
+            <div className={`${threadInfo?.id ? '' : 'pt-6'} mb-6 grid w-fit grid-cols-2 gap-1 rounded-xl p-1`} style={{ background: 'var(--input-bg)' }}>
               {TABS.map(tab => (
                 <button
                   key={tab.key}
@@ -1068,6 +1482,7 @@ export default function Results() {
                 <motion.div key="minutes"
                   initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.18 }}>
+                  <ContinuityPanel data={continuity} />
                   <MinutesTab minutes={minutes} copied={copied} onCopy={copyText} />
                 </motion.div>
               ) : (
@@ -1103,6 +1518,12 @@ export default function Results() {
       {speakerModal && (
         <SpeakerNamesModal jobId={jobId} onClose={() => setSpeakerModal(false)} onApplied={refresh} />
       )}
+
+      <AnimatePresence>
+        {shareModal && (
+          <ShareModal jobId={jobId} onClose={() => setShareModal(false)} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
