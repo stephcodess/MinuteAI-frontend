@@ -5,7 +5,7 @@ import {
   User, Lock, Bell, Trash2, CheckCircle, Eye, EyeOff,
   AlertTriangle, Save, Zap, Globe, Moon, Sun, Monitor,
   Download, Shield, Camera, Loader2, Link2, Settings as SettingsIcon,
-  ArrowRight,
+  ArrowRight, Bot,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Sidebar from '../../components/Sidebar'
@@ -225,10 +225,12 @@ export default function Settings() {
   }
 
   // preferences
-  const [timezone, setTimezone]   = useState('UTC')
-  const [language, setLanguage]   = useState('en')
-  const [theme, setTheme]         = useState('system')
-  const [prefSaved, setPrefSaved] = useState(false)
+  const [timezone, setTimezone]       = useState('UTC')
+  const [language, setLanguage]       = useState('en')
+  const [theme, setTheme]             = useState('system')
+  const [prefSaved, setPrefSaved]     = useState(false)
+  const [meetingJoin, setMeetingJoin] = useState<string | null>(null)
+  const [recapTo, setRecapTo]         = useState<string | null>(null)
 
   // danger zone
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -250,6 +252,8 @@ export default function Settings() {
       setTimezone(p.timezone || 'UTC')
       setLanguage(p.language || 'en')
       setTheme(p.theme || 'system')
+      if (p.meeting_join) setMeetingJoin(p.meeting_join)
+      if (p.recap_to) setRecapTo(p.recap_to)
     }).catch(() => {})
   }, [])
 
@@ -340,7 +344,7 @@ export default function Settings() {
   async function savePrefs(e) {
     e.preventDefault()
     try {
-      await api.patch('/users/me/preferences', { timezone, language, theme })
+      await api.patch('/users/me/preferences', { timezone, language, theme, meeting_join: meetingJoin, recap_to: recapTo })
       setPrefSaved(true)
       setTimeout(() => setPrefSaved(false), 2500)
     } catch (err) {}
@@ -663,8 +667,84 @@ export default function Settings() {
               </form>
             </Section>
 
+            {/* Meeting preferences */}
+            <Section icon={Bot} title="Meeting preferences" desc="Control how the bot joins meetings and who gets the recap" index={5}>
+              <form onSubmit={savePrefs} className="space-y-6">
+                <div>
+                  <p className="text-sm font-semibold text-white mb-3">When should the bot join?</p>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'all',       label: 'All meetings',          desc: 'Join every meeting on my calendar' },
+                      { value: 'own',       label: 'Meetings I organise',   desc: 'Only meetings where I am the host' },
+                      { value: 'teammates', label: 'Meetings with my team', desc: 'Meetings that include a teammate' },
+                      { value: 'invite',    label: 'Manual only',           desc: 'I will invite the bot each time' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setMeetingJoin(opt.value)}
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                          meetingJoin === opt.value
+                            ? 'border-violet-400/60 bg-violet-500/10'
+                            : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-white">{opt.label}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                          </div>
+                          {meetingJoin === opt.value && (
+                            <div className="w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
+                              <CheckCircle size={10} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-white mb-3">Who gets the recap?</p>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'everyone', label: 'All attendees', desc: 'Send notes to everyone in the invite' },
+                      { value: 'team',     label: 'My team only',  desc: 'Send only to teammates in your workspace' },
+                      { value: 'me',       label: 'Just me',       desc: 'Keep notes private' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setRecapTo(opt.value)}
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                          recapTo === opt.value
+                            ? 'border-violet-400/60 bg-violet-500/10'
+                            : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-white">{opt.label}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                          </div>
+                          {recapTo === opt.value && (
+                            <div className="w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
+                              <CheckCircle size={10} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <SaveBtn saved={prefSaved} label="Save preferences" />
+              </form>
+            </Section>
+
             {/* Integrations */}
-            <Section icon={Link2} title="Integrations" desc="Connect your tools — notes auto-sync after every meeting" index={5}>
+            <Section icon={Link2} title="Integrations" desc="Connect your tools — notes auto-sync after every meeting" index={6}>
               <Link to="/integrations"
                 className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.06] bg-white/[0.04] px-5 py-4 hover:bg-violet-500/5 hover:border-violet-500/20 transition-all group">
                 <div>
@@ -676,7 +756,7 @@ export default function Settings() {
             </Section>
 
             {/* Privacy & data */}
-            <Section icon={Shield} title="Privacy & data" desc="How your recordings and transcripts are processed" index={6}>
+            <Section icon={Shield} title="Privacy & data" desc="How your recordings and transcripts are processed" index={7}>
               <div className="space-y-5">
                 <div>
                   <p className="text-sm font-semibold text-white mb-2">Third-party AI processors</p>
@@ -711,7 +791,7 @@ export default function Settings() {
             </Section>
 
             {/* Danger zone */}
-            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={7} danger>
+            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={8} danger>
               {!showDelete ? (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">

@@ -255,7 +255,7 @@ export function getUpcomingZoomMeetings() {
   return api.get('/integrations/zoom/upcoming')
 }
 
-export function updateIntegrationSettings(provider: string, settings: Record<string, string>) {
+export function updateIntegrationSettings(provider: string, settings: Record<string, unknown>) {
   return api.patch(`/integrations/${provider}/settings`, settings)
 }
 

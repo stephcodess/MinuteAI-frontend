@@ -416,6 +416,213 @@ function SlackRoutingPanel({ settings, onSaved }: { settings: any; onSaved: (des
   )
 }
 
+// ── Post-connection setup modal ───────────────────────────────────────────────
+
+const CALENDAR_PROVIDERS = ['google', 'zoom', 'outlook']
+const MESSAGING_PROVIDERS = ['slack', 'notion', 'hubspot', 'linear', 'google_drive', 'webhook']
+
+const JOIN_RULES = [
+  { value: 'all',       label: 'All meetings',          desc: 'Join and record every meeting on your calendar' },
+  { value: 'own',       label: 'Meetings I organise',   desc: 'Only meetings where you are the host' },
+  { value: 'teammates', label: 'Meetings with my team', desc: 'Meetings that include at least one teammate' },
+  { value: 'invite',    label: 'Manual only',           desc: 'I will invite the bot manually each time' },
+]
+
+const SECTION_OPTIONS = [
+  { value: 'overview',     label: 'Summary overview' },
+  { value: 'action_items', label: 'Action items' },
+  { value: 'decisions',    label: 'Key decisions' },
+  { value: 'transcript',   label: 'Full transcript' },
+]
+
+function SetupModal({
+  provider,
+  onDone,
+}: {
+  provider: string
+  onDone: () => void
+}) {
+  const isCalendar = CALENDAR_PROVIDERS.includes(provider)
+  const [joinRule, setJoinRule] = useState('all')
+  const [autoPost, setAutoPost] = useState(true)
+  const [postCategories, setPostCategories] = useState<string[]>([])
+  const [postSections, setPostSections] = useState<string[]>(['overview', 'action_items', 'decisions'])
+  const [saving, setSaving] = useState(false)
+
+  function toggleCat(v: string) {
+    setPostCategories(prev => prev.includes(v) ? prev.filter(c => c !== v) : [...prev, v])
+  }
+
+  function toggleSection(v: string) {
+    setPostSections(prev => prev.includes(v) ? prev.filter(s => s !== v) : [...prev, v])
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      if (isCalendar) {
+        await updateIntegrationSettings(provider, { bot_join_rule: joinRule })
+      } else {
+        await updateIntegrationSettings(provider, {
+          auto_post: autoPost,
+          post_categories: postCategories,
+          post_sections: postSections,
+        })
+      }
+    } catch {}
+    finally {
+      setSaving(false)
+      onDone()
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onDone} />
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        transition={{ duration: 0.2 }}
+        className="relative w-full max-w-md rounded-3xl border border-white/10 bg-[#0f1628] shadow-[0_24px_64px_rgba(0,0,0,0.7)] p-6"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="w-8 h-8 rounded-xl bg-violet-500/20 flex items-center justify-center text-base leading-none">
+            {PROVIDER_LABELS[provider]?.slice(0, 2) ?? '🔌'}
+          </div>
+          <button onClick={onDone} className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/[0.06] transition-colors">
+            <X size={14} />
+          </button>
+        </div>
+
+        <h2 className="text-lg font-bold text-white mt-3 mb-1">
+          {isCalendar ? 'When should the bot join?' : 'Configure posting preferences'}
+        </h2>
+        <p className="text-xs text-slate-500 mb-5">
+          {isCalendar
+            ? `Choose which meetings MinuteAI should automatically join and record from ${PROVIDER_LABELS[provider]}.`
+            : `Set when and what MinuteAI should post to ${PROVIDER_LABELS[provider]}.`}
+        </p>
+
+        {isCalendar ? (
+          <div className="space-y-2">
+            {JOIN_RULES.map(rule => (
+              <button
+                key={rule.value}
+                type="button"
+                onClick={() => setJoinRule(rule.value)}
+                className={`w-full text-left px-4 py-3 rounded-2xl border transition-all ${
+                  joinRule === rule.value
+                    ? 'border-violet-400/60 bg-violet-500/12'
+                    : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{rule.label}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{rule.desc}</p>
+                  </div>
+                  {joinRule === rule.value && (
+                    <div className="w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
+                      <CheckCircle2 size={10} className="text-white" />
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Auto-post toggle */}
+            <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+              <div>
+                <p className="text-sm font-semibold text-white">Auto-post after each meeting</p>
+                <p className="text-xs text-slate-500 mt-0.5">Automatically send notes when processing completes</p>
+              </div>
+              <Toggle checked={autoPost} onChange={setAutoPost} />
+            </div>
+
+            {autoPost && (
+              <>
+                {/* Categories filter */}
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 mb-2">Post only for these meeting types (all if none selected)</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CATEGORIES.map(cat => {
+                      const active = postCategories.includes(cat.value)
+                      return (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => toggleCat(cat.value)}
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all"
+                          style={{
+                            background: active ? cat.bg : 'rgba(255,255,255,0.04)',
+                            color: active ? cat.color : 'var(--text-3)',
+                            border: `1px solid ${active ? cat.color + '40' : 'rgba(255,255,255,0.08)'}`,
+                          }}
+                        >
+                          {cat.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Sections to include */}
+                <div>
+                  <p className="text-xs font-semibold text-slate-400 mb-2">Sections to include in the post</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SECTION_OPTIONS.map(s => {
+                      const active = postSections.includes(s.value)
+                      return (
+                        <button
+                          key={s.value}
+                          type="button"
+                          onClick={() => toggleSection(s.value)}
+                          className={`text-xs font-medium px-3 py-2 rounded-xl border transition-all text-left ${
+                            active
+                              ? 'border-violet-400/60 bg-violet-500/12 text-violet-300'
+                              : 'border-white/[0.08] bg-white/[0.03] text-slate-400 hover:border-white/15'
+                          }`}
+                        >
+                          {active ? '✓ ' : ''}{s.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-3 mt-6">
+          <button
+            type="button"
+            onClick={onDone}
+            className="flex-1 py-3 rounded-2xl border border-white/10 text-slate-400 text-sm font-semibold hover:border-white/20 transition-all"
+          >
+            Skip
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="flex-[2] py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold shadow-[0_4px_16px_rgba(124,58,237,0.4)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.5)] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 size={14} className="animate-spin" /> : null}
+            Save preferences
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 // ── Integration card ──────────────────────────────────────────────────────────
 
 function IntegrationCard({
@@ -565,6 +772,19 @@ function IntegrationCard({
         )}
       </div>
 
+      {/* Zoom scope upgrade notice */}
+      {provider === 'zoom' && info.connected && !info.settings?.scope_v2 && (
+        <div className="mx-4 mb-3 flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/8 px-3 py-2.5">
+          <span className="text-amber-400 text-[11px] flex-1">Reconnect Zoom to enable the scheduled meetings panel.</span>
+          <button
+            onClick={() => onConnect(provider)}
+            className="shrink-0 text-[11px] font-bold text-amber-400 hover:text-amber-300 transition-colors"
+          >
+            Reconnect →
+          </button>
+        </div>
+      )}
+
       {/* Upcoming meetings panel */}
       <AnimatePresence>
         {meetingsOpen && (
@@ -677,6 +897,7 @@ export default function Integrations() {
   const [webhookUrl, setWebhookUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [openMeetingsProvider, setOpenMeetingsProvider] = useState<string | null>(null)
+  const [setupProvider, setSetupProvider] = useState<string | null>(null)
 
   async function loadIntegrations() {
     try {
@@ -697,14 +918,15 @@ export default function Integrations() {
     const error     = searchParams.get('error')
     if (connected) {
       handledOAuthRef.current = true
-      const label = PROVIDER_LABELS[connected] || connected
-      const calendarProviders = ['google', 'zoom', 'outlook']
-      const msg = calendarProviders.includes(connected)
-        ? `${label} connected! Upcoming meetings will be recorded automatically.`
-        : `${label} connected! Meeting notes will be sent after each session.`
-      setBanner({ type: 'success', msg })
       loadIntegrations()
       setSearchParams({}, { replace: true })
+      // Show setup modal for known providers
+      if ([...CALENDAR_PROVIDERS, ...MESSAGING_PROVIDERS].includes(connected)) {
+        setSetupProvider(connected)
+      } else {
+        const label = PROVIDER_LABELS[connected] || connected
+        setBanner({ type: 'success', msg: `${label} connected!` })
+      }
     } else if (error) {
       handledOAuthRef.current = true
       setBanner({ type: 'error', msg: 'Connection failed — please try again.' })
@@ -778,6 +1000,21 @@ export default function Integrations() {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
+      {/* Post-connection setup modal */}
+      <AnimatePresence>
+        {setupProvider && (
+          <SetupModal
+            provider={setupProvider}
+            onDone={() => {
+              const label = PROVIDER_LABELS[setupProvider] || setupProvider
+              setBanner({ type: 'success', msg: `${label} connected and configured!` })
+              setSetupProvider(null)
+              loadIntegrations()
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <Sidebar active="integrations" />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
