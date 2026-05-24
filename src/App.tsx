@@ -21,6 +21,7 @@ import Subscription from './pages/Subscription'
 import Tasks from './pages/Tasks'
 import MeetingBots from './pages/MeetingBots'
 import MeetingBotDetail from './pages/MeetingBotDetail'
+import LiveSession from './pages/LiveSession'
 import LiveTranslator from './pages/LiveTranslator'
 import Onboarding from './pages/Onboarding'
 import Recordings from './pages/Recordings'
@@ -108,6 +109,7 @@ function AppRoutes() {
           <Route path="/threads" element={<RequireAuth><Threads /></RequireAuth>} />
           <Route path="/meeting-bots" element={<MeetingBots />} />
           <Route path="/meeting-bots/:sessionId" element={<MeetingBotDetail />} />
+          <Route path="/live/:shareToken" element={<LiveSession />} />
           <Route path="/translator" element={<RequireAuth><LiveTranslator /></RequireAuth>} />
           <Route path="/recordings" element={<RequireAuth><Recordings /></RequireAuth>} />
           <Route path="/integrations" element={<RequireAuth><Integrations /></RequireAuth>} />
