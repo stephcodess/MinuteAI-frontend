@@ -34,9 +34,32 @@ function CardFormInner({ onSubmit, onComplete, buttonLabel = 'Save card' }: Inne
   const [error, setError] = useState('')
   const [busy,  setBusy]  = useState(false)
 
+  // Stripe.js hasn't finished loading yet — show a placeholder that
+  // matches the form height so the modal doesn't shift when it appears.
+  if (!stripe || !elements) {
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border px-4 py-4 flex items-center gap-2"
+          style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)', minHeight: 52 }}>
+          <Loader2 size={14} className="animate-spin text-violet-400 shrink-0" />
+          <span className="text-sm text-slate-500">Loading payment form…</span>
+        </div>
+        <div className="flex gap-3">
+          {[0, 1].map(i => (
+            <div key={i} className="flex-1 rounded-xl border px-4 py-4"
+              style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)', minHeight: 52 }} />
+          ))}
+        </div>
+        <button disabled
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold opacity-40 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
+          {buttonLabel}
+        </button>
+      </div>
+    )
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!stripe || !elements) return
     setError('')
     setBusy(true)
 
@@ -53,7 +76,6 @@ function CardFormInner({ onSubmit, onComplete, buttonLabel = 'Save card' }: Inne
     try {
       const result = (await onSubmit(paymentMethod!.id)) as any
 
-      // Handle 3D Secure if the subscription requires additional auth
       if (result?.clientSecret) {
         const { error: confirmErr } = await stripe.confirmCardPayment(result.clientSecret)
         if (confirmErr) {
@@ -79,7 +101,6 @@ function CardFormInner({ onSubmit, onComplete, buttonLabel = 'Save card' }: Inne
         >
           <CardNumberElement options={{ ...ELEMENT_OPTIONS, showIcon: true }} />
         </div>
-        
         <div className="flex gap-3">
           <div
             className="flex-1 rounded-xl border px-4 py-4"
@@ -96,13 +117,11 @@ function CardFormInner({ onSubmit, onComplete, buttonLabel = 'Save card' }: Inne
         </div>
       </div>
 
-      {error && (
-        <p className="text-sm text-red-400 px-1">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-400 px-1">{error}</p>}
 
       <button
         type="submit"
-        disabled={!stripe || busy}
+        disabled={busy}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-60 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-500/25"
       >
         {busy
