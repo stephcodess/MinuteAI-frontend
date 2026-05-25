@@ -197,14 +197,14 @@ function TemplateCard({ tpl, selected, onClick }) {
       onClick={onClick}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`relative flex flex-col items-start gap-2 p-3.5 rounded-lg text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
+      className={`relative flex flex-col items-start gap-2 p-3.5 rounded text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
         }`}
       style={{
         background: selected ? 'rgba(139,92,246,0.08)' : 'var(--input-bg)',
         border: selected ? undefined : '1px solid var(--card-border)',
       }}
     >
-      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${tpl.gradient} flex items-center justify-center shadow-sm shrink-0`}>
+      <div className={`w-8 h-8 rounded-md bg-gradient-to-br ${tpl.gradient} flex items-center justify-center shadow-sm shrink-0`}>
         <Icon size={15} className="text-white" />
       </div>
       <div>
