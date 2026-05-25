@@ -5,7 +5,7 @@ import {
   Mic, FileAudio, X, AlertCircle, Lock, Zap, Trash2,
   ArrowRight, CheckCircle, Languages, ChevronDown,
   FileText, BarChart2, AlignLeft, Minimize2, SlidersHorizontal,
-  ShieldCheck,
+  ShieldCheck, Crown,
 } from 'lucide-react'
 import { formRequest } from '../../lib/api'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -198,7 +198,7 @@ function TemplateCard({ tpl, selected, onClick }) {
       onClick={onClick}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`relative flex flex-col items-start gap-2 p-3.5 rounded-2xl text-left transition-all duration-200 ${
+      className={`relative flex flex-col items-start gap-2 p-3.5 rounded-xl text-left transition-all duration-200 ${
         selected ? `ring-2 ${tpl.ring}` : ''
       }`}
       style={{
@@ -324,6 +324,136 @@ function ConfigFields({ meetingType, setMeetingType, audioLanguage, setAudioLang
   )
 }
 
+// ── Limit modal ───────────────────────────────────────────────────────────────
+
+const UPGRADE_PERKS = [
+  'More meetings per month',
+  'Longer audio recordings',
+  'Priority processing',
+  'Advanced document templates',
+  'Team workspace collaboration',
+]
+
+function LimitModal({ onClose, onUpgrade }: { onClose: () => void; onUpgrade: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        onClick={onClose}
+      />
+
+      <motion.div
+        initial={{ opacity: 0, y: 60, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 30, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+        className="relative w-full max-w-[400px] rounded-3xl overflow-hidden shadow-2xl"
+        style={{ background: '#0c0c1d', border: '1px solid rgba(124,58,237,0.3)' }}
+      >
+        {/* Top gradient bar */}
+        <div className="h-1 w-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-indigo-500" />
+
+        {/* Background radial glow */}
+        <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-3xl opacity-20"
+          style={{ background: 'radial-gradient(circle, #7c3aed, transparent 60%)' }} />
+
+        <div className="relative px-7 pb-7 pt-8">
+          {/* Close */}
+          <button onClick={onClose}
+            className="absolute top-5 right-5 w-7 h-7 rounded-full flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all">
+            <X size={14} />
+          </button>
+
+          {/* Animated icon */}
+          <div className="flex justify-center mb-7">
+            <div className="relative flex items-center justify-center">
+              <motion.div className="absolute w-24 h-24 rounded-full"
+                style={{ border: '1px solid rgba(124,58,237,0.35)' }}
+                animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }} />
+              <motion.div className="absolute w-16 h-16 rounded-full"
+                style={{ background: 'rgba(124,58,237,0.15)' }}
+                animate={{ scale: [1, 1.2, 1], opacity: [0.7, 0, 0.7] }}
+                transition={{ duration: 2.8, repeat: Infinity, delay: 0.4, ease: 'easeInOut' }} />
+              <div className="relative w-[72px] h-[72px] rounded-full flex items-center justify-center shadow-2xl"
+                style={{ background: 'linear-gradient(135deg, #7c3aed, #4338ca)', boxShadow: '0 0 48px rgba(124,58,237,0.55)' }}>
+                <Crown size={28} className="text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Heading */}
+          <div className="text-center mb-6">
+            <h2 className="text-[22px] font-black text-white mb-2 leading-tight tracking-tight">
+              You've hit your limit
+            </h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              All meetings on your current plan are used up.
+              Upgrade to keep generating minutes without interruption.
+            </p>
+          </div>
+
+          {/* Usage meter */}
+          <div className="mb-6 rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-semibold text-slate-400">Monthly usage</span>
+              <span className="flex items-center gap-1.5 text-xs font-bold text-red-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                At limit
+              </span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+              <motion.div className="h-full rounded-full"
+                style={{ background: 'linear-gradient(90deg, #dc2626, #f87171)' }}
+                initial={{ width: '0%' }} animate={{ width: '100%' }}
+                transition={{ duration: 1, delay: 0.35, ease: 'easeOut' }} />
+            </div>
+          </div>
+
+          {/* Perks */}
+          <div className="mb-7 space-y-2.5">
+            {UPGRADE_PERKS.map((perk, i) => (
+              <motion.div key={perk}
+                initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.18 + i * 0.07, ease: 'easeOut' }}
+                className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(124,58,237,0.22)' }}>
+                  <CheckCircle size={11} className="text-violet-400" />
+                </div>
+                <span className="text-sm text-slate-300">{perk}</span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* CTAs */}
+          <div className="space-y-3">
+            <motion.button
+              onClick={onUpgrade}
+              whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              className="relative w-full overflow-hidden rounded-full py-3.5 text-sm font-bold text-white"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #4338ca)', boxShadow: '0 8px 32px rgba(124,58,237,0.45)' }}
+            >
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+                animate={{ x: ['-100%', '200%'] }}
+                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5, ease: 'easeInOut' }} />
+              <span className="relative flex items-center justify-center gap-2">
+                <Crown size={15} /> Upgrade now
+              </span>
+            </motion.button>
+            <button onClick={onClose}
+              className="w-full py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors">
+              Maybe later
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 // ── Consent modal ─────────────────────────────────────────────────────────────
 
 function ConsentModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
@@ -413,6 +543,7 @@ export default function Upload() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [configOpen, setConfigOpen]         = useState(false)
   const [showConsent, setShowConsent]       = useState(false)
+  const [showLimitModal, setShowLimitModal] = useState(false)
 
   // Config state
   const [meetingType, setMeetingType]             = useState('general')
@@ -527,7 +658,12 @@ export default function Upload() {
 
       navigate(`/processing/${jobId}`)
     } catch (err) {
-      setError(err.message || 'Upload failed — please try again.')
+      const msg = err.message || 'Upload failed — please try again.'
+      if (msg.includes('meetings included in your plan') || msg.includes('Upgrade to continue')) {
+        setShowLimitModal(true)
+      } else {
+        setError(msg)
+      }
       setUploading(false)
     }
   }
@@ -537,6 +673,14 @@ export default function Upload() {
       <AnimatePresence>
         {showConsent && (
           <ConsentModal onConfirm={doUpload} onCancel={() => setShowConsent(false)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showLimitModal && (
+          <LimitModal
+            onClose={() => setShowLimitModal(false)}
+            onUpgrade={() => { setShowLimitModal(false); navigate('/billing') }}
+          />
         )}
       </AnimatePresence>
 
