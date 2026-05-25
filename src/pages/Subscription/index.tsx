@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, CreditCard, Calendar, CheckCircle, AlertCircle,
-  Loader2, ExternalLink, Receipt, FileText, Crown, Zap,
-  RefreshCw, XCircle, Shield, ChevronRight, Clock, Plus, X,
+  ArrowLeft, CreditCard, Calendar, AlertCircle,
+  Loader2, Receipt, FileText, Crown, Zap,
+  RefreshCw, XCircle, Clock, Plus, X,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import StripeCardForm from '../../components/StripeCardForm'
@@ -40,7 +40,8 @@ export default function Subscription() {
   const [loading,  setLoading]  = useState(true)
   const [invoices, setInvoices] = useState([])
   const [loadingInv, setLoadingInv] = useState(false)
-  const [portalBusy, setPortalBusy] = useState<string | boolean>(false)
+  const [actionBusy, setActionBusy] = useState<string | false>(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [error,    setError]    = useState(null)
 
   useEffect(() => {
@@ -55,14 +56,31 @@ export default function Subscription() {
       .finally(() => setLoadingInv(false))
   }, [])
 
-  async function openPortal(action = '') {
-    setPortalBusy(action || true)
+  async function handleCancel() {
+    setActionBusy('cancel')
+    setActionError(null)
     try {
-      const { url } = await api.post('/billing/portal', { origin: window.location.origin })
-      window.location.href = url
-    } catch (e) {
-      alert(e.message || 'Failed to open billing portal.')
-      setPortalBusy(false)
+      await api.post('/billing/cancel', {})
+      const updated = await api.get('/billing/subscription')
+      setSub(updated)
+    } catch (e: any) {
+      setActionError(e.message || 'Unable to cancel subscription.')
+    } finally {
+      setActionBusy(false)
+    }
+  }
+
+  async function handleRenew() {
+    setActionBusy('renew')
+    setActionError(null)
+    try {
+      await api.post('/billing/renew', {})
+      const updated = await api.get('/billing/subscription')
+      setSub(updated)
+    } catch (e: any) {
+      setActionError(e.message || 'Unable to renew subscription.')
+    } finally {
+      setActionBusy(false)
     }
   }
 
@@ -106,10 +124,12 @@ export default function Subscription() {
               sub={sub}
               invoices={invoices}
               loadingInv={loadingInv}
-              portalBusy={portalBusy}
+              actionBusy={actionBusy}
+              actionError={actionError}
               isCanceling={isCanceling}
               statusMeta={statusMeta}
-              onPortal={openPortal}
+              onCancel={handleCancel}
+              onRenew={handleRenew}
               onChangePlan={() => navigate('/billing')}
               onCardUpdated={async () => {
                 const updated = await api.get('/billing/subscription').catch(() => null)
@@ -143,7 +163,31 @@ function FreePlanView({ onUpgrade }) {
   )
 }
 
-function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, statusMeta, onPortal, onChangePlan, onCardUpdated }) {
+function SubCardBrand({ brand }: { brand?: string }) {
+  const b = (brand || '').toLowerCase()
+  if (b === 'visa') {
+    return (
+      <span className="font-bold italic text-white select-none"
+        style={{ fontFamily: 'Georgia, serif', fontSize: 17, letterSpacing: '-0.02em', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+        VISA
+      </span>
+    )
+  }
+  if (b === 'mastercard') {
+    return (
+      <div className="relative w-9 h-5 flex items-center justify-center">
+        <div className="absolute left-0 w-5 h-5 rounded-full bg-red-500 opacity-85" />
+        <div className="absolute right-0 w-5 h-5 rounded-full bg-amber-400 opacity-85" />
+      </div>
+    )
+  }
+  if (b === 'amex' || b === 'american_express') {
+    return <span className="text-[10px] font-black tracking-widest text-white/90 uppercase select-none">AMEX</span>
+  }
+  return <span className="text-[10px] font-bold uppercase tracking-wider text-white/70 select-none">{brand || 'CARD'}</span>
+}
+
+function ActiveSubView({ sub, invoices, loadingInv, actionBusy, actionError, isCanceling, statusMeta, onCancel, onRenew, onChangePlan, onCardUpdated }) {
   const [showCardForm, setShowCardForm] = useState(false)
   const isTrialing = sub.status === 'trialing'
 
@@ -170,9 +214,9 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
             <p className="flex-1 text-sm font-medium">
               Your subscription will end on <strong>{fmtDate(sub.cancel_at || sub.current_period_end)}</strong> — you keep access until then.
             </p>
-            <button onClick={() => onPortal('renew')} disabled={!!portalBusy}
+            <button onClick={onRenew} disabled={!!actionBusy}
               className="flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-full border border-amber-500/30 px-3 py-2 text-xs font-semibold transition hover:bg-amber-500/10 sm:w-auto">
-              {portalBusy === 'renew' ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+              {actionBusy === 'renew' ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
               Renew
             </button>
           </motion.div>
@@ -205,12 +249,6 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
         </div>
 
         <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:flex-wrap sm:px-6">
-          <button onClick={() => onPortal('manage')} disabled={!!portalBusy}
-            className="flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all disabled:opacity-60"
-            style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-            {portalBusy === 'manage' ? <Loader2 size={13} className="animate-spin" /> : <ExternalLink size={13} />}
-            Manage in Stripe
-          </button>
           <button onClick={onChangePlan}
             className="flex items-center justify-center gap-2 rounded-full bg-violet-500/10 px-4 py-2 text-sm font-semibold text-violet-400 transition-all hover:bg-violet-500/20">
             <Zap size={13} /> Change plan
@@ -223,23 +261,57 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.07 }}
           className="flex flex-col glass-card border rounded-2xl p-4 sm:p-5">
           <p className="text-sm font-bold mb-4" style={{ color: 'var(--text-1)' }}>Payment method</p>
-          <div className="flex flex-1 items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
-              <CreditCard size={16} className="text-violet-400" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
-                {sub.card?.last4 ? `•••• •••• •••• ${sub.card.last4}` : 'No card on file'}
-              </p>
-              {sub.card?.brand && (
-                <p className="text-xs capitalize" style={{ color: 'var(--text-3)' }}>
-                  {sub.card.brand} · expires {sub.card.exp_month}/{sub.card.exp_year}
-                </p>
-              )}
-            </div>
-          </div>
 
-          <div className="pt-4 mt-4" style={{ borderTop: '1px solid var(--divider)' }}>
+          {sub.card?.last4 ? (
+            <div className="mb-4 relative w-full aspect-[1.586] rounded-2xl p-4 overflow-hidden select-none"
+              style={{
+                background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e3a5f 80%, #0f172a 100%)',
+                boxShadow: '0 16px 40px rgba(79,70,229,0.3), 0 4px 10px rgba(0,0,0,0.4)',
+              }}>
+              <div className="pointer-events-none absolute -right-6 -top-6 w-32 h-32 rounded-full opacity-30"
+                style={{ background: 'radial-gradient(circle, #7c3aed, transparent 70%)' }} />
+              <div className="pointer-events-none absolute -left-8 -bottom-8 w-40 h-40 rounded-full opacity-20"
+                style={{ background: 'radial-gradient(circle, #4f46e5, transparent 70%)' }} />
+              <div className="flex items-center justify-between mb-4">
+                <div className="relative w-8 h-[22px] rounded-md overflow-hidden"
+                  style={{ background: 'linear-gradient(145deg, #fbbf24, #d97706)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <div className="absolute inset-0 grid grid-cols-3 gap-px p-[3px]">
+                    {[...Array(6)].map((_, i) => <div key={i} className="rounded-[1px] bg-amber-900/25" />)}
+                  </div>
+                  <div className="absolute inset-x-0 top-1/2 h-px -translate-y-px bg-amber-900/30" />
+                  <div className="absolute inset-y-0 left-1/3 w-px bg-amber-900/20" />
+                  <div className="absolute inset-y-0 right-1/3 w-px bg-amber-900/20" />
+                </div>
+                <div className="flex items-center gap-[2px] opacity-40">
+                  {[9, 13, 17].map(r => (
+                    <div key={r} className="rounded-full" style={{ width: r, height: r, border: '1.5px solid white', opacity: 1 - (r - 9) * 0.13 }} />
+                  ))}
+                </div>
+              </div>
+              <p className="mb-3 font-mono font-medium text-white"
+                style={{ fontSize: 13, letterSpacing: '0.2em', textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}>
+                •••• &nbsp;•••• &nbsp;•••• &nbsp;{sub.card.last4}
+              </p>
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="mb-0.5 text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">Expires</p>
+                  <p className="font-mono font-semibold text-white" style={{ fontSize: 11, textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
+                    {String(sub.card.exp_month).padStart(2, '0')}/{String(sub.card.exp_year).slice(-2)}
+                  </p>
+                </div>
+                <SubCardBrand brand={sub.card.brand} />
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-1 items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+                <CreditCard size={16} className="text-violet-400" />
+              </div>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>No card on file</p>
+            </div>
+          )}
+
+          <div className="pt-4" style={{ borderTop: '1px solid var(--divider)' }}>
             {showCardForm ? (
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -342,9 +414,12 @@ function ActiveSubView({ sub, invoices, loadingInv, portalBusy, isCanceling, sta
           <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>
             You'll keep access until {fmtDate(sub.current_period_end)}. After that your account moves to the free tier.
           </p>
-          <button onClick={() => onPortal('cancel')} disabled={!!portalBusy}
+          {actionError && (
+            <p className="text-sm font-medium text-red-400 mb-2">{actionError}</p>
+          )}
+          <button onClick={onCancel} disabled={!!actionBusy}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/10 disabled:opacity-60 sm:w-auto">
-            {portalBusy === 'cancel' ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
+            {actionBusy === 'cancel' ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
             Cancel subscription
           </button>
         </motion.div>

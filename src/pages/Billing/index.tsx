@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Zap, CheckCircle, ArrowRight, CreditCard, Receipt,
   Shield, Crown, Sparkles, HelpCircle, FileText, Clock,
-  ExternalLink, AlertCircle, Loader2, X, ChevronLeft, ChevronRight, TicketPercent,
+  AlertCircle, Loader2, X, ChevronLeft, ChevronRight, TicketPercent,
   Trash2,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
@@ -206,6 +206,39 @@ function PlanCard({ plan, idx, currentPlan, onUpgrade, promoCode, billing }) {
   )
 }
 
+function CardBrandMark({ brand }: { brand?: string }) {
+  const b = (brand || '').toLowerCase()
+  if (b === 'visa') {
+    return (
+      <span className="font-bold italic text-white select-none"
+        style={{ fontFamily: 'Georgia, serif', fontSize: 20, letterSpacing: '-0.02em', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+        VISA
+      </span>
+    )
+  }
+  if (b === 'mastercard') {
+    return (
+      <div className="relative w-10 h-6 flex items-center justify-center">
+        <div className="absolute left-0 w-6 h-6 rounded-full bg-red-500 opacity-85" />
+        <div className="absolute right-0 w-6 h-6 rounded-full bg-amber-400 opacity-85" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-3 h-6 rounded-full bg-orange-500 opacity-60 mix-blend-multiply" />
+        </div>
+      </div>
+    )
+  }
+  if (b === 'amex' || b === 'american_express') {
+    return (
+      <span className="text-xs font-black tracking-widest text-white/90 uppercase select-none">AMEX</span>
+    )
+  }
+  return (
+    <span className="text-xs font-bold uppercase tracking-wider text-white/70 select-none">
+      {brand || 'CARD'}
+    </span>
+  )
+}
+
 export default function Billing() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -220,10 +253,10 @@ export default function Billing() {
   const [loadingPaymentMethod, setLoadingPaymentMethod] = useState(false)
   const [paymentActionBusy, setPaymentActionBusy] = useState(false)
   const [paymentError, setPaymentError] = useState('')
+  const [showUpdateCardForm, setShowUpdateCardForm] = useState(false)
   const [upgradeModal,  setUpgradeModal]  = useState<any>(null)
   const [upgradeWithSavedBusy, setUpgradeWithSavedBusy] = useState(false)
   const [upgradeError, setUpgradeError] = useState('')
-  const [portalBusy, setPortalBusy] = useState(false)
   const [promoInput, setPromoInput] = useState('')
   const [promoDraft, setPromoDraft] = useState(null)
   const [promoBusy, setPromoBusy] = useState(false)
@@ -346,17 +379,6 @@ export default function Billing() {
     await loadPaymentMethod()
     await refreshUser()
     setBanner('success')
-  }
-
-  async function handlePortal() {
-    setPortalBusy(true)
-    try {
-      const { url } = await api.post('/billing/portal', { origin: window.location.origin })
-      window.location.href = url
-    } catch (err) {
-      alert(err.message || 'Failed to open billing portal.')
-      setPortalBusy(false)
-    }
   }
 
   async function applyPromoCode() {
@@ -644,45 +666,110 @@ export default function Billing() {
                     <p className="text-sm text-gray-400">Loading payment method...</p>
                   </div>
                 ) : paymentMethod ? (
-                  <div className="glass-card border rounded-2xl p-5 sm:p-6">
-                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-violet-500/10 flex items-center justify-center shrink-0">
-                          <CreditCard size={21} className="text-violet-400" />
+                  <div className="glass-card border rounded-2xl p-5 sm:p-6 space-y-5">
+
+                    {/* ── Physical card visual ── */}
+                    <div className="relative w-full max-w-xs aspect-[1.586] rounded-2xl p-5 overflow-hidden select-none"
+                      style={{
+                        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e3a5f 80%, #0f172a 100%)',
+                        boxShadow: '0 24px 48px rgba(79,70,229,0.35), 0 4px 12px rgba(0,0,0,0.5)',
+                      }}>
+                      {/* Glow blobs */}
+                      <div className="pointer-events-none absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-30"
+                        style={{ background: 'radial-gradient(circle, #7c3aed, transparent 70%)' }} />
+                      <div className="pointer-events-none absolute -left-10 -bottom-10 w-48 h-48 rounded-full opacity-20"
+                        style={{ background: 'radial-gradient(circle, #4f46e5, transparent 70%)' }} />
+
+                      {/* Top row: chip + contactless */}
+                      <div className="flex items-center justify-between mb-5">
+                        {/* EMV chip */}
+                        <div className="relative w-9 h-[26px] rounded-md overflow-hidden"
+                          style={{ background: 'linear-gradient(145deg, #fbbf24, #d97706)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                          <div className="absolute inset-0 grid grid-cols-3 gap-px p-[3px]">
+                            {[...Array(6)].map((_, i) => (
+                              <div key={i} className="rounded-[1px] bg-amber-900/25" />
+                            ))}
+                          </div>
+                          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-px bg-amber-900/30" />
+                          <div className="absolute inset-y-0 left-1/3 w-px bg-amber-900/20" />
+                          <div className="absolute inset-y-0 right-1/3 w-px bg-amber-900/20" />
                         </div>
-                        <div>
-                          <h3 className="font-bold t1 mb-0.5">Saved payment method</h3>
-                          <p className="text-sm t2">
-                            {paymentMethod.brand ? `${paymentMethod.brand.toUpperCase()} ` : ''}ending in {paymentMethod.last4}
-                          </p>
-                          <p className="text-xs t3">
-                            Expires {paymentMethod.exp_month}/{paymentMethod.exp_year}
-                          </p>
+                        {/* Contactless waves */}
+                        <div className="flex items-center gap-[2px] opacity-50">
+                          {[10, 14, 18].map(r => (
+                            <div key={r} className="rounded-full border-2 border-white"
+                              style={{ width: r, height: r, borderRadius: '50%', borderColor: 'white', borderStyle: 'solid', borderWidth: 1.5, opacity: 1 - (r - 10) * 0.12 }} />
+                          ))}
                         </div>
                       </div>
+
+                      {/* Card number */}
+                      <p className="mb-4 font-mono font-medium text-white tracking-[0.22em]"
+                        style={{ fontSize: 15, textShadow: '0 1px 4px rgba(0,0,0,0.5)', letterSpacing: '0.22em' }}>
+                        •••• &nbsp;•••• &nbsp;•••• &nbsp;{paymentMethod.last4}
+                      </p>
+
+                      {/* Bottom row: expiry + brand */}
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="mb-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-white/40">Expires</p>
+                          <p className="font-mono font-semibold text-white text-xs" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
+                            {String(paymentMethod.exp_month).padStart(2, '0')}/{String(paymentMethod.exp_year).slice(-2)}
+                          </p>
+                        </div>
+                        <CardBrandMark brand={paymentMethod.brand} />
+                      </div>
+                    </div>
+
+                    {/* ── Card info + actions ── */}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold t1">
+                          {paymentMethod.brand ? paymentMethod.brand.charAt(0).toUpperCase() + paymentMethod.brand.slice(1) : 'Card'} ending in {paymentMethod.last4}
+                        </p>
+                        <p className="text-xs t3">Expires {paymentMethod.exp_month}/{paymentMethod.exp_year}</p>
+                      </div>
                       {isPaid ? (
-                        <button
-                          onClick={handlePortal}
-                          disabled={portalBusy}
-                          className="flex w-full items-center justify-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-60 sm:w-auto"
-                        >
-                          {portalBusy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
-                          Manage in Portal
-                        </button>
+                        showUpdateCardForm ? null : (
+                          <button
+                            onClick={() => setShowUpdateCardForm(true)}
+                            className="flex w-full items-center justify-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10 sm:w-auto"
+                          >
+                            <CreditCard size={14} /> Update card
+                          </button>
+                        )
                       ) : (
                         <button
                           onClick={removePaymentMethod}
                           disabled={paymentActionBusy}
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 disabled:opacity-60 sm:w-auto"
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 disabled:opacity-60 sm:w-auto"
                         >
                           {paymentActionBusy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                           Remove card
                         </button>
                       )}
                     </div>
-                    {paymentError ? <p className="mt-4 text-sm font-medium text-red-400">{paymentError}</p> : null}
+
+                    {paymentError ? <p className="text-sm font-medium text-red-400">{paymentError}</p> : null}
+
+                    {isPaid && showUpdateCardForm && (
+                      <div className="pt-4 border-t border-white/10">
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs font-semibold t3">New card details</p>
+                          <button onClick={() => setShowUpdateCardForm(false)} className="text-xs flex items-center gap-1 t3 hover:opacity-80 transition-opacity">
+                            <X size={12} /> Cancel
+                          </button>
+                        </div>
+                        <StripeCardForm
+                          onSubmit={async (pmId) => { await api.post('/billing/attach-payment-method', { payment_method_id: pmId }) }}
+                          onComplete={async () => { setShowUpdateCardForm(false); await loadPaymentMethod() }}
+                          buttonLabel="Update card"
+                        />
+                      </div>
+                    )}
+
                     {!isPaid && (
-                      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                         <p className="text-sm t2">This card will be used automatically when you upgrade.</p>
                       </div>
                     )}
@@ -697,14 +784,14 @@ export default function Billing() {
                       {isPaid ? "You have an active subscription, but we couldn't load your card details." : "You're on the free plan — no card required. Add one when you're ready to upgrade."}
                     </p>
                     {isPaid ? (
-                      <button
-                        onClick={handlePortal}
-                        disabled={portalBusy}
-                        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:from-violet-500 hover:to-indigo-500 disabled:opacity-60 sm:w-auto"
-                      >
-                        {portalBusy ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
-                        Open billing portal
-                      </button>
+                      <div className="w-full max-w-sm">
+                        <p className="text-xs font-semibold t3 mb-3">Add a payment method</p>
+                        <StripeCardForm
+                          onSubmit={async (pmId) => { await api.post('/billing/attach-payment-method', { payment_method_id: pmId }) }}
+                          onComplete={loadPaymentMethod}
+                          buttonLabel="Save card"
+                        />
+                      </div>
                     ) : (
                       <button
                         onClick={() => setTab('plan')}
