@@ -13,77 +13,77 @@ import { useAuth } from '../../context/AuthContext'
 import Sidebar from '../../components/Sidebar'
 
 const ACCEPTED_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/aac', 'audio/wav', 'audio/webm', 'video/mp4']
-const ACCEPTED_EXTS  = ['mp3', 'mp4', 'm4a', 'wav', 'webm']
+const ACCEPTED_EXTS = ['mp3', 'mp4', 'm4a', 'wav', 'webm']
 const MAX_SIZE_MB = 500
 const FORMATS = ['MP3', 'MP4', 'M4A', 'WAV', 'WebM']
 const CHUNK_SIZE = 5 * 1024 * 1024
 
 const MEETING_TYPES = [
-  { value: 'general',    label: 'General Meeting'     },
-  { value: 'standup',    label: 'Team Standup'         },
-  { value: 'client',     label: 'Client Call'          },
-  { value: 'interview',  label: 'Job Interview'        },
-  { value: 'workshop',   label: 'Workshop / Training'  },
-  { value: 'lecture',    label: 'Lecture / Webinar'    },
-  { value: 'brainstorm', label: 'Brainstorming'        },
-  { value: 'one_on_one', label: 'One-on-One'           },
+  { value: 'general', label: 'General Meeting' },
+  { value: 'standup', label: 'Team Standup' },
+  { value: 'client', label: 'Client Call' },
+  { value: 'interview', label: 'Job Interview' },
+  { value: 'workshop', label: 'Workshop / Training' },
+  { value: 'lecture', label: 'Lecture / Webinar' },
+  { value: 'brainstorm', label: 'Brainstorming' },
+  { value: 'one_on_one', label: 'One-on-One' },
 ]
 
 const OUTPUT_LANGUAGES = [
-  { code: 'en', name: 'English'     },
-  { code: 'fr', name: 'French'      },
-  { code: 'es', name: 'Spanish'     },
-  { code: 'de', name: 'German'      },
-  { code: 'it', name: 'Italian'     },
-  { code: 'pt', name: 'Portuguese'  },
-  { code: 'nl', name: 'Dutch'       },
-  { code: 'pl', name: 'Polish'      },
-  { code: 'sv', name: 'Swedish'     },
-  { code: 'da', name: 'Danish'      },
-  { code: 'no', name: 'Norwegian'   },
-  { code: 'fi', name: 'Finnish'     },
-  { code: 'tr', name: 'Turkish'     },
-  { code: 'ro', name: 'Romanian'    },
-  { code: 'hu', name: 'Hungarian'   },
-  { code: 'cs', name: 'Czech'       },
-  { code: 'uk', name: 'Ukrainian'   },
-  { code: 'ru', name: 'Russian'     },
-  { code: 'ar', name: 'Arabic'      },
-  { code: 'zh', name: 'Chinese'     },
-  { code: 'ja', name: 'Japanese'    },
-  { code: 'ko', name: 'Korean'      },
-  { code: 'hi', name: 'Hindi'       },
-  { code: 'sw', name: 'Swahili'     },
-  { code: 'yo', name: 'Yoruba'      },
-  { code: 'ig', name: 'Igbo'        },
-  { code: 'ha', name: 'Hausa'       },
-  { code: 'id', name: 'Indonesian'  },
-  { code: 'vi', name: 'Vietnamese'  },
-  { code: 'th', name: 'Thai'        },
+  { code: 'en', name: 'English' },
+  { code: 'fr', name: 'French' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'nl', name: 'Dutch' },
+  { code: 'pl', name: 'Polish' },
+  { code: 'sv', name: 'Swedish' },
+  { code: 'da', name: 'Danish' },
+  { code: 'no', name: 'Norwegian' },
+  { code: 'fi', name: 'Finnish' },
+  { code: 'tr', name: 'Turkish' },
+  { code: 'ro', name: 'Romanian' },
+  { code: 'hu', name: 'Hungarian' },
+  { code: 'cs', name: 'Czech' },
+  { code: 'uk', name: 'Ukrainian' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'ko', name: 'Korean' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'sw', name: 'Swahili' },
+  { code: 'yo', name: 'Yoruba' },
+  { code: 'ig', name: 'Igbo' },
+  { code: 'ha', name: 'Hausa' },
+  { code: 'id', name: 'Indonesian' },
+  { code: 'vi', name: 'Vietnamese' },
+  { code: 'th', name: 'Thai' },
 ]
 
 const AUDIO_LANGUAGES = [
-  { code: '',   name: 'Auto-detect'      },
-  { code: 'en', name: 'English'          },
-  { code: 'yo', name: 'Yoruba'           },
-  { code: 'ig', name: 'Igbo'             },
-  { code: 'ha', name: 'Hausa'            },
-  { code: 'fr', name: 'French'           },
-  { code: 'es', name: 'Spanish'          },
-  { code: 'de', name: 'German'           },
-  { code: 'it', name: 'Italian'          },
-  { code: 'pt', name: 'Portuguese'       },
-  { code: 'nl', name: 'Dutch'            },
-  { code: 'ru', name: 'Russian'          },
-  { code: 'zh', name: 'Chinese'          },
-  { code: 'ja', name: 'Japanese'         },
-  { code: 'ko', name: 'Korean'           },
-  { code: 'ar', name: 'Arabic'           },
-  { code: 'hi', name: 'Hindi'            },
-  { code: 'tr', name: 'Turkish'          },
-  { code: 'pl', name: 'Polish'           },
-  { code: 'sv', name: 'Swedish'          },
-  { code: 'uk', name: 'Ukrainian'        },
+  { code: '', name: 'Auto-detect' },
+  { code: 'en', name: 'English' },
+  { code: 'yo', name: 'Yoruba' },
+  { code: 'ig', name: 'Igbo' },
+  { code: 'ha', name: 'Hausa' },
+  { code: 'fr', name: 'French' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'de', name: 'German' },
+  { code: 'it', name: 'Italian' },
+  { code: 'pt', name: 'Portuguese' },
+  { code: 'nl', name: 'Dutch' },
+  { code: 'ru', name: 'Russian' },
+  { code: 'zh', name: 'Chinese' },
+  { code: 'ja', name: 'Japanese' },
+  { code: 'ko', name: 'Korean' },
+  { code: 'ar', name: 'Arabic' },
+  { code: 'hi', name: 'Hindi' },
+  { code: 'tr', name: 'Turkish' },
+  { code: 'pl', name: 'Polish' },
+  { code: 'sv', name: 'Swedish' },
+  { code: 'uk', name: 'Ukrainian' },
 ]
 
 const TEMPLATES = [
@@ -176,11 +176,10 @@ function IdleIcon({ dragging }) {
         transition={{ duration: 2.4, repeat: Infinity, delay: 0.4, ease: 'easeInOut' }}
       />
       <motion.div
-        className={`w-[72px] h-[72px] rounded-full flex items-center justify-center shadow-xl transition-colors duration-300 ${
-          dragging
+        className={`w-[72px] h-[72px] rounded-full flex items-center justify-center shadow-xl transition-colors duration-300 ${dragging
             ? 'bg-gradient-to-br from-violet-500 to-indigo-600 shadow-violet-400/40'
             : 'bg-gradient-to-br from-violet-600 to-indigo-700 shadow-violet-500/25'
-        }`}
+          }`}
         animate={{ y: [0, -5, 0] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
         whileHover={{ scale: 1.06 }}
@@ -198,15 +197,14 @@ function TemplateCard({ tpl, selected, onClick }) {
       onClick={onClick}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`relative flex flex-col items-start gap-2 p-3.5 rounded-xl text-left transition-all duration-200 ${
-        selected ? `ring-2 ${tpl.ring}` : ''
-      }`}
+      className={`relative flex flex-col items-start gap-2 p-3.5 rounded-lg text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
+        }`}
       style={{
         background: selected ? 'rgba(139,92,246,0.08)' : 'var(--input-bg)',
         border: selected ? undefined : '1px solid var(--card-border)',
       }}
     >
-      <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${tpl.gradient} flex items-center justify-center shadow-sm shrink-0`}>
+      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${tpl.gradient} flex items-center justify-center shadow-sm shrink-0`}>
         <Icon size={15} className="text-white" />
       </div>
       <div>
@@ -228,16 +226,14 @@ function StepIndicator({ step, dark = false }: { step: number; dark?: boolean })
     <div className="hidden sm:flex items-center gap-3">
       {steps.map((label, i) => (
         <div key={label} className="flex items-center gap-2">
-          <div className={`flex items-center gap-1.5 text-xs font-semibold ${
-            dark
+          <div className={`flex items-center gap-1.5 text-xs font-semibold ${dark
               ? i <= step ? 'text-white' : 'text-white/40'
               : i <= step ? 'text-violet-300' : 'text-slate-600'
-          }`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-              i < step  ? 'bg-white text-violet-300'
-              : i === step ? (dark ? 'bg-white text-violet-300' : 'bg-violet-600 text-white')
-              : dark ? 'bg-white/20 text-white/50' : 'bg-white/[0.06] text-slate-500'
             }`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${i < step ? 'bg-white text-violet-300'
+                : i === step ? (dark ? 'bg-white text-violet-300' : 'bg-violet-600 text-white')
+                  : dark ? 'bg-white/20 text-white/50' : 'bg-white/[0.06] text-slate-500'
+              }`}>
               {i < step ? <CheckCircle size={11} /> : i + 1}
             </div>
             {label}
@@ -503,9 +499,8 @@ function ConsentModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
           <label className="flex items-start gap-3 cursor-pointer select-none mb-5">
             <div
               onClick={() => setChecked(c => !c)}
-              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                checked ? 'bg-violet-600 border-violet-600' : 'border-slate-600'
-              }`}
+              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${checked ? 'bg-violet-600 border-violet-600' : 'border-slate-600'
+                }`}
             >
               {checked && <CheckCircle size={12} className="text-white" />}
             </div>
@@ -536,26 +531,26 @@ function ConsentModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
 export default function Upload() {
   const { user } = useAuth()
   const preferredLanguage = OUTPUT_LANGUAGES.some(lang => lang.code === user?.language) ? user.language : 'en'
-  const [file, setFile]                     = useState(null)
-  const [dragging, setDragging]             = useState(false)
-  const [error, setError]                   = useState(null)
-  const [uploading, setUploading]           = useState(false)
+  const [file, setFile] = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const [error, setError] = useState(null)
+  const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
-  const [configOpen, setConfigOpen]         = useState(false)
-  const [showConsent, setShowConsent]       = useState(false)
+  const [configOpen, setConfigOpen] = useState(false)
+  const [showConsent, setShowConsent] = useState(false)
   const [showLimitModal, setShowLimitModal] = useState(false)
 
   // Config state
-  const [meetingType, setMeetingType]             = useState('general')
-  const [meetingTitle, setMeetingTitle]           = useState('')
-  const [attendees, setAttendees]                 = useState('')
-  const [audioLanguage, setAudioLanguage]         = useState('')
-  const [outputLanguage, setOutputLanguage]       = useState(preferredLanguage)
+  const [meetingType, setMeetingType] = useState('general')
+  const [meetingTitle, setMeetingTitle] = useState('')
+  const [attendees, setAttendees] = useState('')
+  const [audioLanguage, setAudioLanguage] = useState('')
+  const [outputLanguage, setOutputLanguage] = useState(preferredLanguage)
   const [customInstructions, setCustomInstructions] = useState('')
-  const [template, setTemplate]                   = useState('standard')
+  const [template, setTemplate] = useState('standard')
 
-  const inputRef         = useRef(null)
-  const navigate         = useNavigate()
+  const inputRef = useRef(null)
+  const navigate = useNavigate()
   const { activeWorkspace } = useWorkspace()
 
   const step = uploading ? 2 : file ? 1 : 0
@@ -642,8 +637,8 @@ export default function Upload() {
       const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE
-        const blob  = file.slice(start, Math.min(start + CHUNK_SIZE, file.size))
-        const form  = new FormData()
+        const blob = file.slice(start, Math.min(start + CHUNK_SIZE, file.size))
+        const form = new FormData()
         form.append('index', String(i))
         form.append('total', String(totalChunks))
         form.append('chunk', blob, 'chunk')
@@ -721,13 +716,12 @@ export default function Upload() {
                 onDragOver={e => { e.preventDefault(); setDragging(true) }}
                 onDragLeave={e => { if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false) }}
                 onDrop={onDrop}
-                className={`relative rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer ${
-                  dragging
+                className={`relative rounded-3xl border-2 border-dashed transition-all duration-300 cursor-pointer ${dragging
                     ? 'border-violet-500 bg-violet-500/10 shadow-2xl shadow-violet-500/20 scale-[1.01]'
                     : file
-                    ? 'border-violet-500/40 bg-violet-500/5 cursor-default'
-                    : 'border-white/10 hover:border-violet-500/40 hover:bg-violet-500/5 bg-white/[0.03]'
-                }`}
+                      ? 'border-violet-500/40 bg-violet-500/5 cursor-default'
+                      : 'border-white/10 hover:border-violet-500/40 hover:bg-violet-500/5 bg-white/[0.03]'
+                  }`}
               >
                 <input ref={inputRef} type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/webm,video/mp4,video/webm,.mp3,.mp4,.m4a,.wav,.webm" className="hidden"
                   onChange={e => { if (e.target.files[0]) handleFileSelect(e.target.files[0]) }} />
@@ -812,11 +806,10 @@ export default function Upload() {
               <motion.button onClick={handleSubmit} disabled={!file || uploading}
                 whileHover={file && !uploading ? { scale: 1.015 } : {}}
                 whileTap={file && !uploading ? { scale: 0.98 } : {}}
-                className={`group relative w-full py-4 rounded-full font-semibold text-base transition-all duration-200 overflow-hidden ${
-                  file && !uploading
+                className={`group relative w-full py-4 rounded-full font-semibold text-base transition-all duration-200 overflow-hidden ${file && !uploading
                     ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-lg shadow-violet-500/30'
                     : 'text-slate-500 cursor-not-allowed'
-                }`}
+                  }`}
                 style={{ background: file && !uploading ? undefined : 'var(--input-bg)' }}>
                 {file && !uploading && (
                   <motion.div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -skew-x-12"
