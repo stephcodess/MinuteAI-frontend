@@ -1953,7 +1953,6 @@ export default function Results() {
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
   const [speakerModal,  setSpeakerModal]  = useState(false)
   const [shareModal,    setShareModal]    = useState(false)
-  const [headerExpanded, setHeaderExpanded] = useState(false)
   const [threadInfo,    setThreadInfo]    = useState<any | null>(null)
   const [continuity,    setContinuity]    = useState<any | null>(null)
 
@@ -2035,91 +2034,70 @@ export default function Results() {
             <h1 className="flex-1 min-w-0 text-base sm:text-xl font-bold truncate" style={{ color: 'var(--text-1)' }}>
               {minutes?.title ?? 'Meeting Minutes'}
             </h1>
-            {/* mobile: primary action + expand toggle */}
-            <div className="flex items-center gap-2 sm:hidden">
-              <button
-                onClick={() => setTemplateModal('docx')}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium bg-gradient-to-r from-violet-600 to-indigo-600 text-white"
-              >
-                <Download size={12} /> .docx
-              </button>
-              <button
-                onClick={() => setHeaderExpanded(v => !v)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
-                style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}
-              >
-                <ChevronDown size={15} className={`transition-transform duration-200 ${headerExpanded ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
           </div>
 
-          {/* collapsible on mobile, always visible on sm+ */}
-          <div className={`${headerExpanded ? 'block' : 'hidden'} sm:block`}>
-            <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:pt-4">
-              <div className="min-w-0">
-                {(metaParts.length > 0 || meta?.participants?.length > 0) && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {metaParts.map((p, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1"
-                        style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
-                        {i === 0 ? <CalendarDays size={11} /> : <Clock size={11} />}
-                        {p}
-                      </span>
-                    ))}
-                    {meta?.participants?.slice(0, 12).map(participant => (
-                      <span key={participant}
-                        className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 ring-1 ring-violet-500/20">
-                        <Users size={11} className="shrink-0" />
-                        <span className="truncate">{participant}</span>
-                      </span>
-                    ))}
-                    {meta?.participants?.length > 12 && (
-                      <span className="rounded-full px-2.5 py-1 text-xs font-medium ring-1"
-                        style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
-                        +{meta.participants.length - 12} more
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* action buttons */}
-              <div className="flex shrink-0 flex-wrap items-center gap-2">
-                <button onClick={copyText}
-                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
-                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-                  {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                  {copied ? 'Copied!' : 'Copy text'}
-                </button>
-                <button onClick={() => setSpeakerModal(true)}
-                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
-                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-                  <Users size={14} /> Name Speakers
-                </button>
-                <button onClick={() => setShareModal(true)}
-                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
-                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-                  <Share2 size={14} /> Share
-                </button>
-                <button onClick={() => setTemplateModal('pdf')}
-                  className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
-                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-                  <FileDown size={14} /> PDF
-                </button>
-                <button onClick={() => setTemplateModal('docx')}
-                  className="hidden sm:flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl font-medium transition-colors shadow-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white">
-                  <Download size={14} /> Download .docx
-                </button>
-                {minutes?.has_audio && (
-                  <button onClick={downloadAudio}
-                    className="flex items-center gap-1.5 text-sm border px-3 py-2 rounded-xl transition-colors hover:bg-white/[0.04]"
-                    style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
-                    title="Download original recording">
-                    <Download size={14} /> Recording
-                  </button>
-                )}
-              </div>
+          {/* meta chips: always visible */}
+          {(metaParts.length > 0 || meta?.participants?.length > 0) && (
+            <div className="mt-2.5 flex flex-wrap items-center gap-2">
+              {metaParts.map((p, i) => (
+                <span key={i} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1"
+                  style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
+                  {i === 0 ? <CalendarDays size={11} /> : <Clock size={11} />}
+                  {p}
+                </span>
+              ))}
+              {meta?.participants?.slice(0, 12).map(participant => (
+                <span key={participant}
+                  className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 ring-1 ring-violet-500/20">
+                  <Users size={11} className="shrink-0" />
+                  <span className="truncate">{participant}</span>
+                </span>
+              ))}
+              {meta?.participants?.length > 12 && (
+                <span className="rounded-full px-2.5 py-1 text-xs font-medium ring-1"
+                  style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
+                  +{meta.participants.length - 12} more
+                </span>
+              )}
             </div>
+          )}
+
+          {/* action buttons — scrollable row on mobile, wrap on desktop */}
+          <div className="mt-3 -mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0"
+            style={{ scrollbarWidth: 'none' }}>
+            <button onClick={copyText}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
+              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+              {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
+              {copied ? 'Copied!' : 'Copy text'}
+            </button>
+            <button onClick={() => setSpeakerModal(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
+              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+              <Users size={14} /> Name Speakers
+            </button>
+            <button onClick={() => setShareModal(true)}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
+              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+              <Share2 size={14} /> Share
+            </button>
+            <button onClick={() => setTemplateModal('pdf')}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
+              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+              <FileDown size={14} /> PDF
+            </button>
+            <button onClick={() => setTemplateModal('docx')}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium shadow-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-colors">
+              <Download size={14} /> Download .docx
+            </button>
+            {minutes?.has_audio && (
+              <button onClick={downloadAudio}
+                className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
+                style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+                title="Download original recording">
+                <Download size={14} /> Recording
+              </button>
+            )}
           </div>
         </div>
 
