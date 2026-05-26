@@ -2139,6 +2139,7 @@ export default function Results() {
   const [activeTab,     setActiveTab]     = useState('transcript')
   const [activeMobileTab, setActiveMobileTab] = useState('minutes')
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
+  const [headerExpanded, setHeaderExpanded] = useState(true)
   const [speakerModal,  setSpeakerModal]  = useState(false)
   const [shareModal,    setShareModal]    = useState(false)
   const [threadInfo,    setThreadInfo]    = useState<any | null>(null)
@@ -2209,23 +2210,31 @@ export default function Results() {
 
         {/* ── header ── */}
         <div className="shrink-0 border-b" style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
-          {/* breadcrumb row */}
+          {/* breadcrumb row — always visible, chevron collapses details on mobile */}
           <div className="flex items-center gap-1.5 border-b px-4 py-2 sm:px-6" style={{ borderColor: 'var(--divider)' }}>
             <Link
               to="/dashboard"
-              className="text-xs transition-colors hover:text-violet-400"
+              className="shrink-0 text-xs transition-colors hover:text-violet-400"
               style={{ color: 'var(--text-3)' }}
             >
               My Meetings
             </Link>
-            <ChevronRight size={11} style={{ color: 'var(--text-3)' }} />
-            <span className="max-w-[220px] truncate text-xs font-medium sm:max-w-sm" style={{ color: 'var(--text-2)' }}>
+            <ChevronRight size={11} className="shrink-0" style={{ color: 'var(--text-3)' }} />
+            <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: 'var(--text-2)' }}>
               {minutes?.title ?? 'Meeting'}
             </span>
+            <button
+              onClick={() => setHeaderExpanded(v => !v)}
+              className="ml-2 flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors hover:bg-white/[0.06] sm:hidden"
+              style={{ color: 'var(--text-3)' }}
+              title={headerExpanded ? 'Collapse header' : 'Expand header'}
+            >
+              <ChevronDown size={13} className={`transition-transform duration-200 ${headerExpanded ? 'rotate-180' : ''}`} />
+            </button>
           </div>
 
-          {/* title + compact actions */}
-          <div className="flex items-start gap-3 px-4 py-3 sm:px-6">
+          {/* title + compact actions — collapsible on mobile */}
+          <div className={`${headerExpanded ? 'flex' : 'hidden'} sm:flex items-start gap-3 px-4 py-3 sm:px-6`}>
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-lg font-bold leading-tight sm:text-xl" style={{ color: 'var(--text-1)' }}>
                 {minutes?.title ?? 'Meeting Minutes'}
