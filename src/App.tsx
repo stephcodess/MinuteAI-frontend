@@ -31,6 +31,7 @@ import ConnectCard from './pages/ConnectCard'
 import Threads from './pages/Threads'
 import ActionFab from './components/ActionFab'
 import UpdateNotifier from './components/UpdateNotifier'
+import ProductTour from './components/ProductTour'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
@@ -121,6 +122,7 @@ function AppRoutes() {
           <Route path="/contact" element={<Navigate to="/login" replace />} />
         </Routes>
       <ActionFab />
+      <ProductTour />
       <UpdateNotifier />
     </div>
   )

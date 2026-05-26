@@ -68,7 +68,7 @@ export default function AcceptInvite() {
   const emailParam = invite ? `?email=${encodeURIComponent(invite.invited_email)}` : ''
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-4 bg-[#080b14] overflow-hidden">
+    <div className="relative min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden" style={{ background: 'var(--page-bg)' }}>
       {/* ── Background ── */}
       <GridBg />
       <Orb className="top-[-15%] left-[-5%] w-[600px] h-[600px] bg-violet-700/18" />

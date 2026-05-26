@@ -4,4 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Electron loads the built renderer from file://, so asset URLs must be relative.
+  base: './',
 })

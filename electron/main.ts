@@ -37,9 +37,26 @@ function createWindow() {
     mainWindow!.show()
   })
 
-  // Open external links in the default browser instead of a new Electron window.
-  // TODO: Add deep-link OAuth support (minuteai://) for Google sign-in on desktop.
+  // Google OAuth popup must stay inside Electron so that accounts.google.com/gsi/transform
+  // can reach window.opener.postMessage() and deliver the access token back to the renderer.
+  // All other external links open in the system browser.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://accounts.google.com/')) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 500,
+          height: 650,
+          parent: mainWindow ?? undefined,
+          modal: true,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
+          },
+        },
+      }
+    }
     shell.openExternal(url)
     return { action: 'deny' }
   })

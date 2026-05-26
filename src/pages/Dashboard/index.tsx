@@ -7,6 +7,7 @@ import {
   Plus, Star, UserPlus, Bell, Loader2,
   CheckSquare, TrendingUp, ChevronLeft, ChevronRight,
   Bot, Copy, CalendarClock, ExternalLink,
+  X, PlayCircle, Compass, ArrowRight,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -89,27 +90,29 @@ function Pagination({ page, totalPages, total, pageSize, onPage }) {
 
   return (
     <div className="flex items-center justify-between px-5 py-3 border-t divider">
-      <span className="text-xs text-slate-500">
-        Showing <span className="font-medium text-slate-400">{from}–{to}</span> of <span className="font-medium text-slate-400">{total}</span>
+      <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+        Showing <span className="font-medium" style={{ color: 'var(--text-2)' }}>{from}–{to}</span> of <span className="font-medium" style={{ color: 'var(--text-2)' }}>{total}</span>
       </span>
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPage(page - 1)}
           disabled={page === 1}
-          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 hover:bg-white/[0.06] text-slate-500 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 hover:bg-white/[0.06] transition-colors"
+          style={{ color: 'var(--text-3)' }}
         >
           <ChevronLeft size={14} />
         </button>
         {pages.map((p, i) =>
           p === '…'
-            ? <span key={`ellipsis-${i}`} className="px-1 text-slate-500 text-xs select-none">…</span>
+            ? <span key={`ellipsis-${i}`} className="px-1 text-xs select-none" style={{ color: 'var(--text-3)' }}>…</span>
             : <button
               key={p}
               onClick={() => onPage(p)}
               className={`w-7 h-7 rounded-lg text-xs font-semibold transition-all ${page === p
                 ? 'bg-violet-600 text-white shadow-sm shadow-violet-300/30'
-                : 'text-slate-500 hover:bg-white/[0.06]'
+                : 'hover:bg-white/[0.06]'
                 }`}
+              style={{ color: page === p ? undefined : 'var(--text-3)' }}
             >
               {p}
             </button>
@@ -117,7 +120,8 @@ function Pagination({ page, totalPages, total, pageSize, onPage }) {
         <button
           onClick={() => onPage(page + 1)}
           disabled={page === totalPages}
-          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 hover:bg-white/[0.06] text-slate-500 transition-colors"
+          className="w-7 h-7 flex items-center justify-center rounded-lg disabled:opacity-30 hover:bg-white/[0.06] transition-colors"
+          style={{ color: 'var(--text-3)' }}
         >
           <ChevronRight size={14} />
         </button>
@@ -144,10 +148,10 @@ function StatCard({ label, value, delta, icon: Icon, gradient, index }) {
           <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}>
             <Icon size={18} className="text-white" />
           </div>
-          <span className="text-[10px] font-semibold px-2 py-1 rounded-full leading-tight text-right max-w-[100px]" style={{ color: 'var(--text-3)', background: 'var(--input-bg)' }}>{delta}</span>
+          <span className="text-[10px] font-bold px-2 py-1 rounded-full leading-tight text-right max-w-[110px]" style={{ color: 'var(--text-2)', background: 'var(--card-border)' }}>{delta}</span>
         </div>
         <p className="text-[34px] font-black leading-none mb-1 tracking-tight" style={{ color: 'var(--text-1)' }}>{String(value)}</p>
-        <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-2)' }}>{label}</p>
       </div>
     </motion.div>
   )
@@ -180,36 +184,35 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <p className="text-sm font-semibold text-white truncate">{meeting.title || 'Untitled meeting'}</p>
+          <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-1)' }}>{meeting.title || 'Untitled meeting'}</p>
           {meeting.starred && <Star size={11} className="text-amber-400 fill-amber-400 shrink-0" />}
           {meeting.thread_category && (() => {
-            const CAT_COLORS: Record<string, { color: string; bg: string }> = {
-              engineering: { color: '#60a5fa', bg: 'rgba(96,165,250,0.15)' },
-              product:     { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
-              design:      { color: '#f472b6', bg: 'rgba(244,114,182,0.15)' },
-              sales:       { color: '#34d399', bg: 'rgba(52,211,153,0.15)' },
-              marketing:   { color: '#fb923c', bg: 'rgba(251,146,60,0.15)' },
-              client:      { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
-              leadership:  { color: '#e879f9', bg: 'rgba(232,121,249,0.15)' },
-              all_hands:   { color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' },
-              one_on_one:  { color: '#38bdf8', bg: 'rgba(56,189,248,0.15)' },
-              other:       { color: '#6b7280', bg: 'rgba(107,114,128,0.15)' },
+            const CAT_CLASSES: Record<string, string> = {
+              engineering: 'text-blue-400 bg-blue-400/15',
+              product:     'text-violet-400 bg-violet-400/15',
+              design:      'text-pink-400 bg-pink-400/15',
+              sales:       'text-emerald-400 bg-emerald-400/15',
+              marketing:   'text-orange-400 bg-orange-400/15',
+              client:      'text-amber-400 bg-amber-400/15',
+              leadership:  'text-fuchsia-400 bg-fuchsia-400/15',
+              all_hands:   'text-slate-400 bg-slate-400/15',
+              one_on_one:  'text-sky-400 bg-sky-400/15',
+              other:       'text-gray-400 bg-gray-400/15',
             }
             const CAT_LABELS: Record<string, string> = {
               engineering: 'Engineering', product: 'Product', design: 'Design',
               sales: 'Sales', marketing: 'Marketing', client: 'Client',
               leadership: 'Leadership', all_hands: 'All-Hands', one_on_one: '1:1', other: 'Other',
             }
-            const c = CAT_COLORS[meeting.thread_category] || { color: '#6b7280', bg: 'rgba(107,114,128,0.15)' }
+            const cls = CAT_CLASSES[meeting.thread_category] || 'text-gray-400 bg-gray-400/15'
             return (
-              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md"
-                style={{ background: c.bg, color: c.color }}>
+              <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md ${cls}`}>
                 {CAT_LABELS[meeting.thread_category] || meeting.thread_category}
               </span>
             )
           })()}
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>
           <span className="flex items-center gap-1"><Calendar size={9} />{fmtDate(meeting.date)}</span>
           {meeting.duration && meeting.duration !== '—' && (
             <span className="flex items-center gap-1"><Clock size={9} />{meeting.duration}</span>
@@ -238,7 +241,8 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
         <div className="relative">
           <button
             onClick={() => setMenuOpen(v => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-white hover:text-slate-300"
+            className="flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-white/[0.06]"
+            style={{ color: 'var(--text-3)' }}
             aria-label="Meeting actions"
           >
             <MoreHorizontal size={14} />
@@ -256,7 +260,8 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
                 >
                   <button
                     onClick={() => { onStar?.(meeting.id); setMenuOpen(false) }}
-                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-400 hover:bg-[var(--nav-hover-bg)]"
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm hover:bg-[var(--nav-hover-bg)]"
+                    style={{ color: 'var(--text-2)' }}
                   >
                     <Star size={13} className={meeting.starred ? 'fill-amber-400 text-amber-400' : ''} />
                     {meeting.starred ? 'Unstar' : 'Star'}
@@ -292,7 +297,8 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
         <div className="relative ml-auto">
           <button
             onClick={() => setMenuOpen(v => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-[var(--nav-hover-bg)] hover:text-slate-300"
+            className="flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-[var(--nav-hover-bg)]"
+            style={{ color: 'var(--text-3)' }}
             aria-label="Meeting actions"
           >
             <MoreHorizontal size={15} />
@@ -310,7 +316,8 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
                 >
                   <button
                     onClick={() => { onStar?.(meeting.id); setMenuOpen(false) }}
-                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-slate-400 hover:bg-[var(--nav-hover-bg)]"
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm hover:bg-[var(--nav-hover-bg)]"
+                    style={{ color: 'var(--text-2)' }}
                   >
                     <Star size={13} className={meeting.starred ? 'fill-amber-400 text-amber-400' : ''} />
                     {meeting.starred ? 'Unstar' : 'Star'}
@@ -357,7 +364,7 @@ function ActivityFeed({ meetings }) {
           <div className="w-6 h-6 rounded-lg bg-violet-500/10 flex items-center justify-center">
             <Bell size={12} className="text-violet-400" />
           </div>
-          <p className="text-sm font-bold text-white">Activity</p>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Activity</p>
         </div>
         {items.some(i => i.spinning) && (
           <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
@@ -370,14 +377,14 @@ function ActivityFeed({ meetings }) {
       {items.length === 0 ? (
         <div className="py-10 flex flex-col items-center gap-2">
           <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center">
-            <Bell size={18} className="text-slate-600" />
+            <Bell size={18} style={{ color: 'var(--text-3)' }} />
           </div>
-          <p className="text-xs text-slate-500">No activity yet</p>
+          <p className="text-xs" style={{ color: 'var(--text-3)' }}>No activity yet</p>
         </div>
       ) : (
         <div className="relative">
           {/* vertical timeline line */}
-          <div className="absolute left-[27px] top-4 bottom-4 w-px bg-white/[0.06]" />
+          <div className="absolute left-[27px] top-4 bottom-4 w-px" style={{ background: 'var(--divider)' }} />
 
           {items.map((item, i) => (
             <motion.div
@@ -401,16 +408,16 @@ function ActivityFeed({ meetings }) {
               </div>
 
               <div className="flex-1 min-w-0 pt-0.5">
-                <p className="text-xs font-semibold text-slate-200 leading-tight truncate">{item.label}</p>
+                <p className="text-xs font-semibold leading-tight truncate" style={{ color: 'var(--text-1)' }}>{item.label}</p>
                 {item.to ? (
                   <Link to={item.to} className="text-[11px] text-violet-500 hover:underline mt-0.5 block">
                     {item.sub} →
                   </Link>
                 ) : (
-                  <p className="text-[11px] text-slate-500 mt-0.5">{item.sub}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>{item.sub}</p>
                 )}
               </div>
-              <span className="text-[10px] text-slate-600 shrink-0 pt-0.5">{item.time}</span>
+              <span className="text-[10px] shrink-0 pt-0.5" style={{ color: 'var(--text-3)' }}>{item.time}</span>
             </motion.div>
           ))}
         </div>
@@ -470,7 +477,7 @@ function TeamPreview() {
           <div className="w-6 h-6 rounded-lg bg-violet-500/10 flex items-center justify-center">
             <Users size={12} className="text-violet-400" />
           </div>
-          <p className="text-sm font-bold text-white">Team</p>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Team</p>
         </div>
         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
           {activeCount} active
@@ -493,7 +500,7 @@ function TeamPreview() {
             </motion.div>
           ))}
           {members.length > 5 && (
-            <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-slate-500 text-[11px] font-bold ring-2 ring-white">
+            <div className="w-9 h-9 rounded-full bg-white/[0.06] flex items-center justify-center text-[11px] font-bold ring-2 ring-white" style={{ color: 'var(--text-3)' }}>
               +{members.length - 5}
             </div>
           )}
@@ -512,7 +519,7 @@ function TeamPreview() {
                 {m.initials}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-white truncate">{m.name}{m.isMe ? ' (you)' : ''}</p>
+                <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-1)' }}>{m.name}{m.isMe ? ' (you)' : ''}</p>
               </div>
               <div className="flex items-center gap-1">
                 {m.isMe && (
@@ -567,24 +574,25 @@ function RecorderInviteCard({ botAccount }) {
         <div className="w-6 h-6 rounded-lg bg-cyan-500/10 flex items-center justify-center">
           <Bot size={12} className="text-cyan-400" />
         </div>
-        <p className="text-sm font-bold text-white">Workspace recorder</p>
+        <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Workspace recorder</p>
       </div>
       <div className="px-5 py-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Invite this bot</p>
-        <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white/[0.04] px-3 py-2">
-          <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-200">
+        <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-2)' }}>Invite this bot</p>
+        <div className="flex items-center gap-2 rounded-xl border px-3 py-2" style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)' }}>
+          <span className="min-w-0 flex-1 truncate text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
             {botAccount?.email || 'Setting up recorder...'}
           </span>
           <button
             onClick={copyEmail}
             disabled={!botAccount?.email}
-            className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-white/[0.08] hover:text-violet-400 disabled:opacity-40"
+            className="shrink-0 rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-violet-400 disabled:opacity-40"
+            style={{ color: 'var(--text-3)' }}
             title="Copy recorder email"
           >
             {copied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
           </button>
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-slate-500">
+        <p className="mt-3 text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>
           Add this address as a guest when scheduling in Google Calendar so MinuteAI can detect and join workspace meetings.
         </p>
       </div>
@@ -617,7 +625,7 @@ function recordingBadge(status: string | null, auto_join: boolean) {
     return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">{LIVE_LABEL[status] || status}</span>
   }
   if (status === 'done') {
-    return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-500/10 text-slate-400">Recorded</span>
+    return <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-500/10" style={{ color: 'var(--text-2)' }}>Recorded</span>
   }
   return null
 }
@@ -640,7 +648,7 @@ function UpcomingMeetings({ sessions, calendarData }) {
           <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
             <CalendarClock size={12} className="text-blue-400" />
           </div>
-          <p className="text-sm font-bold text-white">Upcoming</p>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Upcoming</p>
         </div>
         <div className="flex items-center gap-2">
           {hasLive && (
@@ -671,7 +679,7 @@ function UpcomingMeetings({ sessions, calendarData }) {
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-bold text-white">{session.title || 'Meeting'}</p>
+                  <p className="truncate text-xs font-bold" style={{ color: 'var(--text-1)' }}>{session.title || 'Meeting'}</p>
                   <p className="mt-0.5 text-[11px] font-semibold text-red-400">{LIVE_LABEL[session.status] || session.status}</p>
                   {session.meeting_url && (
                     <a href={session.meeting_url} target="_blank" rel="noreferrer"
@@ -703,10 +711,10 @@ function UpcomingMeetings({ sessions, calendarData }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <p className="truncate text-xs font-bold text-white">{event.title}</p>
+                    <p className="truncate text-xs font-bold" style={{ color: 'var(--text-1)' }}>{event.title}</p>
                     {recordingBadge(event.recording_status, auto_join)}
                   </div>
-                  <p className="text-[11px] text-slate-500">{fmtCalStart(event.start)}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>{fmtCalStart(event.start)}</p>
                   <a href={event.meet_url} target="_blank" rel="noreferrer"
                     className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300">
                     Join Meet <ExternalLink size={10} />
@@ -721,17 +729,17 @@ function UpcomingMeetings({ sessions, calendarData }) {
       {/* Empty state */}
       {isEmpty && (
         <div className="px-5 py-8 text-center">
-          <CalendarClock size={22} className="mx-auto text-slate-600" />
+          <CalendarClock size={22} className="mx-auto" style={{ color: 'var(--text-3)' }} />
           {connected === false ? (
             <>
-              <p className="mt-2 text-xs font-semibold text-slate-500">Connect Google Calendar to see upcoming meetings</p>
+              <p className="mt-2 text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Connect Google Calendar to see upcoming meetings</p>
               <Link to="/settings?tab=integrations" className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-400 hover:underline">
                 Connect Calendar
               </Link>
             </>
           ) : (
             <>
-              <p className="mt-2 text-xs font-semibold text-slate-500">No upcoming Google Meet meetings</p>
+              <p className="mt-2 text-xs font-semibold" style={{ color: 'var(--text-3)' }}>No upcoming Google Meet meetings</p>
               <Link to="/meeting-bots" className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-400 hover:underline">
                 <Plus size={10} /> Schedule a recording
               </Link>
@@ -740,6 +748,192 @@ function UpcomingMeetings({ sessions, calendarData }) {
         </div>
       )}
     </motion.div>
+  )
+}
+
+const TOUR_STEPS = [
+  {
+    selector: '[data-tour="new-meeting"]',
+    title: 'Create your first meeting',
+    body: 'Upload a recording or start from the New meeting flow. This is where most teams begin.',
+    placement: 'bottom',
+  },
+  {
+    selector: '[data-tour="stats"]',
+    title: 'Track your workspace momentum',
+    body: 'These cards summarize meetings processed, monthly volume, time saved, and action items extracted.',
+    placement: 'bottom',
+  },
+  {
+    selector: '[data-tour="meetings"]',
+    title: 'Open completed meeting results',
+    body: 'Your processed meetings appear here. Click a completed row to view minutes, transcript, recording, and tasks.',
+    placement: 'right',
+  },
+  {
+    selector: '[data-tour="upcoming"]',
+    title: 'Let MinuteAI join scheduled calls',
+    body: 'Connect your calendar or schedule a bot recording so meetings can be captured automatically.',
+    placement: 'left',
+  },
+  {
+    selector: '[data-tour="recorder"]',
+    title: 'Invite your workspace recorder',
+    body: 'Add this recorder email to calendar invites when you want MinuteAI to join as a guest.',
+    placement: 'left',
+  },
+]
+
+function DashboardTour({ userId }: { userId?: string }) {
+  const storageKey = `minuteai_dashboard_tour_done_${userId || 'anon'}`
+  const introVideo = import.meta.env.VITE_INTRO_VIDEO_URL
+  const [showIntro, setShowIntro] = useState(false)
+  const [active, setActive] = useState(false)
+  const [stepIndex, setStepIndex] = useState(0)
+  const [rect, setRect] = useState<DOMRect | null>(null)
+
+  useEffect(() => {
+    if (localStorage.getItem(storageKey)) return
+    const id = window.setTimeout(() => setShowIntro(true), 700)
+    return () => window.clearTimeout(id)
+  }, [storageKey])
+
+  useEffect(() => {
+    if (!active) return
+    function updateRect() {
+      const el = document.querySelector(TOUR_STEPS[stepIndex]?.selector)
+      setRect(el?.getBoundingClientRect() ?? null)
+    }
+    updateRect()
+    window.addEventListener('resize', updateRect)
+    window.addEventListener('scroll', updateRect, true)
+    return () => {
+      window.removeEventListener('resize', updateRect)
+      window.removeEventListener('scroll', updateRect, true)
+    }
+  }, [active, stepIndex])
+
+  function startTour() {
+    setShowIntro(false)
+    setActive(true)
+    setStepIndex(0)
+  }
+
+  function finishTour() {
+    localStorage.setItem(storageKey, 'true')
+    setShowIntro(false)
+    setActive(false)
+  }
+
+  function nextStep() {
+    if (stepIndex >= TOUR_STEPS.length - 1) finishTour()
+    else setStepIndex(i => i + 1)
+  }
+
+  function skipIntro() {
+    localStorage.setItem(storageKey, 'true')
+    setShowIntro(false)
+  }
+
+  useEffect(() => {
+    const handler = () => startTour()
+    window.addEventListener('minuteai:start-dashboard-tour', handler)
+    return () => window.removeEventListener('minuteai:start-dashboard-tour', handler)
+  }, [])
+
+  const step = TOUR_STEPS[stepIndex]
+  const top = rect ? Math.min(Math.max(rect.bottom + 12, 16), window.innerHeight - 220) : 120
+  const preferLeft = step?.placement === 'left'
+  const left = rect
+    ? preferLeft
+      ? Math.max(16, rect.left - 340)
+      : Math.min(Math.max(16, rect.left), window.innerWidth - 340)
+    : 32
+
+  return (
+    <AnimatePresence>
+      {showIntro && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={skipIntro} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 14 }}
+            className="relative z-10 w-full max-w-2xl overflow-hidden rounded-2xl border shadow-2xl"
+            style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--card-border)' }}
+          >
+            <button onClick={skipIntro} className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/30 text-white transition hover:bg-black/50">
+              <X size={15} />
+            </button>
+            <div className="aspect-video bg-black">
+              {introVideo ? (
+                <video src={introVideo} controls autoPlay className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-violet-950 via-slate-950 to-indigo-950 px-8 text-center text-white">
+                  <PlayCircle size={56} className="mb-4 text-violet-300" />
+                  <p className="text-xl font-black">Welcome to MinuteAI</p>
+                  <p className="mt-2 max-w-md text-sm text-white/65">
+                    Add `VITE_INTRO_VIDEO_URL` to show your onboarding video here.
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>Let’s get you oriented</p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--text-3)' }}>
+                Watch the intro, then take a quick tour of where meetings, tasks, recordings, and bots live.
+              </p>
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <button onClick={skipIntro} className="rounded-lg px-4 py-2 text-sm font-semibold" style={{ color: 'var(--text-2)' }}>
+                  Skip
+                </button>
+                <button onClick={startTour} className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">
+                  Start tour <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {active && (
+        <div className="fixed inset-0 z-50 pointer-events-none">
+          <div className="absolute inset-0 bg-black/55" />
+          {rect && (
+            <motion.div
+              layout
+              className="absolute rounded-2xl border-2 border-violet-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.55)]"
+              style={{ left: rect.left - 6, top: rect.top - 6, width: rect.width + 12, height: rect.height + 12 }}
+            />
+          )}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="pointer-events-auto absolute w-[min(360px,calc(100vw-32px))] rounded-2xl border p-4 shadow-2xl backdrop-blur-none"
+            style={{ left, top, background: 'var(--sidebar-bg)', borderColor: 'var(--card-border)' }}
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-violet-400">
+                {stepIndex + 1} of {TOUR_STEPS.length}
+              </span>
+              <button onClick={finishTour} className="flex h-7 w-7 items-center justify-center rounded-lg transition hover:bg-white/[0.06]" style={{ color: 'var(--text-3)' }}>
+                <X size={13} />
+              </button>
+            </div>
+            <p className="text-base font-bold" style={{ color: 'var(--text-1)' }}>{step.title}</p>
+            <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--text-3)' }}>{step.body}</p>
+            <div className="mt-4 flex items-center justify-between">
+              <button onClick={finishTour} className="text-sm font-semibold" style={{ color: 'var(--text-3)' }}>Skip</button>
+              <button onClick={nextStep} className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-700">
+                {stepIndex >= TOUR_STEPS.length - 1 ? 'Finish' : 'Next'} <ArrowRight size={13} />
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -821,32 +1015,23 @@ export default function Dashboard() {
       <main className="min-w-0 flex-1 overflow-y-auto page-content">
 
         {/* ── Hero banner ── */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#3d27b8] via-[#4b38d4] to-[#6d28d9] pb-28 pt-10 px-6 lg:px-8">
+        <div className="relative overflow-hidden border-b dashboard-hero px-4 pb-24 pt-8 sm:px-6 lg:px-8"
+          style={{ borderColor: 'var(--card-border)' }}>
           {/* mesh pattern */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0)',
-              backgroundSize: '32px 32px',
-            }}
-          />
-          {/* glow orbs */}
-          <div className="absolute -top-24 -right-16 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-indigo-300/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative max-w-5xl mx-auto">
+          <div className="absolute inset-0 pointer-events-none dashboard-hero-dots" />
+          <div className="relative mx-auto max-w-7xl">
             {/* top row: greeting + CTA */}
-            <div className="flex items-start justify-between gap-4 mb-6">
+            <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 {/* date badge */}
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/50 mb-3">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/75 mb-3">
                   <Calendar size={10} />
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </span>
                 <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight tracking-tight">
                   {greeting}, {user?.name?.split(' ')[0]} 👋
                 </h1>
-                <p className="text-white/50 text-sm mt-1.5 font-medium">
+                <p className="text-white/80 text-sm mt-1.5 font-medium">
                   {activeWorkspace?.name ?? 'Your workspace'}
                   {remaining !== null && (
                     <span className="ml-2 inline-flex items-center gap-1 bg-white/10 border border-white/15 rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white/80">
@@ -857,15 +1042,24 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => navigate('/upload')}
-                className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-full bg-white text-violet-300 text-sm font-bold shadow-xl shadow-violet-900/30 hover:shadow-2xl transition-all mt-1"
-              >
-                <Plus size={16} />
-                New meeting
-              </motion.button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('minuteai:start-dashboard-tour'))}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-white/85 transition hover:bg-white/15"
+                >
+                  <Compass size={15} /> Take tour
+                </button>
+                <motion.button
+                  data-tour="new-meeting"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/upload')}
+                  className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-full bg-white text-violet-700 text-sm font-bold shadow-xl shadow-violet-900/30 hover:shadow-2xl transition-all"
+                >
+                  <Plus size={16} />
+                  New meeting
+                </motion.button>
+              </div>
             </div>
 
             {/* Quick action chips */}
@@ -890,21 +1084,38 @@ export default function Dashboard() {
         </div>
 
         {/* ── Stats cards (overlap hero) ── */}
-        <div className="px-6 lg:px-8 -mt-14 relative z-10 mb-6 max-w-5xl mx-auto w-full">
+        <div data-tour="stats" className="relative z-10 mx-auto -mt-12 mb-6 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {buildStats(statsData).map((s, i) => <StatCard key={s.label} {...s} index={i} />)}
           </div>
         </div>
 
         {/* ── Main content: 2-col layout ── */}
-        <div className="px-6 pb-12 lg:px-8 max-w-5xl mx-auto w-full">
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
 
             {/* Left column: meetings list */}
-            <div className="lg:col-span-2 flex flex-col gap-5">
+            <div className="flex flex-col gap-5 xl:col-span-8">
+
+              <div className="grid gap-4 md:grid-cols-3">
+                {[
+                  { title: 'Upload a recording', body: 'Turn audio or video into minutes.', icon: FileText, to: '/upload' },
+                  { title: 'Invite the bot', body: 'Record calendar meetings automatically.', icon: Bot, to: '/meeting-bots' },
+                  { title: 'Assign action items', body: 'Track extracted work with your team.', icon: CheckSquare, to: '/tasks' },
+                ].map(({ title, body, icon: Icon, to }) => (
+                  <Link key={title} to={to} className="glass-card group rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-violet-500/30">
+                    <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+                      <Icon size={16} />
+                    </div>
+                    <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{title}</p>
+                    <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>{body}</p>
+                  </Link>
+                ))}
+              </div>
 
               {/* ── Meeting list card ── */}
               <motion.div
+                data-tour="meetings"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
@@ -916,22 +1127,23 @@ export default function Dashboard() {
                     <div className="w-7 h-7 rounded-xl bg-violet-500/10 flex items-center justify-center">
                       <FileText size={13} className="text-violet-400" />
                     </div>
-                    <p className="text-sm font-bold text-white">Meetings</p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Meetings</p>
                     {meetings.length > 0 && (
                       <span className="text-[11px] font-semibold text-violet-400 bg-violet-500/10 px-2 py-0.5 rounded-full">{meetings.length}</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     {/* filter tabs */}
-                    <div className="flex items-center gap-1 bg-white/[0.06] rounded-full p-1">
+                    <div className="flex items-center gap-1 rounded-full p-1" style={{ background: 'var(--input-bg)' }}>
                       {[['all', 'All'], ['month', 'Month'], ['starred', '★']].map(([f, label]) => (
                         <button
                           key={f}
                           onClick={() => setFilter(f)}
                           className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${filter === f
                             ? 'bg-violet-600 text-white shadow-sm'
-                            : 'text-slate-500 hover:text-white'
+                            : ''
                           }`}
+                          style={{ color: filter === f ? undefined : 'var(--text-3)' }}
                         >
                           {label}
                         </button>
@@ -939,7 +1151,7 @@ export default function Dashboard() {
                     </div>
                     {/* search */}
                     <div className="relative">
-                      <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                      <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-3)' }} />
                       <input
                         value={search}
                         onChange={e => setSearch(e.target.value)}
@@ -955,12 +1167,12 @@ export default function Dashboard() {
                   <div className="divide-y divide-[var(--divider)]">
                     {[1, 2, 3, 4].map(i => (
                       <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
-                        <div className="w-10 h-10 rounded-2xl bg-white/[0.06] shrink-0" />
+                        <div className="w-10 h-10 rounded-2xl shrink-0" style={{ background: 'var(--input-bg)' }} />
                         <div className="flex-1 space-y-2">
-                          <div className="h-3 bg-white/[0.06] rounded-full w-3/5" />
-                          <div className="h-2.5 bg-white/[0.06] rounded-full w-2/5" />
+                          <div className="h-3 rounded-full w-3/5" style={{ background: 'var(--input-bg)' }} />
+                          <div className="h-2.5 rounded-full w-2/5" style={{ background: 'var(--input-bg)' }} />
                         </div>
-                        <div className="h-6 w-16 bg-white/[0.06] rounded-full" />
+                        <div className="h-6 w-16 rounded-full" style={{ background: 'var(--input-bg)' }} />
                       </div>
                     ))}
                   </div>
@@ -982,10 +1194,10 @@ export default function Dashboard() {
                     <div className="w-16 h-16 rounded-3xl bg-violet-500/10 flex items-center justify-center mx-auto mb-4">
                       <FileText size={26} className="text-violet-300" />
                     </div>
-                    <p className="font-bold text-slate-200 mb-1.5">
+                    <p className="font-bold mb-1.5" style={{ color: 'var(--text-1)' }}>
                       {search ? 'No matches found' : 'No meetings yet'}
                     </p>
-                    <p className="text-sm text-slate-500 mb-6 max-w-[220px]">
+                    <p className="text-sm mb-6 max-w-[260px]" style={{ color: 'var(--text-3)' }}>
                       {search
                         ? 'Try a different keyword or clear the filter.'
                         : 'Upload your first recording and get AI-generated minutes in minutes.'}
@@ -1006,9 +1218,13 @@ export default function Dashboard() {
             </div>
 
             {/* Right column: sidebar widgets */}
-            <div className="flex flex-col gap-4">
-              <UpcomingMeetings sessions={upcoming} calendarData={calendarData} />
-              <RecorderInviteCard botAccount={botAccount} />
+            <div className="flex flex-col gap-4 xl:col-span-4">
+              <div data-tour="upcoming">
+                <UpcomingMeetings sessions={upcoming} calendarData={calendarData} />
+              </div>
+              <div data-tour="recorder">
+                <RecorderInviteCard botAccount={botAccount} />
+              </div>
               <TeamPreview />
             </div>
 

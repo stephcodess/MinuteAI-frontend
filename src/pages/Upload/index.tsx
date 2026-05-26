@@ -194,22 +194,24 @@ function TemplateCard({ tpl, selected, onClick }) {
   const Icon = tpl.icon
   return (
     <motion.button
+      type="button"
       onClick={onClick}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`relative flex flex-col items-start gap-2 p-3.5 rounded-sm text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
+      className={`relative flex flex-col items-start gap-2 p-3.5 text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
         }`}
       style={{
         background: selected ? 'rgba(139,92,246,0.08)' : 'var(--input-bg)',
         border: selected ? undefined : '1px solid var(--card-border)',
+        borderRadius: 8,
       }}
     >
       <div className={`w-8 h-8 rounded-md bg-gradient-to-br ${tpl.gradient} flex items-center justify-center shadow-sm shrink-0`}>
         <Icon size={15} className="text-white" />
       </div>
       <div>
-        <p className="text-xs font-bold text-slate-200">{tpl.name}</p>
-        <p className="text-[11px] text-slate-500 leading-snug mt-0.5">{tpl.desc}</p>
+        <p className="text-xs font-bold" style={{ color: 'var(--text-1)' }}>{tpl.name}</p>
+        <p className="text-[11px] leading-snug mt-0.5" style={{ color: 'var(--text-3)' }}>{tpl.desc}</p>
       </div>
       {selected && (
         <div className={`absolute top-2 right-2 w-4 h-4 rounded-full ${tpl.dot} flex items-center justify-center`}>

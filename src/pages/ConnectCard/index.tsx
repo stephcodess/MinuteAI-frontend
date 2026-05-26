@@ -25,7 +25,7 @@ export default function ConnectCard() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#07090f] px-4 py-10">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 py-10" style={{ background: 'var(--page-bg)' }}>
 
       {/* Background atmosphere */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -33,13 +33,7 @@ export default function ConnectCard() {
         <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-indigo-600/10 blur-[100px]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-violet-900/8 blur-[80px]" />
         {/* Subtle grid */}
-        <div
-          className="absolute inset-0 opacity-[0.025]"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(139,92,246,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.6) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }}
-        />
+        <div className="connect-grid absolute inset-0 opacity-[0.025]" />
       </div>
 
       <motion.div
@@ -67,9 +61,9 @@ export default function ConnectCard() {
         <div
           className="rounded-3xl border overflow-hidden"
           style={{
-            background: 'rgba(255,255,255,0.035)',
-            borderColor: 'rgba(255,255,255,0.08)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.08) inset',
+            background: 'var(--card-bg)',
+            borderColor: 'var(--card-border)',
+            boxShadow: '0 32px 80px var(--modal-overlay)',
           }}
         >
           {/* Top accent line */}

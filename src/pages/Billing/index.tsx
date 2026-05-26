@@ -669,22 +669,15 @@ export default function Billing() {
                   <div className="glass-card border rounded-2xl p-5 sm:p-6 space-y-5">
 
                     {/* ── Physical card visual ── */}
-                    <div className="relative w-full max-w-xs aspect-[1.586] rounded-2xl p-5 overflow-hidden select-none"
-                      style={{
-                        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e3a5f 80%, #0f172a 100%)',
-                        boxShadow: '0 24px 48px rgba(79,70,229,0.35), 0 4px 12px rgba(0,0,0,0.5)',
-                      }}>
+                    <div className="billing-card-bg relative w-full max-w-xs aspect-[1.586] rounded-2xl p-5 overflow-hidden select-none">
                       {/* Glow blobs */}
-                      <div className="pointer-events-none absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-30"
-                        style={{ background: 'radial-gradient(circle, #7c3aed, transparent 70%)' }} />
-                      <div className="pointer-events-none absolute -left-10 -bottom-10 w-48 h-48 rounded-full opacity-20"
-                        style={{ background: 'radial-gradient(circle, #4f46e5, transparent 70%)' }} />
+                      <div className="billing-card-blob-tr pointer-events-none absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-30" />
+                      <div className="billing-card-blob-bl pointer-events-none absolute -left-10 -bottom-10 w-48 h-48 rounded-full opacity-20" />
 
                       {/* Top row: chip + contactless */}
                       <div className="flex items-center justify-between mb-5">
                         {/* EMV chip */}
-                        <div className="relative w-9 h-[26px] rounded-md overflow-hidden"
-                          style={{ background: 'linear-gradient(145deg, #fbbf24, #d97706)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                        <div className="billing-card-chip relative w-9 h-[26px] rounded-md overflow-hidden">
                           <div className="absolute inset-0 grid grid-cols-3 gap-px p-[3px]">
                             {[...Array(6)].map((_, i) => (
                               <div key={i} className="rounded-[1px] bg-amber-900/25" />
@@ -977,7 +970,7 @@ export default function Billing() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.7)' }}
+            style={{ background: 'var(--modal-overlay)' }}
             onClick={e => { if (e.target === e.currentTarget) setUpgradeModal(null) }}
           >
             <motion.div
@@ -986,10 +979,10 @@ export default function Billing() {
               exit={{ opacity: 0, scale: 0.95, y: 12 }}
               transition={{ duration: 0.2 }}
               className="w-full max-w-md rounded-2xl border overflow-hidden"
-              style={{ background: '#0c0f1a', borderColor: 'rgba(255,255,255,0.1)' }}
+              style={{ background: 'var(--modal-bg)', borderColor: 'var(--modal-border)' }}
             >
               {/* Modal header */}
-              <div className="flex items-start justify-between gap-3 px-6 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <div className="flex items-start justify-between gap-3 px-6 py-5 border-b" style={{ borderColor: 'var(--card-border)' }}>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-violet-400 mb-0.5">Subscribe</p>
                   <h2 className="text-lg font-bold text-white">{upgradeModal.plan.name}</h2>

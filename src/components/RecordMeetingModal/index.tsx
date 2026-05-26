@@ -103,8 +103,8 @@ export default function RecordMeetingModal({ open, onClose }) {
             className="fixed inset-0 z-[130] flex items-end justify-center p-4 sm:items-center"
           >
             <div className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-white/60 bg-white shadow-[0_35px_90px_rgba(30,41,59,0.22)]">
-              <div className="relative overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#312e81] to-[#4f46e5] px-6 py-6 text-white">
-                <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)', backgroundSize: '22px 22px' }} />
+              <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-900 to-indigo-600 px-6 py-6 text-white">
+                <div className="absolute inset-0 opacity-30 recording-cover-dots" />
                 <div className="relative flex items-start justify-between gap-4">
                   <div className="max-w-xl">
                     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/14 ring-1 ring-white/20 backdrop-blur">
@@ -128,7 +128,7 @@ export default function RecordMeetingModal({ open, onClose }) {
 
               {showDevelopmentNotice ? (
                 <div className="px-6 py-6">
-                  <div className="rounded-[24px] bg-[#f8fafc] p-5 ring-1 ring-slate-200/70">
+                  <div className="rounded-[24px] bg-slate-50 p-5 ring-1 ring-slate-200/70">
                     <div className="flex items-start gap-4">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
                         <Sparkles size={20} />
@@ -301,7 +301,7 @@ export default function RecordMeetingModal({ open, onClose }) {
                   </div>
                 </form>
 
-                <div className="space-y-4 rounded-[24px] bg-[#f8fafc] p-5 ring-1 ring-slate-200/70">
+                <div className="space-y-4 rounded-[24px] bg-slate-50 p-5 ring-1 ring-slate-200/70">
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Support notes</p>
                   <div className="space-y-3">
                     <SupportPill icon={CalendarClock} label="Scheduled sessions include a calendar event" tone="good" />
