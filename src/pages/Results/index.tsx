@@ -938,6 +938,133 @@ function TranscriptPanel({
   )
 }
 
+// ── Ask AI tab ────────────────────────────────────────────────────────────────
+
+const SUGGESTED_QUESTIONS = [
+  'What were the key decisions made?',
+  'What are the next steps?',
+  'Who is responsible for what?',
+]
+
+function AskAiTab({ transcript }: { transcript?: string }) {
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([])
+  const [input, setInput]   = useState('')
+  const [thinking, setThinking] = useState(false)
+  const endRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, thinking])
+
+  async function send(question?: string) {
+    const q = (question ?? input).trim()
+    if (!q || thinking) return
+    setInput('')
+    const next = [...messages, { role: 'user' as const, content: q }]
+    setMessages(next)
+    setThinking(true)
+    try {
+      const data = await api.post('/ai/live/chat', {
+        transcript: transcript || '',
+        question: q,
+        history: messages,
+      })
+      setMessages([...next, { role: 'assistant', content: data.answer }])
+    } catch {
+      setMessages([...next, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
+    } finally {
+      setThinking(false)
+    }
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center text-center py-10">
+            <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center mb-3">
+              <MessageSquare size={22} className="text-violet-400" />
+            </div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Ask about this meeting</p>
+            <p className="mt-1 max-w-xs text-xs" style={{ color: 'var(--text-3)' }}>
+              Get instant answers based on the transcript and minutes.
+            </p>
+            <div className="mt-5 flex flex-col gap-2 w-full max-w-xs">
+              {SUGGESTED_QUESTIONS.map(q => (
+                <button
+                  key={q}
+                  onClick={() => send(q)}
+                  className="rounded-xl border px-3 py-2.5 text-left text-xs transition-colors hover:bg-white/[0.04]"
+                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          messages.map((msg, i) => (
+            <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold ${
+                msg.role === 'user'
+                  ? 'bg-violet-500/20 text-violet-400'
+                  : 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white'
+              }`}>
+                {msg.role === 'user' ? 'You' : 'AI'}
+              </div>
+              <div
+                className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                  msg.role === 'user' ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                }`}
+                style={{
+                  background: msg.role === 'user' ? 'rgba(139,92,246,0.15)' : 'var(--input-bg)',
+                  color: 'var(--text-1)',
+                }}
+              >
+                {msg.content}
+              </div>
+            </div>
+          ))
+        )}
+        {thinking && (
+          <div className="flex gap-2.5">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 text-[9px] font-bold text-white">AI</div>
+            <div className="rounded-2xl rounded-tl-sm px-3.5 py-3" style={{ background: 'var(--input-bg)' }}>
+              <div className="flex gap-1 items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+
+      <div className="shrink-0 border-t p-3" style={{ borderColor: 'var(--divider)' }}>
+        <div className="flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+            placeholder="Ask about this meeting…"
+            rows={1}
+            className="flex-1 resize-none rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-1 focus:ring-violet-500/40"
+            style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+          />
+          <button
+            onClick={() => send()}
+            disabled={!input.trim() || thinking}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white disabled:opacity-40 transition-all hover:from-violet-500 hover:to-indigo-500"
+          >
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function RecordingDock({ hasAudio, audioUrl, onDownload }: { hasAudio?: boolean; audioUrl?: string; onDownload: () => void }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [playing, setPlaying] = useState(false)
@@ -1935,13 +2062,15 @@ function ContinuityPanel({ data }: { data: any }) {
 
 const TABS = [
   { key: 'transcript', label: 'Transcript' },
-  { key: 'tasks',      label: 'Tasks'      },
+  { key: 'ask_ai',    label: 'Ask AI'     },
+  { key: 'tasks',     label: 'Tasks'      },
 ]
 
 const MOBILE_TABS = [
   { key: 'minutes',    label: 'Minutes'    },
   { key: 'transcript', label: 'Transcript' },
-  { key: 'tasks',      label: 'Tasks'      },
+  { key: 'ask_ai',    label: 'Ask AI'     },
+  { key: 'tasks',     label: 'Tasks'      },
 ]
 
 export default function Results() {
@@ -2009,7 +2138,9 @@ export default function Results() {
     ? 'tasks'
     : activeMobileTab === 'transcript'
       ? 'transcript'
-      : activeTab
+      : activeMobileTab === 'ask_ai'
+        ? 'ask_ai'
+        : activeTab
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
@@ -2104,7 +2235,7 @@ export default function Results() {
         {/* ── mobile tab bar (sticky below header, hidden on xl) ── */}
         <div className="shrink-0 border-b px-4 py-2 xl:hidden"
           style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
-          <div className="grid grid-cols-3 gap-1 rounded-xl p-1"
+          <div className="grid grid-cols-4 gap-1 rounded-xl p-1"
             style={{ background: 'var(--input-bg)', border: '1px solid var(--card-border)' }}>
             {MOBILE_TABS.map(tab => (
               <button
@@ -2164,11 +2295,11 @@ export default function Results() {
                 </div>
               </div>
 
-              <aside className={`${activeMobileTab === 'minutes' ? 'hidden' : 'block'} min-w-0 overflow-hidden xl:block xl:sticky xl:top-5 xl:max-h-[calc(100vh-220px)] xl:rounded-lg xl:border xl:shadow-sm`}
+              <aside className={`${activeMobileTab === 'minutes' ? 'hidden' : 'flex flex-col'} min-w-0 overflow-hidden xl:flex xl:flex-col xl:sticky xl:top-5 xl:max-h-[calc(100vh-220px)] xl:rounded-lg xl:border xl:shadow-sm`}
                 style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
                 {/* tab strip */}
                 <div className="hidden border-b px-4 pt-3 xl:block" style={{ borderColor: 'var(--divider)' }}>
-                  <div className="grid w-full grid-cols-2 gap-1 rounded-xl p-1 sm:w-fit" style={{ background: 'var(--input-bg)' }}>
+                  <div className="grid w-full grid-cols-3 gap-1 rounded-xl p-1 sm:w-fit" style={{ background: 'var(--input-bg)' }}>
                     {TABS.map(tab => (
                       <button
                         key={tab.key}
@@ -2195,6 +2326,8 @@ export default function Results() {
                       onNameSpeakers={() => setSpeakerModal(true)}
                       onSaved={refresh}
                     />
+                  ) : sideTab === 'ask_ai' ? (
+                    <AskAiTab transcript={minutes?.transcript} />
                   ) : (
                     <div className="h-full overflow-y-auto px-4">
                       <TasksTab jobId={jobId} canManage={true} meetingTitle={minutes?.title} />
