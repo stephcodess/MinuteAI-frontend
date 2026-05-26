@@ -756,15 +756,16 @@ function TranscriptPanel({
   jobId,
   onNameSpeakers,
   onSaved,
+  currentTime = 0,
 }: {
   transcript?: string
   segments?: any[]
   jobId?: string
   onNameSpeakers: () => void
   onSaved: () => void
+  currentTime?: number
 }) {
   const [query, setQuery] = useState('')
-  const [syncAudio, setSyncAudio] = useState(true)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(transcript || '')
   const [saving, setSaving] = useState(false)
@@ -779,6 +780,17 @@ function TranscriptPanel({
     return { ...item, index, charStart }
   })
   const totalTranscriptChars = Math.max(cursor, 1)
+  const activeEntryRef = useRef<HTMLDivElement | null>(null)
+  const activeEntryIndex = hasTimedSegments
+    ? indexedEntries.reduce((found, e) => (e.startTime != null && e.startTime <= currentTime ? e.index : found), -1)
+    : -1
+
+  useEffect(() => {
+    if (activeEntryIndex >= 0) {
+      activeEntryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [activeEntryIndex])
+
   const filtered = query.trim()
     ? indexedEntries.filter(item =>
         `${item.speaker} ${item.text}`.toLowerCase().includes(query.trim().toLowerCase())
@@ -790,7 +802,6 @@ function TranscriptPanel({
   }, [transcript, editing])
 
   function playFrom(item, sentenceOffset = 0) {
-    if (!syncAudio) return
     const nextTimed = indexedEntries.slice(item.index + 1).find(entry => entry.startTime != null)
     let time = item.startTime
 
@@ -836,19 +847,6 @@ function TranscriptPanel({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            {hasTimedSegments && (
-              <button
-                onClick={() => setSyncAudio(v => !v)}
-                title={syncAudio ? 'Audio sync on — click sentences to seek' : 'Audio sync off'}
-                className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors ${
-                  syncAudio ? 'border-violet-500/40 text-violet-400 bg-violet-500/10' : 'hover:bg-white/[0.04]'
-                }`}
-                style={{ borderColor: syncAudio ? undefined : 'var(--card-border)', color: syncAudio ? undefined : 'var(--text-3)' }}
-              >
-                <Headphones size={11} />
-                Sync
-              </button>
-            )}
             <button
               onClick={onNameSpeakers}
               className="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/[0.04]"
@@ -923,7 +921,8 @@ function TranscriptPanel({
               return (
                 <div
                   key={`${item.speaker}-${item.index}`}
-                  className="flex gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/[0.03]"
+                  ref={item.index === activeEntryIndex ? activeEntryRef : undefined}
+                  className={`flex gap-3 rounded-lg px-2 py-1.5 transition-all ${item.index === activeEntryIndex ? 'border-l-2 border-violet-500 bg-violet-500/[0.07] pl-1.5' : 'hover:bg-white/[0.03]'}`}
                 >
                   <div
                     className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
@@ -938,8 +937,8 @@ function TranscriptPanel({
                         <button
                           onClick={() => playFrom(item, 0)}
                           className="text-[11px] font-medium transition-colors hover:underline"
-                          style={{ color: syncAudio ? 'rgb(139,92,246)' : 'var(--text-3)' }}
-                          title={syncAudio ? 'Jump to this point' : 'Enable sync to seek'}
+                          style={{ color: 'rgb(139,92,246)' }}
+                          title="Jump to this point"
                         >
                           {formatPlayerTime(item.startTime)}
                         </button>
@@ -955,9 +954,9 @@ function TranscriptPanel({
                               type="button"
                               key={`${item.index}-${sentenceIndex}`}
                               onClick={() => playFrom(item, offset)}
-                              className={`inline rounded px-0.5 text-left transition-colors ${syncAudio ? 'hover:bg-violet-500/10 hover:text-violet-400 cursor-pointer' : 'cursor-default'}`}
+                              className="inline rounded px-0.5 text-left transition-colors hover:bg-violet-500/10 hover:text-violet-400 cursor-pointer"
                               style={{ borderRadius: 4, color: 'inherit' }}
-                              title={syncAudio ? 'Play from here' : undefined}
+                              title="Play from here"
                             >
                               {sentence}{sentenceIndex < sentences.length - 1 ? ' ' : ''}
                             </button>
@@ -1106,7 +1105,9 @@ function StephTab({ transcript }: { transcript?: string }) {
   )
 }
 
-function RecordingDock({ hasAudio, audioUrl, onDownload }: { hasAudio?: boolean; audioUrl?: string; onDownload: () => void }) {
+function RecordingDock({ hasAudio, audioUrl, onDownload, onTimeUpdate }: {
+  hasAudio?: boolean; audioUrl?: string; onDownload: () => void; onTimeUpdate?: (t: number) => void
+}) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -1126,9 +1127,18 @@ function RecordingDock({ hasAudio, audioUrl, onDownload }: { hasAudio?: boolean;
       audio.play().catch(() => {})
       setCurrentTime(audio.currentTime)
     }
-
+    function handleKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return
+      if (e.code === 'Space') { e.preventDefault(); togglePlay() }
+      if (e.code === 'ArrowLeft') jump(-5)
+      if (e.code === 'ArrowRight') jump(5)
+    }
     window.addEventListener('minuteai:seek-recording', handleSeek)
-    return () => window.removeEventListener('minuteai:seek-recording', handleSeek)
+    window.addEventListener('keydown', handleKey)
+    return () => {
+      window.removeEventListener('minuteai:seek-recording', handleSeek)
+      window.removeEventListener('keydown', handleKey)
+    }
   }, [duration])
 
   if (!hasAudio || !audioUrl) return null
@@ -1154,102 +1164,109 @@ function RecordingDock({ hasAudio, audioUrl, onDownload }: { hasAudio?: boolean;
   }
 
   function cycleSpeed() {
-    const next = speed === 1 ? 1.25 : speed === 1.25 ? 1.5 : speed === 1.5 ? 2 : 1
+    const SPEEDS = [1, 1.25, 1.5, 1.75, 2]
+    const next = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]
     setSpeed(next)
     if (audioRef.current) audioRef.current.playbackRate = next
+  }
+
+  function seekFromClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!duration) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    seekTo(((e.clientX - rect.left) / rect.width) * duration)
   }
 
   const progress = duration ? (currentTime / duration) * 100 : 0
 
   return (
-    <div className="relative shrink-0 border-t shadow-[0_-10px_30px_rgba(15,23,42,0.06)]"
-      style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
+    <div className="shrink-0 border-t" style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
       <audio
         ref={audioRef}
         src={audioUrl}
         preload="metadata"
         onLoadedMetadata={e => setDuration(e.currentTarget.duration || 0)}
-        onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime || 0)}
+        onTimeUpdate={e => { const t = e.currentTarget.currentTime || 0; setCurrentTime(t); onTimeUpdate?.(t) }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
       />
 
-      <div className="h-1 w-full" style={{ background: 'var(--input-bg)' }}>
-        <div className="h-full bg-gradient-to-r from-violet-600 to-indigo-600" style={{ width: `${progress}%` }} />
+      {/* clickable progress bar */}
+      <div
+        role="progressbar"
+        aria-label="Playback progress"
+        className="group relative h-1.5 w-full cursor-pointer"
+        style={{ background: 'var(--input-bg)' }}
+        onClick={seekFromClick}
+      >
+        <div
+          className="pointer-events-none h-full bg-gradient-to-r from-violet-600 to-indigo-500"
+          style={{ width: `${progress}%` }}
+        />
+        <div
+          className="pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-violet-500 opacity-0 shadow transition-opacity group-hover:opacity-100"
+          style={{ left: `calc(${progress}% - 7px)` }}
+        />
       </div>
 
-      <div className="grid min-h-[72px] grid-cols-1 items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 lg:grid-cols-[180px_minmax(300px,1fr)_180px] lg:px-6 xl:grid-cols-[220px_minmax(320px,1fr)_220px]">
-        <div className="order-1 flex items-center justify-center gap-2 text-xs sm:justify-start sm:text-sm lg:order-none" style={{ color: 'var(--text-2)' }}>
-          <span className="font-semibold tabular-nums" style={{ color: 'var(--text-1)' }}>
-            {formatPlayerTime(currentTime)}
-          </span>
-          <span style={{ color: 'var(--text-3)' }}>/</span>
-          <span className="tabular-nums" style={{ color: 'var(--text-3)' }}>
-            {formatPlayerTime(duration)}
-          </span>
+      {/* controls row */}
+      <div className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:gap-3">
+        {/* time */}
+        <div className="flex shrink-0 items-center gap-1 text-xs tabular-nums" style={{ color: 'var(--text-3)' }}>
+          <span className="font-semibold" style={{ color: 'var(--text-1)' }}>{formatPlayerTime(currentTime)}</span>
+          <span>/</span>
+          <span>{formatPlayerTime(duration)}</span>
         </div>
 
-        <div className="order-3 flex items-center justify-center gap-1.5 sm:order-2 sm:gap-3 lg:order-none lg:gap-4">
+        {/* playback controls */}
+        <div className="flex flex-1 items-center justify-center gap-1 sm:gap-2">
           <button
             onClick={cycleSpeed}
-            className="h-8 min-w-8 rounded-lg px-2 text-[11px] font-semibold transition-colors hover:bg-white/[0.04] sm:h-9 sm:min-w-9 sm:text-xs"
+            className="min-w-[36px] rounded-lg px-2 py-1.5 text-[11px] font-semibold tabular-nums transition-colors hover:bg-white/[0.06]"
             style={{ color: 'var(--text-2)' }}
+            title="Playback speed"
           >
             {speed}x
           </button>
           <button
             onClick={() => jump(-10)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.04] sm:h-9 sm:w-9"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
             style={{ color: 'var(--text-2)' }}
-            title="Back 10 seconds"
+            title="Back 10 seconds (←)"
           >
-            <RotateCcw size={16} />
+            <RotateCcw size={15} />
           </button>
           <button
             onClick={togglePlay}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25 transition-transform hover:scale-105 sm:h-11 sm:w-11"
-            title={playing ? 'Pause' : 'Play'}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/20 transition-transform hover:scale-105 active:scale-95"
+            title={playing ? 'Pause (Space)' : 'Play (Space)'}
           >
-            {playing ? <Pause size={19} fill="currentColor" /> : <Play size={19} fill="currentColor" className="ml-0.5" />}
+            {playing
+              ? <Pause size={18} fill="currentColor" />
+              : <Play size={18} fill="currentColor" className="ml-0.5" />}
           </button>
           <button
             onClick={() => jump(10)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.04] sm:h-9 sm:w-9"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
             style={{ color: 'var(--text-2)' }}
-            title="Forward 10 seconds"
+            title="Forward 10 seconds (→)"
           >
-            <RotateCw size={16} />
+            <RotateCw size={15} />
           </button>
           <button
             onClick={onDownload}
-            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.04] sm:h-9 sm:w-9"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
             style={{ color: 'var(--text-2)' }}
             title="Download recording"
           >
-            <Download size={16} />
+            <Download size={15} />
           </button>
         </div>
 
-        <div className="order-2 flex items-center justify-center gap-2 sm:order-3 sm:gap-3 lg:order-none lg:justify-end">
-          <Volume2 size={15} className="hidden sm:block" style={{ color: 'var(--text-3)' }} />
-          <input
-            aria-label="Recording progress"
-            type="range"
-            min="0"
-            max={duration || 0}
-            value={Math.min(currentTime, duration || currentTime)}
-            onChange={e => seekTo(Number(e.target.value))}
-            className="w-full max-w-[520px] accent-violet-600 lg:max-w-[220px]"
-          />
-        </div>
-
-        <div className="hidden min-w-0 items-center gap-2 2xl:absolute 2xl:left-1/2 2xl:top-3 2xl:flex 2xl:-translate-x-1/2"
-          style={{ color: 'var(--text-3)' }}
-        >
-          <Headphones size={14} />
-          <span className="max-w-[240px] truncate text-xs font-medium">Original recording</span>
-        </div>
+        {/* keyboard hint — hidden on mobile */}
+        <p className="hidden shrink-0 text-[10px] sm:block" style={{ color: 'var(--text-3)' }}>
+          Space · ← →
+        </p>
       </div>
     </div>
   )
@@ -2118,6 +2135,7 @@ export default function Results() {
   const { jobId } = useParams()
   const { minutes, downloadDocx, downloadPdf, downloadAudio, loading, error, refresh } = useResults(jobId)
   const [copied,        setCopied]        = useState(false)
+  const [playbackTime,  setPlaybackTime]  = useState(0)
   const [activeTab,     setActiveTab]     = useState('transcript')
   const [activeMobileTab, setActiveMobileTab] = useState('minutes')
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
@@ -2190,86 +2208,99 @@ export default function Results() {
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden">
 
         {/* ── header ── */}
-        <div className="shrink-0 border-b px-4 pt-4 pb-4 sm:px-8 sm:pt-5 sm:pb-5"
-          style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
-
-          {/* always-visible row: back + title + expand toggle (mobile only) */}
-          <div className="flex items-center gap-3">
+        <div className="shrink-0 border-b" style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
+          {/* breadcrumb row */}
+          <div className="flex items-center gap-1.5 border-b px-4 py-2 sm:px-6" style={{ borderColor: 'var(--divider)' }}>
             <Link
               to="/dashboard"
-              className="flex items-center gap-1 text-xs shrink-0 transition-colors hover:opacity-80"
+              className="text-xs transition-colors hover:text-violet-400"
               style={{ color: 'var(--text-3)' }}
             >
-              <ArrowLeft size={14} />
-              <span className="hidden sm:inline">Back</span>
+              My Meetings
             </Link>
-            <h1 className="flex-1 min-w-0 text-base sm:text-xl font-bold truncate" style={{ color: 'var(--text-1)' }}>
-              {minutes?.title ?? 'Meeting Minutes'}
-            </h1>
+            <ChevronRight size={11} style={{ color: 'var(--text-3)' }} />
+            <span className="max-w-[220px] truncate text-xs font-medium sm:max-w-sm" style={{ color: 'var(--text-2)' }}>
+              {minutes?.title ?? 'Meeting'}
+            </span>
           </div>
 
-          {/* meta chips: always visible */}
-          {(metaParts.length > 0 || meta?.participants?.length > 0) && (
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              {metaParts.map((p, i) => (
-                <span key={i} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ring-1"
-                  style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
-                  {i === 0 ? <CalendarDays size={11} /> : <Clock size={11} />}
-                  {p}
-                </span>
-              ))}
-              {meta?.participants?.slice(0, 12).map(participant => (
-                <span key={participant}
-                  className="inline-flex max-w-full items-center gap-1 rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 ring-1 ring-violet-500/20">
-                  <Users size={11} className="shrink-0" />
-                  <span className="truncate">{participant}</span>
-                </span>
-              ))}
-              {meta?.participants?.length > 12 && (
-                <span className="rounded-full px-2.5 py-1 text-xs font-medium ring-1"
-                  style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
-                  +{meta.participants.length - 12} more
-                </span>
-              )}
+          {/* title + compact actions */}
+          <div className="flex items-start gap-3 px-4 py-3 sm:px-6">
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate text-lg font-bold leading-tight sm:text-xl" style={{ color: 'var(--text-1)' }}>
+                {minutes?.title ?? 'Meeting Minutes'}
+              </h1>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                {meta?.date && (
+                  <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-3)' }}>
+                    <CalendarDays size={11} /> {meta.date}
+                  </span>
+                )}
+                {meta?.duration && (
+                  <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-3)' }}>
+                    <Clock size={11} /> {meta.duration}
+                  </span>
+                )}
+                {meta?.participants?.slice(0, 3).map((p: string) => (
+                  <span key={p} className="text-xs" style={{ color: 'var(--text-3)' }}>{p}</span>
+                ))}
+                {meta?.participants?.length > 3 && (
+                  <span className="text-xs" style={{ color: 'var(--text-3)' }}>+{meta.participants.length - 3} more</span>
+                )}
+              </div>
             </div>
-          )}
 
-          {/* action buttons — scrollable row on mobile, wrap on desktop */}
-          <div className="mt-3 -mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0"
-            style={{ scrollbarWidth: 'none' }}>
-            <button onClick={copyText}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
-              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-              {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
-              {copied ? 'Copied!' : 'Copy text'}
-            </button>
-            <button onClick={() => setSpeakerModal(true)}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
-              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-              <Users size={14} /> Name Speakers
-            </button>
-            <button onClick={() => setShareModal(true)}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
-              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-              <Share2 size={14} /> Share
-            </button>
-            <button onClick={() => setTemplateModal('pdf')}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
-              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
-              <FileDown size={14} /> PDF
-            </button>
-            <button onClick={() => setTemplateModal('docx')}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium shadow-sm bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white transition-colors">
-              <Download size={14} /> Download .docx
-            </button>
-            {minutes?.has_audio && (
-              <button onClick={downloadAudio}
-                className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04]"
-                style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
-                title="Download original recording">
-                <Download size={14} /> Recording
+            {/* icon action buttons */}
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button
+                onClick={copyText}
+                title={copied ? 'Copied!' : 'Copy minutes text'}
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                style={{ color: copied ? 'rgb(52,211,153)' : 'var(--text-3)' }}
+              >
+                {copied ? <CheckCheck size={15} /> : <Copy size={15} />}
               </button>
-            )}
+              <button
+                onClick={() => setSpeakerModal(true)}
+                title="Name speakers"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                style={{ color: 'var(--text-3)' }}
+              >
+                <Users size={15} />
+              </button>
+              <button
+                onClick={() => setShareModal(true)}
+                title="Share"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                style={{ color: 'var(--text-3)' }}
+              >
+                <Share2 size={15} />
+              </button>
+              <button
+                onClick={() => setTemplateModal('pdf')}
+                title="Export PDF"
+                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                style={{ color: 'var(--text-3)' }}
+              >
+                <FileDown size={15} />
+              </button>
+              {minutes?.has_audio && (
+                <button
+                  onClick={downloadAudio}
+                  title="Download recording"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                  style={{ color: 'var(--text-3)' }}
+                >
+                  <Headphones size={15} />
+                </button>
+              )}
+              <button
+                onClick={() => setTemplateModal('docx')}
+                className="ml-1 flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:from-violet-500 hover:to-indigo-500"
+              >
+                <Download size={12} /> .docx
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2365,7 +2396,7 @@ export default function Results() {
                       segments={minutes?.transcript_segments}
                       jobId={jobId}
                       onNameSpeakers={() => setSpeakerModal(true)}
-                      onSaved={refresh}
+                      onSaved={refresh} currentTime={playbackTime}
                     />
                   ) : sideTab === 'ask_ai' ? (
                     <StephTab transcript={minutes?.transcript} />
@@ -2385,7 +2416,7 @@ export default function Results() {
             </div>
           </div>
         </div>
-        <RecordingDock hasAudio={minutes?.has_audio} audioUrl={audioUrl} onDownload={downloadAudio} />
+        <RecordingDock hasAudio={minutes?.has_audio} audioUrl={audioUrl} onDownload={downloadAudio} onTimeUpdate={setPlaybackTime} />
       </main>
 
       {templateModal && (
