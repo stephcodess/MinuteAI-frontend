@@ -1112,7 +1112,7 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 12 }} transition={{ duration: 0.2, ease: 'easeOut' }}
@@ -1240,7 +1240,7 @@ function TemplatePickerModal({ format, onClose, onDownload }) {
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 12 }} transition={{ duration: 0.2, ease: 'easeOut' }}
@@ -1382,7 +1382,7 @@ function ShareModal({ jobId, minutes, onClose }: { jobId: string; minutes?: any;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1609,7 +1609,7 @@ function LegacyShareModal({ jobId, onClose }: { jobId: string; onClose: () => vo
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+          className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
