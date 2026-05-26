@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -8,11 +8,13 @@ import {
   Clock, Hash, AlignLeft, ChevronLeft, ChevronRight,
   X, Zap, BarChart2, Minimize2, Lightbulb, HelpCircle,
   ArrowRight, MessageSquare, Target, List, ArrowLeft,
-  GitBranch, AlertCircle, Share2,
+  GitBranch, AlertCircle, Share2, Search, Headphones,
+  Play, Pause, RotateCcw, RotateCw, Volume2,
+  Link2, Code2, Globe2, UserPlus, PencilLine, Save,
 } from 'lucide-react'
 import { useResults } from '../../hooks/useResults'
 import { useWorkspace } from '../../context/WorkspaceContext'
-import { api, getThreadForJob, getThreadContinuity, updateThread } from '../../lib/api'
+import { api, getThreadForJob, getThreadContinuity, updateThread, getDownloadUrl } from '../../lib/api'
 import Sidebar from '../../components/Sidebar'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -500,16 +502,16 @@ function SectionCard({ icon: Icon, title, accent = 'violet', children, delay = 0
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay }}
-      className="rounded-2xl border overflow-hidden"
+      className="rounded-lg border overflow-hidden shadow-sm"
       style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
     >
-      <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: 'var(--card-border)', background: 'var(--input-bg)' }}>
+      <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'var(--card-border)', background: 'var(--input-bg)' }}>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
           <Icon size={14} className={colors.text} />
         </div>
         <h2 className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>{title}</h2>
       </div>
-      <div className="px-6 py-5">{children}</div>
+      <div className="px-5 py-5">{children}</div>
     </motion.div>
   )
 }
@@ -522,7 +524,7 @@ function MinutesTab({ minutes, copied, onCopy }) {
   )
 
   return (
-    <div className="py-6 space-y-4">
+    <div className="py-5 space-y-4">
       {minutes.overview && (
         <SectionCard icon={FileText} title="Overview" accent="violet" delay={0}>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>{minutes.overview}</p>
@@ -664,6 +666,426 @@ function MinutesTab({ minutes, copied, onCopy }) {
 }
 
 // ── Speaker Names Modal ───────────────────────────────────────────────────────
+
+function parseTimecode(value = '') {
+  const parts = value.split(':').map(Number)
+  if (parts.some(n => Number.isNaN(n))) return null
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+  return null
+}
+
+function extractLeadingTime(line = '') {
+  const match = line.match(/^\s*(?:\[|\()?((?:\d{1,2}:)?\d{1,2}:\d{2}(?:\.\d+)?)(?:\]|\))?\s*(?:[-–—]\s*)?/)
+  if (!match) return { time: null, line }
+  return { time: parseTimecode(match[1]), line: line.slice(match[0].length).trim() }
+}
+
+function parseTranscript(transcript = '') {
+  const lines = transcript.split(/\n+/).map(line => line.trim()).filter(Boolean)
+  const entries: Array<{ speaker: string; text: string; startTime?: number | null }> = []
+
+  lines.forEach(line => {
+    let { time, line: cleanLine } = extractLeadingTime(line)
+    let match = cleanLine.match(/^([^:]{1,48})\s+\[?((?:\d{1,2}:)?\d{1,2}:\d{2}(?:\.\d+)?)\]?:\s*(.+)$/)
+    if (match) {
+      time = parseTimecode(match[2])
+      entries.push({ speaker: match[1].trim(), text: match[3].trim(), startTime: time })
+      return
+    }
+
+    match = cleanLine.match(/^([^:]{1,48}):\s*(.+)$/)
+    if (match) {
+      entries.push({ speaker: match[1].trim(), text: match[2].trim(), startTime: time })
+      return
+    }
+
+    const last = entries[entries.length - 1]
+    if (last) last.text = `${last.text} ${cleanLine}`
+    else entries.push({ speaker: 'Transcript', text: cleanLine, startTime: time })
+  })
+
+  return entries
+}
+
+function splitSentences(text = '') {
+  const trimmed = text.trim()
+  if (!trimmed) return []
+  const matches = trimmed.match(/[^.!?]+(?:[.!?]+["')\]]*|$)/g)
+  const sentences = (matches || [trimmed]).map(s => s.trim()).filter(Boolean)
+  return sentences.length ? sentences : [trimmed]
+}
+
+function formatPlayerTime(seconds = 0) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${mins}:${String(secs).padStart(2, '0')}`
+}
+
+function segmentsToTranscriptEntries(segments: any[] = []) {
+  return segments
+    .filter(segment => segment?.text)
+    .map(segment => ({
+      speaker: segment.speaker || 'Speaker',
+      text: segment.text,
+      startTime: Number.isFinite(Number(segment.start)) ? Number(segment.start) : null,
+      endTime: Number.isFinite(Number(segment.end)) ? Number(segment.end) : null,
+    }))
+}
+
+function TranscriptPanel({
+  transcript,
+  segments,
+  jobId,
+  onNameSpeakers,
+  onSaved,
+}: {
+  transcript?: string
+  segments?: any[]
+  jobId?: string
+  onNameSpeakers: () => void
+  onSaved: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(transcript || '')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const hasTimedSegments = Array.isArray(segments) && segments.length > 0
+  const entries = hasTimedSegments ? segmentsToTranscriptEntries(segments) : parseTranscript(transcript || '')
+  let cursor = 0
+  const indexedEntries = entries.map((item, index) => {
+    const charStart = cursor
+    cursor += item.text.length + 1
+    return { ...item, index, charStart }
+  })
+  const totalTranscriptChars = Math.max(cursor, 1)
+  const filtered = query.trim()
+    ? indexedEntries.filter(item =>
+        `${item.speaker} ${item.text}`.toLowerCase().includes(query.trim().toLowerCase())
+      )
+    : indexedEntries
+
+  useEffect(() => {
+    if (!editing) setDraft(transcript || '')
+  }, [transcript, editing])
+
+  function playFrom(item, sentenceOffset = 0) {
+    const nextTimed = indexedEntries.slice(item.index + 1).find(entry => entry.startTime != null)
+    let time = item.startTime
+
+    if (time != null && item.endTime != null && item.endTime > time) {
+      const turnRatio = Math.max(0, Math.min(sentenceOffset / Math.max(item.text.length, 1), 1))
+      time = time + ((item.endTime - time) * turnRatio)
+    } else if (time != null && nextTimed?.startTime != null && nextTimed.startTime > time) {
+      const turnRatio = Math.max(0, Math.min(sentenceOffset / Math.max(item.text.length, 1), 1))
+      time = time + ((nextTimed.startTime - time) * turnRatio)
+    }
+
+    const ratio = Math.max(0, Math.min((item.charStart + sentenceOffset) / totalTranscriptChars, 1))
+    window.dispatchEvent(new CustomEvent('minuteai:seek-recording', {
+      detail: { time, ratio },
+    }))
+  }
+
+  async function saveTranscript() {
+    if (!jobId) return
+    setSaving(true)
+    setSaveError('')
+    try {
+      await api.patch(`/results/${jobId}/transcript`, { transcript: draft })
+      setEditing(false)
+      onSaved()
+    } catch (err) {
+      setSaveError(err?.message || 'Could not save transcript.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex h-full min-h-[420px] flex-col">
+      <div className="shrink-0 border-b px-4 py-3" style={{ borderColor: 'var(--divider)' }}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Transcript</p>
+            <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
+              {entries.length
+                ? `${entries.length} speaker turns${hasTimedSegments ? ' with audio sync' : ''}`
+                : 'No transcript text yet'}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={onNameSpeakers}
+              className="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/[0.04]"
+              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+            >
+              Name speakers
+            </button>
+            <button
+              onClick={() => setEditing(v => !v)}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/[0.04]"
+              style={{ borderColor: 'var(--card-border)', color: editing ? 'rgb(139,92,246)' : 'var(--text-2)' }}
+            >
+              <PencilLine size={12} />
+              {editing ? 'Preview' : 'Edit'}
+            </button>
+          </div>
+        </div>
+        {editing ? (
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
+              Edit speaker labels or text, then save. Audio sync uses saved timestamps when available.
+            </p>
+            <button
+              onClick={saveTranscript}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-60"
+            >
+              {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+              Save
+            </button>
+          </div>
+        ) : (
+          <div className="relative mt-3">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-3)' }} />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Find in transcript"
+              className="w-full rounded-xl border py-2 pl-9 pr-3 text-sm outline-none transition focus:ring-1 focus:ring-violet-500/40"
+              style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-5">
+        {editing ? (
+          <div className="h-full">
+            <textarea
+              value={draft}
+              onChange={e => setDraft(e.target.value)}
+              className="h-full min-h-[320px] w-full resize-none rounded-xl border p-3 text-sm leading-relaxed outline-none transition focus:ring-1 focus:ring-violet-500/40"
+              style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+              placeholder="Speaker 1: Paste or edit transcript text here..."
+            />
+            {saveError && <p className="mt-2 text-xs text-red-400">{saveError}</p>}
+          </div>
+        ) : !entries.length ? (
+          <div className="flex h-full min-h-[260px] flex-col items-center justify-center text-center">
+            <MessageSquare size={24} style={{ color: 'var(--text-3)' }} />
+            <p className="mt-3 text-sm font-medium" style={{ color: 'var(--text-2)' }}>Transcript unavailable</p>
+            <p className="mt-1 max-w-xs text-xs" style={{ color: 'var(--text-3)' }}>
+              The minutes are ready, but this meeting does not have transcript text attached.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {filtered.map((item) => {
+              const sentences = splitSentences(item.text)
+              let sentenceCursor = 0
+              return (
+                <div
+                  key={`${item.speaker}-${item.index}`}
+                  className="flex gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/[0.03]"
+                  style={{ borderRadius: 8 }}
+                >
+                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-[11px] font-bold text-emerald-400">
+                    {item.speaker.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-center gap-2">
+                      <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>{item.speaker}</p>
+                      <span className="h-1 w-1 rounded-full" style={{ background: 'var(--text-3)' }} />
+                      <span className="text-[11px]" style={{ color: 'var(--text-3)' }}>
+                        {item.startTime != null ? formatPlayerTime(item.startTime) : `Turn ${item.index + 1}`}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-1)' }}>
+                      {sentences.map((sentence, sentenceIndex) => (
+                        (() => {
+                          const offset = sentenceCursor
+                          sentenceCursor += sentence.length + 1
+                          return (
+                            <button
+                              type="button"
+                              key={`${item.index}-${sentenceIndex}`}
+                              onClick={() => playFrom(item, offset)}
+                              className="inline rounded px-0.5 text-left transition-colors hover:bg-violet-500/10 hover:text-violet-500"
+                              style={{ borderRadius: 4, color: 'inherit' }}
+                              title="Play recording from this sentence"
+                            >
+                              {sentence}{sentenceIndex < sentences.length - 1 ? ' ' : ''}
+                            </button>
+                          )
+                        })()
+                      ))}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+            {!filtered.length && (
+              <p className="py-12 text-center text-sm" style={{ color: 'var(--text-3)' }}>No transcript matches.</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function RecordingDock({ hasAudio, audioUrl, onDownload }: { hasAudio?: boolean; audioUrl?: string; onDownload: () => void }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [playing, setPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [speed, setSpeed] = useState(1)
+
+  useEffect(() => {
+    function handleSeek(event: Event) {
+      const audio = audioRef.current
+      if (!audio) return
+      const detail = (event as CustomEvent).detail || {}
+      const knownDuration = duration || audio.duration || 0
+      const target = Number.isFinite(detail.time)
+        ? detail.time
+        : knownDuration * Math.max(0, Math.min(Number(detail.ratio) || 0, 1))
+      audio.currentTime = Math.max(0, Math.min(target, knownDuration || target))
+      audio.play().catch(() => {})
+      setCurrentTime(audio.currentTime)
+    }
+
+    window.addEventListener('minuteai:seek-recording', handleSeek)
+    return () => window.removeEventListener('minuteai:seek-recording', handleSeek)
+  }, [duration])
+
+  if (!hasAudio || !audioUrl) return null
+
+  function seekTo(value: number) {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.currentTime = value
+    setCurrentTime(value)
+  }
+
+  function jump(delta: number) {
+    const audio = audioRef.current
+    if (!audio) return
+    seekTo(Math.min(Math.max(audio.currentTime + delta, 0), duration || audio.duration || 0))
+  }
+
+  function togglePlay() {
+    const audio = audioRef.current
+    if (!audio) return
+    if (audio.paused) audio.play()
+    else audio.pause()
+  }
+
+  function cycleSpeed() {
+    const next = speed === 1 ? 1.25 : speed === 1.25 ? 1.5 : speed === 1.5 ? 2 : 1
+    setSpeed(next)
+    if (audioRef.current) audioRef.current.playbackRate = next
+  }
+
+  const progress = duration ? (currentTime / duration) * 100 : 0
+
+  return (
+    <div className="relative shrink-0 border-t shadow-[0_-10px_30px_rgba(15,23,42,0.06)]"
+      style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
+      <audio
+        ref={audioRef}
+        src={audioUrl}
+        preload="metadata"
+        onLoadedMetadata={e => setDuration(e.currentTarget.duration || 0)}
+        onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime || 0)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+      />
+
+      <div className="h-1 w-full" style={{ background: 'var(--input-bg)' }}>
+        <div className="h-full bg-gradient-to-r from-violet-600 to-indigo-600" style={{ width: `${progress}%` }} />
+      </div>
+
+      <div className="grid min-h-[72px] grid-cols-1 items-center gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 lg:grid-cols-[180px_minmax(300px,1fr)_180px] lg:px-6 xl:grid-cols-[220px_minmax(320px,1fr)_220px]">
+        <div className="order-1 flex items-center justify-center gap-2 text-xs sm:justify-start sm:text-sm lg:order-none" style={{ color: 'var(--text-2)' }}>
+          <span className="font-semibold tabular-nums" style={{ color: 'var(--text-1)' }}>
+            {formatPlayerTime(currentTime)}
+          </span>
+          <span style={{ color: 'var(--text-3)' }}>/</span>
+          <span className="tabular-nums" style={{ color: 'var(--text-3)' }}>
+            {formatPlayerTime(duration)}
+          </span>
+        </div>
+
+        <div className="order-3 flex items-center justify-center gap-1.5 sm:order-2 sm:gap-3 lg:order-none lg:gap-4">
+          <button
+            onClick={cycleSpeed}
+            className="h-8 min-w-8 rounded-lg px-2 text-[11px] font-semibold transition-colors hover:bg-white/[0.04] sm:h-9 sm:min-w-9 sm:text-xs"
+            style={{ color: 'var(--text-2)' }}
+          >
+            {speed}x
+          </button>
+          <button
+            onClick={() => jump(-10)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.04] sm:h-9 sm:w-9"
+            style={{ color: 'var(--text-2)' }}
+            title="Back 10 seconds"
+          >
+            <RotateCcw size={16} />
+          </button>
+          <button
+            onClick={togglePlay}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25 transition-transform hover:scale-105 sm:h-11 sm:w-11"
+            title={playing ? 'Pause' : 'Play'}
+          >
+            {playing ? <Pause size={19} fill="currentColor" /> : <Play size={19} fill="currentColor" className="ml-0.5" />}
+          </button>
+          <button
+            onClick={() => jump(10)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.04] sm:h-9 sm:w-9"
+            style={{ color: 'var(--text-2)' }}
+            title="Forward 10 seconds"
+          >
+            <RotateCw size={16} />
+          </button>
+          <button
+            onClick={onDownload}
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.04] sm:h-9 sm:w-9"
+            style={{ color: 'var(--text-2)' }}
+            title="Download recording"
+          >
+            <Download size={16} />
+          </button>
+        </div>
+
+        <div className="order-2 flex items-center justify-center gap-2 sm:order-3 sm:gap-3 lg:order-none lg:justify-end">
+          <Volume2 size={15} className="hidden sm:block" style={{ color: 'var(--text-3)' }} />
+          <input
+            aria-label="Recording progress"
+            type="range"
+            min="0"
+            max={duration || 0}
+            value={Math.min(currentTime, duration || currentTime)}
+            onChange={e => seekTo(Number(e.target.value))}
+            className="w-full max-w-[520px] accent-violet-600 lg:max-w-[220px]"
+          />
+        </div>
+
+        <div className="hidden min-w-0 items-center gap-2 2xl:absolute 2xl:left-1/2 2xl:top-3 2xl:flex 2xl:-translate-x-1/2"
+          style={{ color: 'var(--text-3)' }}
+        >
+          <Headphones size={14} />
+          <span className="max-w-[240px] truncate text-xs font-medium">Original recording</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function SpeakerNamesModal({ jobId, onClose, onApplied }) {
   const [speakers, setSpeakers] = useState<Array<{ label: string; samples: string[] }>>([])
@@ -898,7 +1320,253 @@ const SHAREABLE_PROVIDERS: Record<string, { label: string; icon: string }> = {
   webhook:      { label: 'Webhook',      icon: '🔗' },
 }
 
-function ShareModal({ jobId, onClose }: { jobId: string; onClose: () => void }) {
+function ShareModal({ jobId, minutes, onClose }: { jobId: string; minutes?: any; onClose: () => void }) {
+  const [integrations, setIntegrations] = useState<any>({})
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [sharing, setSharing] = useState(false)
+  const [results, setResults] = useState<Record<string, string> | null>(null)
+  const [activeTab, setActiveTab] = useState<'share' | 'embed'>('share')
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [copiedEmbed, setCopiedEmbed] = useState(false)
+
+  useEffect(() => {
+    api.get('/integrations')
+      .then(setIntegrations)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const connected = Object.entries(SHAREABLE_PROVIDERS).filter(
+    ([provider]) => integrations[provider]?.connected
+  )
+  const meetingUrl = `${window.location.origin}/results/${jobId}`
+  const title = minutes?.title || 'Meeting Minutes'
+  const meta = minutes?.metadata
+  const subtitle = [meta?.date, meta?.duration].filter(Boolean).join(' · ') || 'MinuteAI meeting'
+  const embedCode = `<iframe src="${meetingUrl}" width="640" height="360" frameborder="0" allow="autoplay; clipboard-write; fullscreen" allowfullscreen></iframe>`
+
+  function toggle(provider: string) {
+    setSelected(s => {
+      const next = new Set(s)
+      next.has(provider) ? next.delete(provider) : next.add(provider)
+      return next
+    })
+  }
+
+  async function handleShare() {
+    if (!selected.size) return
+    setSharing(true)
+    try {
+      const data: any = await api.post(`/results/${jobId}/share`, { providers: [...selected] })
+      setResults(data.results)
+    } catch (err: any) {
+      setResults({ error: err.message })
+    } finally {
+      setSharing(false)
+    }
+  }
+
+  async function copyMeetingLink() {
+    await navigator.clipboard.writeText(meetingUrl)
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 1800)
+  }
+
+  async function copyEmbedCode() {
+    await navigator.clipboard.writeText(embedCode)
+    setCopiedEmbed(true)
+    setTimeout(() => setCopiedEmbed(false), 1800)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 12 }}
+        transition={{ duration: 0.18 }}
+        className="relative z-10 flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-lg shadow-2xl"
+        style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+      >
+        <div className="flex items-start justify-between px-6 py-5">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold" style={{ color: 'var(--text-1)' }}>{title}</h2>
+            <p className="mt-1 truncate text-sm" style={{ color: 'var(--text-3)' }}>{subtitle}</p>
+          </div>
+          <button onClick={onClose} className="ml-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.08]"
+            style={{ color: 'var(--text-3)' }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 border-b px-6" style={{ borderColor: 'var(--divider)' }}>
+          {(['share', 'embed'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`border-b-2 py-3 text-sm font-medium capitalize transition-colors ${
+                activeTab === tab ? 'border-violet-600 text-violet-500' : 'border-transparent'
+              }`}
+              style={{ color: activeTab === tab ? undefined : 'var(--text-3)' }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === 'share' ? (
+            <div>
+              <div className="border-b px-6 py-3" style={{ background: 'var(--input-bg)', borderColor: 'var(--divider)' }}>
+                <div className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--text-2)' }}>
+                  <span className="rounded-md bg-violet-600 px-2 py-0.5 text-[11px] font-bold text-white">NEW</span>
+                  <span>Share with specific teammates or connected apps.</span>
+                </div>
+              </div>
+
+              <div className="space-y-5 px-6 py-5">
+                <div className="flex gap-3">
+                  <div className="relative min-w-0 flex-1">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-3)' }} />
+                    <input
+                      placeholder="Name, email, or user group"
+                      className="w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm outline-none focus:ring-1 focus:ring-violet-500/40"
+                      style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+                    />
+                  </div>
+                  <button disabled className="rounded-lg bg-violet-600/20 px-4 text-sm font-semibold text-violet-400 opacity-60">
+                    Invite
+                  </button>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm" style={{ color: 'var(--text-2)' }}>Share with contacts on</p>
+                  <div className="flex flex-wrap gap-2">
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2 text-xs" style={{ color: 'var(--text-3)' }}>
+                        <Loader2 size={13} className="animate-spin" /> Loading apps
+                      </span>
+                    ) : connected.length ? connected.map(([provider, providerMeta]) => {
+                      const isSelected = selected.has(provider)
+                      return (
+                        <button
+                          key={provider}
+                          onClick={() => toggle(provider)}
+                          className={`flex h-10 items-center gap-2 rounded-lg border px-3 text-sm transition-all ${
+                            isSelected ? 'border-violet-500/50 bg-violet-500/10' : 'hover:border-violet-500/30'
+                          }`}
+                          style={{ borderColor: isSelected ? undefined : 'var(--divider)', color: 'var(--text-2)' }}
+                        >
+                          <span>{providerMeta.icon}</span>
+                          {providerMeta.label}
+                        </button>
+                      )
+                    }) : (
+                      <span className="text-xs" style={{ color: 'var(--text-3)' }}>No connected apps yet.</span>
+                    )}
+                  </div>
+                  {selected.size > 0 && (
+                    <button
+                      onClick={handleShare}
+                      disabled={sharing}
+                      className="mt-3 inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+                    >
+                      {sharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+                      Share to selected apps
+                    </button>
+                  )}
+                  {results && (
+                    <div className="mt-3 space-y-1.5">
+                      {Object.entries(results).map(([provider, status]) => (
+                        <p key={provider} className="text-xs" style={{ color: status === 'ok' ? '#34d399' : '#fb7185' }}>
+                          {SHAREABLE_PROVIDERS[provider]?.label ?? provider}: {status === 'ok' ? 'Sent' : status}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm" style={{ color: 'var(--text-3)' }}>Teammates with access</p>
+                  <div className="flex items-center gap-3 rounded-lg px-3 py-2.5" style={{ background: 'var(--input-bg)' }}>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500 text-xs font-bold text-white">
+                      RW
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium" style={{ color: 'var(--text-1)' }}>Raji Olaoluwa</p>
+                      <p className="truncate text-xs" style={{ color: 'var(--text-3)' }}>Host</p>
+                    </div>
+                    <span className="text-xs" style={{ color: 'var(--text-3)' }}>Host</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 px-6 py-5">
+              <div className="relative overflow-hidden rounded-lg bg-black p-4 text-white">
+                <div className="relative z-10 flex min-h-[250px] flex-col">
+                  <div>
+                    <p className="text-sm font-bold">{title}</p>
+                    <p className="text-xs text-white/70">{subtitle}</p>
+                  </div>
+                  <div className="flex flex-1 items-center justify-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-violet-600 shadow-2xl shadow-violet-500/30">
+                      <Play size={26} fill="currentColor" className="ml-1" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-white/80">
+                    <span className="flex h-5 w-5 items-center justify-center rounded bg-violet-600 font-bold">M</span>
+                    By AI-Powered MinuteAI
+                  </div>
+                </div>
+                <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 45%, #7c3aed, transparent 35%)' }} />
+              </div>
+
+              <div className="rounded-lg p-4" style={{ background: 'var(--input-bg)' }}>
+                <pre className="max-h-28 overflow-auto whitespace-pre-wrap break-all text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                  {embedCode}
+                </pre>
+                <button
+                  onClick={copyEmbedCode}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border py-2 text-sm font-semibold transition hover:bg-white/[0.04]"
+                  style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+                >
+                  <Code2 size={15} /> {copiedEmbed ? 'Copied Embed Code' : 'Copy Embed Code'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t px-6 py-4" style={{ background: 'var(--input-bg)', borderColor: 'var(--divider)' }}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border" style={{ borderColor: 'var(--card-border)' }}>
+                <Globe2 size={17} style={{ color: 'var(--text-3)' }} />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Anyone with link</p>
+                <p className="truncate text-xs" style={{ color: 'var(--text-3)' }}>Anyone who has this link can access this meeting.</p>
+              </div>
+            </div>
+            <button
+              onClick={copyMeetingLink}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition hover:bg-white/[0.04]"
+              style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+            >
+              <Link2 size={15} /> {copiedLink ? 'Copied' : 'Copy Link'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+function LegacyShareModal({ jobId, onClose }: { jobId: string; onClose: () => void }) {
   const [integrations, setIntegrations] = useState<any>({})
   const [selected,     setSelected]     = useState<Set<string>>(new Set())
   const [loading,      setLoading]      = useState(true)
@@ -1266,15 +1934,22 @@ function ContinuityPanel({ data }: { data: any }) {
 // ── Results page ──────────────────────────────────────────────────────────────
 
 const TABS = [
-  { key: 'minutes', label: 'Minutes' },
-  { key: 'tasks',   label: 'Tasks'   },
+  { key: 'transcript', label: 'Transcript' },
+  { key: 'tasks',      label: 'Tasks'      },
+]
+
+const MOBILE_TABS = [
+  { key: 'minutes',    label: 'Minutes'    },
+  { key: 'transcript', label: 'Transcript' },
+  { key: 'tasks',      label: 'Tasks'      },
 ]
 
 export default function Results() {
   const { jobId } = useParams()
   const { minutes, downloadDocx, downloadPdf, downloadAudio, loading, error, refresh } = useResults(jobId)
   const [copied,        setCopied]        = useState(false)
-  const [activeTab,     setActiveTab]     = useState('minutes')
+  const [activeTab,     setActiveTab]     = useState('transcript')
+  const [activeMobileTab, setActiveMobileTab] = useState('minutes')
   const [templateModal, setTemplateModal] = useState<'pdf' | 'docx' | null>(null)
   const [speakerModal,  setSpeakerModal]  = useState(false)
   const [shareModal,    setShareModal]    = useState(false)
@@ -1330,6 +2005,12 @@ export default function Results() {
 
   const meta = minutes?.metadata
   const metaParts = [meta?.date, meta?.duration].filter(Boolean)
+  const audioUrl = minutes?.has_audio && jobId ? getDownloadUrl(jobId, 'audio') : undefined
+  const sideTab = activeMobileTab === 'tasks'
+    ? 'tasks'
+    : activeMobileTab === 'transcript'
+      ? 'transcript'
+      : activeTab
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
@@ -1442,9 +2123,35 @@ export default function Results() {
           </div>
         </div>
 
+        {/* ── mobile tab bar (sticky below header, hidden on xl) ── */}
+        <div className="shrink-0 border-b px-4 py-2 xl:hidden"
+          style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
+          <div className="grid grid-cols-3 gap-1 rounded-xl p-1"
+            style={{ background: 'var(--input-bg)', border: '1px solid var(--card-border)' }}>
+            {MOBILE_TABS.map(tab => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveMobileTab(tab.key)}
+                className={`px-2 py-2 text-xs font-semibold transition-all ${
+                  activeMobileTab === tab.key
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
+                    : ''
+                }`}
+                style={{
+                  borderRadius: 8,
+                  color: activeMobileTab === tab.key ? undefined : 'var(--text-3)',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* ── scrollable content ── */}
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="px-3 sm:px-5 lg:px-6 xl:px-8">
 
             {/* thread banner */}
             {threadInfo?.id && (
@@ -1459,41 +2166,65 @@ export default function Results() {
               </div>
             )}
 
-            {/* tab strip */}
-            <div className={`${threadInfo?.id ? '' : 'pt-6'} mb-6 grid w-fit grid-cols-2 gap-1 rounded-xl p-1`} style={{ background: 'var(--input-bg)' }}>
-              {TABS.map(tab => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                    activeTab === tab.key
-                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
-                      : ''
-                  }`}
-                  style={{ color: activeTab === tab.key ? undefined : 'var(--text-3)' }}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className={`${threadInfo?.id ? '' : 'pt-5 sm:pt-6'} grid gap-5 xl:grid-cols-[minmax(560px,0.95fr)_minmax(520px,0.85fr)] xl:gap-6`}>
+              <div className={`${activeMobileTab === 'minutes' ? 'block' : 'hidden'} min-w-0 xl:flex xl:justify-center`}>
+                <div className="w-full max-w-[760px]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Minutes</p>
+                    <h2 className="mt-1 text-lg font-bold" style={{ color: 'var(--text-1)' }}>Meeting notes</h2>
+                  </div>
+                  <button onClick={copyText}
+                    className="hidden items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-white/[0.04] sm:flex"
+                    style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}>
+                    {copied ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                    {copied ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <ContinuityPanel data={continuity} />
+                <MinutesTab minutes={minutes} copied={copied} onCopy={copyText} />
+                </div>
+              </div>
+
+              <aside className={`${activeMobileTab === 'minutes' ? 'hidden' : 'block'} min-w-0 overflow-hidden xl:block xl:sticky xl:top-5 xl:max-h-[calc(100vh-220px)] xl:rounded-lg xl:border xl:shadow-sm`}
+                style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
+                {/* tab strip */}
+                <div className="hidden border-b px-4 pt-3 xl:block" style={{ borderColor: 'var(--divider)' }}>
+                  <div className="grid w-full grid-cols-2 gap-1 rounded-xl p-1 sm:w-fit" style={{ background: 'var(--input-bg)' }}>
+                    {TABS.map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                          activeTab === tab.key
+                            ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
+                            : ''
+                        }`}
+                        style={{ color: activeTab === tab.key ? undefined : 'var(--text-3)' }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="overflow-hidden xl:h-[calc(100vh-282px)] xl:max-h-[calc(100vh-280px)]">
+                  {sideTab === 'transcript' ? (
+                    <TranscriptPanel
+                      transcript={minutes?.transcript}
+                      segments={minutes?.transcript_segments}
+                      jobId={jobId}
+                      onNameSpeakers={() => setSpeakerModal(true)}
+                      onSaved={refresh}
+                    />
+                  ) : (
+                    <div className="h-full overflow-y-auto px-4">
+                      <TasksTab jobId={jobId} canManage={true} meetingTitle={minutes?.title} />
+                    </div>
+                  )}
+                </div>
+              </aside>
             </div>
-
-            <AnimatePresence mode="wait">
-              {activeTab === 'minutes' ? (
-                <motion.div key="minutes"
-                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18 }}>
-                  <ContinuityPanel data={continuity} />
-                  <MinutesTab minutes={minutes} copied={copied} onCopy={copyText} />
-                </motion.div>
-              ) : (
-                <motion.div key="tasks"
-                  initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.18 }}>
-                  <TasksTab jobId={jobId} canManage={true} meetingTitle={minutes?.title} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             <div className="py-8 text-center border-t mt-4" style={{ borderColor: 'var(--card-border)' }}>
               <Link to="/upload"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors">
@@ -1502,6 +2233,7 @@ export default function Results() {
             </div>
           </div>
         </div>
+        <RecordingDock hasAudio={minutes?.has_audio} audioUrl={audioUrl} onDownload={downloadAudio} />
       </main>
 
       {templateModal && (
@@ -1521,7 +2253,7 @@ export default function Results() {
 
       <AnimatePresence>
         {shareModal && (
-          <ShareModal jobId={jobId} onClose={() => setShareModal(false)} />
+          <ShareModal jobId={jobId} minutes={minutes} onClose={() => setShareModal(false)} />
         )}
       </AnimatePresence>
     </div>
