@@ -734,6 +734,22 @@ function segmentsToTranscriptEntries(segments: any[] = []) {
     }))
 }
 
+const SPEAKER_PALETTE = [
+  { bg: 'rgba(52,211,153,0.15)',  text: '#34d399' },
+  { bg: 'rgba(96,165,250,0.15)',  text: '#60a5fa' },
+  { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c' },
+  { bg: 'rgba(232,121,249,0.15)', text: '#e879f9' },
+  { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24' },
+  { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa' },
+  { bg: 'rgba(244,114,182,0.15)', text: '#f472b6' },
+  { bg: 'rgba(56,189,248,0.15)',  text: '#38bdf8' },
+]
+
+function speakerColor(speaker: string, allSpeakers: string[]) {
+  const idx = allSpeakers.indexOf(speaker)
+  return SPEAKER_PALETTE[(idx < 0 ? 0 : idx) % SPEAKER_PALETTE.length]
+}
+
 function TranscriptPanel({
   transcript,
   segments,
@@ -748,12 +764,14 @@ function TranscriptPanel({
   onSaved: () => void
 }) {
   const [query, setQuery] = useState('')
+  const [syncAudio, setSyncAudio] = useState(true)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(transcript || '')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const hasTimedSegments = Array.isArray(segments) && segments.length > 0
   const entries = hasTimedSegments ? segmentsToTranscriptEntries(segments) : parseTranscript(transcript || '')
+  const allSpeakers = [...new Set(entries.map(e => e.speaker))]
   let cursor = 0
   const indexedEntries = entries.map((item, index) => {
     const charStart = cursor
@@ -772,6 +790,7 @@ function TranscriptPanel({
   }, [transcript, editing])
 
   function playFrom(item, sentenceOffset = 0) {
+    if (!syncAudio) return
     const nextTimed = indexedEntries.slice(item.index + 1).find(entry => entry.startTime != null)
     let time = item.startTime
 
@@ -816,7 +835,20 @@ function TranscriptPanel({
                 : 'No transcript text yet'}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
+            {hasTimedSegments && (
+              <button
+                onClick={() => setSyncAudio(v => !v)}
+                title={syncAudio ? 'Audio sync on — click sentences to seek' : 'Audio sync off'}
+                className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors ${
+                  syncAudio ? 'border-violet-500/40 text-violet-400 bg-violet-500/10' : 'hover:bg-white/[0.04]'
+                }`}
+                style={{ borderColor: syncAudio ? undefined : 'var(--card-border)', color: syncAudio ? undefined : 'var(--text-3)' }}
+              >
+                <Headphones size={11} />
+                Sync
+              </button>
+            )}
             <button
               onClick={onNameSpeakers}
               className="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/[0.04]"
@@ -887,22 +919,31 @@ function TranscriptPanel({
             {filtered.map((item) => {
               const sentences = splitSentences(item.text)
               let sentenceCursor = 0
+              const clr = speakerColor(item.speaker, allSpeakers)
               return (
                 <div
                   key={`${item.speaker}-${item.index}`}
                   className="flex gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/[0.03]"
-                  style={{ borderRadius: 8 }}
                 >
-                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-[11px] font-bold text-emerald-400">
+                  <div
+                    className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                    style={{ background: clr.bg, color: clr.text }}
+                  >
                     {item.speaker.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2">
-                      <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>{item.speaker}</p>
-                      <span className="h-1 w-1 rounded-full" style={{ background: 'var(--text-3)' }} />
-                      <span className="text-[11px]" style={{ color: 'var(--text-3)' }}>
-                        {item.startTime != null ? formatPlayerTime(item.startTime) : `Turn ${item.index + 1}`}
-                      </span>
+                      <p className="text-xs font-semibold" style={{ color: clr.text }}>{item.speaker}</p>
+                      {item.startTime != null && (
+                        <button
+                          onClick={() => playFrom(item, 0)}
+                          className="text-[11px] font-medium transition-colors hover:underline"
+                          style={{ color: syncAudio ? 'rgb(139,92,246)' : 'var(--text-3)' }}
+                          title={syncAudio ? 'Jump to this point' : 'Enable sync to seek'}
+                        >
+                          {formatPlayerTime(item.startTime)}
+                        </button>
+                      )}
                     </div>
                     <p className="text-sm leading-relaxed" style={{ color: 'var(--text-1)' }}>
                       {sentences.map((sentence, sentenceIndex) => (
@@ -914,9 +955,9 @@ function TranscriptPanel({
                               type="button"
                               key={`${item.index}-${sentenceIndex}`}
                               onClick={() => playFrom(item, offset)}
-                              className="inline rounded px-0.5 text-left transition-colors hover:bg-violet-500/10 hover:text-violet-500"
+                              className={`inline rounded px-0.5 text-left transition-colors ${syncAudio ? 'hover:bg-violet-500/10 hover:text-violet-400 cursor-pointer' : 'cursor-default'}`}
                               style={{ borderRadius: 4, color: 'inherit' }}
-                              title="Play recording from this sentence"
+                              title={syncAudio ? 'Play from here' : undefined}
                             >
                               {sentence}{sentenceIndex < sentences.length - 1 ? ' ' : ''}
                             </button>
@@ -938,7 +979,7 @@ function TranscriptPanel({
   )
 }
 
-// ── Ask AI tab ────────────────────────────────────────────────────────────────
+// ── Steph tab ─────────────────────────────────────────────────────────────────
 
 const SUGGESTED_QUESTIONS = [
   'What were the key decisions made?',
@@ -946,7 +987,7 @@ const SUGGESTED_QUESTIONS = [
   'Who is responsible for what?',
 ]
 
-function AskAiTab({ transcript }: { transcript?: string }) {
+function StephTab({ transcript }: { transcript?: string }) {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([])
   const [input, setInput]   = useState('')
   const [thinking, setThinking] = useState(false)
@@ -985,9 +1026,9 @@ function AskAiTab({ transcript }: { transcript?: string }) {
             <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center mb-3">
               <MessageSquare size={22} className="text-violet-400" />
             </div>
-            <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Ask about this meeting</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Talk to Steph</p>
             <p className="mt-1 max-w-xs text-xs" style={{ color: 'var(--text-3)' }}>
-              Get instant answers based on the transcript and minutes.
+              Ask Steph anything about this meeting — decisions, action items, who said what.
             </p>
             <div className="mt-5 flex flex-col gap-2 w-full max-w-xs">
               {SUGGESTED_QUESTIONS.map(q => (
@@ -1010,7 +1051,7 @@ function AskAiTab({ transcript }: { transcript?: string }) {
                   ? 'bg-violet-500/20 text-violet-400'
                   : 'bg-gradient-to-br from-violet-500 to-indigo-600 text-white'
               }`}>
-                {msg.role === 'user' ? 'You' : 'AI'}
+                {msg.role === 'user' ? 'You' : 'S'}
               </div>
               <div
                 className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
@@ -1028,7 +1069,7 @@ function AskAiTab({ transcript }: { transcript?: string }) {
         )}
         {thinking && (
           <div className="flex gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 text-[9px] font-bold text-white">AI</div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 text-[9px] font-bold text-white">S</div>
             <div className="rounded-2xl rounded-tl-sm px-3.5 py-3" style={{ background: 'var(--input-bg)' }}>
               <div className="flex gap-1 items-center">
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -1047,7 +1088,7 @@ function AskAiTab({ transcript }: { transcript?: string }) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-            placeholder="Ask about this meeting…"
+            placeholder="Ask Steph about this meeting…"
             rows={1}
             className="flex-1 resize-none rounded-xl border px-3 py-2.5 text-sm outline-none transition focus:ring-1 focus:ring-violet-500/40"
             style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
@@ -2062,14 +2103,14 @@ function ContinuityPanel({ data }: { data: any }) {
 
 const TABS = [
   { key: 'transcript', label: 'Transcript' },
-  { key: 'ask_ai',    label: 'Ask AI'     },
+  { key: 'ask_ai',    label: 'Steph'      },
   { key: 'tasks',     label: 'Tasks'      },
 ]
 
 const MOBILE_TABS = [
   { key: 'minutes',    label: 'Minutes'    },
   { key: 'transcript', label: 'Transcript' },
-  { key: 'ask_ai',    label: 'Ask AI'     },
+  { key: 'ask_ai',    label: 'Steph'      },
   { key: 'tasks',     label: 'Tasks'      },
 ]
 
@@ -2327,7 +2368,7 @@ export default function Results() {
                       onSaved={refresh}
                     />
                   ) : sideTab === 'ask_ai' ? (
-                    <AskAiTab transcript={minutes?.transcript} />
+                    <StephTab transcript={minutes?.transcript} />
                   ) : (
                     <div className="h-full overflow-y-auto px-4">
                       <TasksTab jobId={jobId} canManage={true} meetingTitle={minutes?.title} />
