@@ -197,7 +197,7 @@ function TemplateCard({ tpl, selected, onClick }) {
       onClick={onClick}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`relative flex flex-col items-start gap-2 p-3.5 rounded text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
+      className={`relative flex flex-col items-start gap-2 p-3.5 rounded-sm text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
         }`}
       style={{
         background: selected ? 'rgba(139,92,246,0.08)' : 'var(--input-bg)',

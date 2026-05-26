@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Bot, CalendarPlus, Clock3, ExternalLink, FileVideo,
-  Loader2, Logs, ShieldAlert, Square,
+  ImageIcon, Loader2, Logs, ShieldAlert, Square,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import { downloadMeetingBotCalendar, endMeetingBotSession, getMeetingBotSession } from '../../lib/api'
@@ -54,6 +54,8 @@ export default function MeetingBotDetail() {
   const [loading, setLoading]         = useState(true)
   const [ending, setEnding]           = useState(false)
   const [loadingArtifact, setLoadingArtifact] = useState(false)
+  const [debugScreenshotUrl, setDebugScreenshotUrl] = useState(null)
+  const [debugScreenshotError, setDebugScreenshotError] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -73,11 +75,50 @@ export default function MeetingBotDetail() {
   }, [sessionId])
 
   const artifactUrl = useMemo(() => {
-    if (!session?.recording_path) return null
-    return session.recording_path.startsWith('http')
-      ? session.recording_path
-      : `${BASE}${session.recording_path}`
+    if (!session?.recording_path || !session?.id) return null
+    if (session.recording_path.startsWith('http')) return session.recording_path
+    return `${BASE}/meeting-bots/${session.id}/artifact`
+  }, [session?.id, session?.recording_path])
+
+  const hasDebugScreenshot = useMemo(() => {
+    const path = String(session?.recording_path || '').toLowerCase()
+    return Boolean(path && /\.(png|jpe?g|webp)$/.test(path))
   }, [session?.recording_path])
+
+  useEffect(() => {
+    let alive = true
+    let objectUrl = null
+
+    async function loadDebugScreenshot() {
+      setDebugScreenshotUrl(null)
+      setDebugScreenshotError(false)
+      if (!artifactUrl || !hasDebugScreenshot) return
+
+      try {
+        if (!artifactUrl.startsWith(BASE)) {
+          if (alive) setDebugScreenshotUrl(artifactUrl)
+          return
+        }
+        const token = localStorage.getItem(ACCESS_KEY)
+        const res = await fetch(artifactUrl, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+        if (!res.ok) throw new Error('Failed to load debug screenshot')
+        const blob = await res.blob()
+        objectUrl = URL.createObjectURL(blob)
+        if (alive) setDebugScreenshotUrl(objectUrl)
+      } catch {
+        if (alive) setDebugScreenshotUrl(null)
+        if (alive) setDebugScreenshotError(true)
+      }
+    }
+
+    loadDebugScreenshot()
+    return () => {
+      alive = false
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [artifactUrl, hasDebugScreenshot])
 
   async function handleOpenArtifact() {
     if (!artifactUrl) return
@@ -289,6 +330,53 @@ export default function MeetingBotDetail() {
                   </motion.div>
 
                   {/* Artifacts */}
+                  {hasDebugScreenshot && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.1 }}
+                      className="rounded-2xl border overflow-hidden"
+                      style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
+                    >
+                      <div className="flex items-center justify-between gap-3 px-5 py-4 border-b" style={{ borderColor: 'var(--card-border)', background: 'var(--input-bg)' }}>
+                        <div className="flex items-center gap-2.5">
+                          <ImageIcon size={15} className="text-violet-400" />
+                          <h2 className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Debug screenshot</h2>
+                        </div>
+                        {artifactUrl && (
+                          <button
+                            onClick={handleOpenArtifact}
+                            disabled={loadingArtifact}
+                            className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-white/[0.04] disabled:opacity-60"
+                            style={{ borderColor: 'var(--card-border)', color: 'var(--text-2)' }}
+                          >
+                            {loadingArtifact ? <Loader2 size={12} className="animate-spin" /> : <ExternalLink size={12} />}
+                            Open
+                          </button>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        {debugScreenshotUrl ? (
+                          <button onClick={handleOpenArtifact} className="block w-full overflow-hidden rounded-xl border text-left" style={{ borderColor: 'var(--card-border)' }}>
+                            <img
+                              src={debugScreenshotUrl}
+                              alt="Meeting bot debug screenshot"
+                              className="block max-h-[420px] w-full object-contain"
+                              style={{ background: 'var(--page-bg)' }}
+                            />
+                          </button>
+                        ) : debugScreenshotError ? (
+                          <div className="rounded-xl px-3 py-8 text-sm" style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
+                            Debug screenshot could not be loaded.
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 rounded-xl px-3 py-8 text-sm" style={{ background: 'var(--input-bg)', color: 'var(--text-3)' }}>
+                            <Loader2 size={14} className="animate-spin text-violet-400" />
+                            Loading debug screenshot...
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+
                   <motion.div
                     initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, delay: 0.11 }}
                     className="rounded-2xl border overflow-hidden"

@@ -496,16 +496,15 @@ export default function Sidebar({ active }) {
                   <button
                     onClick={() => toggleGroup(group.label)}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl mb-0.5 transition-all text-xs font-bold uppercase tracking-widest"
-                    style={{ color: hasActiveItem ? undefined : 'var(--text-3)', color2: hasActiveItem ? 'rgb(167,139,250)' : undefined }}
+                    style={{ color: hasActiveItem ? 'rgb(167,139,250)' : 'var(--text-3)' }}
                     data-active={hasActiveItem}
                   >
-                    <span className="flex-1 text-left" style={{ color: hasActiveItem ? 'rgb(167,139,250)' : 'var(--text-3)' }}>{group.label}</span>
+                    <span className="flex-1 text-left">{group.label}</span>
                     {hasActiveItem && <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />}
                     <motion.div
                       animate={{ rotate: isOpen ? 180 : 0 }}
                       transition={{ duration: 0.22, ease: 'easeInOut' }}
                       className="shrink-0"
-                      style={{ color: hasActiveItem ? 'rgb(167,139,250)' : 'var(--text-3)' }}
                     >
                       <ChevronDown size={13} />
                     </motion.div>
