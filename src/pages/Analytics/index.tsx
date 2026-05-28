@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   CalendarDays, Clock, Zap, CheckCircle2,
-  Users, TrendingUp, AlertCircle, Radio, ArrowUpRight,
+  Users, TrendingUp, AlertCircle, Radio, ArrowUpRight, Crown, Sparkles,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import { useWorkspace } from '../../context/WorkspaceContext'
-import { getMeetingAnalytics } from '../../lib/api'
+import { getMeetingAnalytics, getUserUsage } from '../../lib/api'
 
 const RANGE_OPTIONS = [
   { label: '4 weeks',  days: 28  },
@@ -220,6 +220,126 @@ function Skeleton({ h = 'h-40' }: { h?: string }) {
   return <div className={`rounded-2xl animate-pulse ${h}`} style={{ background: 'var(--card-border)' }} />
 }
 
+// ── Usage / subscription panel ───────────────────────────────────────────────
+
+const PLAN_META: Record<string, { label: string; color: string; gradient: string }> = {
+  free:  { label: 'Free',       color: 'text-slate-400',  gradient: 'from-slate-500/20 to-slate-500/5'    },
+  pro:   { label: 'Pro',        color: 'text-violet-400', gradient: 'from-violet-500/20 to-violet-500/5'  },
+  team:  { label: 'Team',       color: 'text-sky-400',    gradient: 'from-sky-500/20 to-sky-500/5'        },
+  admin: { label: 'Admin',      color: 'text-amber-400',  gradient: 'from-amber-500/20 to-amber-500/5'    },
+}
+
+function UsageBar({ used, limit, color }: { used: number; limit: number | null; color: string }) {
+  const pct = limit ? Math.min((used / limit) * 100, 100) : 0
+  const near = limit ? pct >= 80 : false
+  const barColor = near ? '#f87171' : color
+  return (
+    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--input-bg)' }}>
+      <div className="h-full rounded-full transition-all duration-700"
+        style={{ width: limit ? `${pct}%` : '100%', background: barColor, opacity: limit ? 1 : 0.2 }} />
+    </div>
+  )
+}
+
+function UsagePanel() {
+  const [usage, setUsage] = useState<any>(null)
+
+  useEffect(() => {
+    getUserUsage().then(setUsage).catch(() => {})
+  }, [])
+
+  if (!usage) return null
+
+  const plan = usage.plan || 'free'
+  const meta = PLAN_META[plan] || PLAN_META.free
+  const isFree = plan === 'free'
+
+  const meetingsUsed  = usage.meetings_used  ?? 0
+  const meetingsLimit = usage.meetings_limit ?? null
+  const hoursUsed     = usage.hours_used     ?? 0
+  const hoursLimit    = usage.hours_limit    ?? null
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0 }}
+      className="rounded-2xl border p-5 relative overflow-hidden"
+      style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
+    >
+      {/* Subtle gradient bg */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${meta.gradient} pointer-events-none`} />
+
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-8">
+
+        {/* Plan badge */}
+        <div className="shrink-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <Crown size={14} className={meta.color} />
+            <span className={`text-xs font-bold uppercase tracking-wider ${meta.color}`}>{meta.label} Plan</span>
+          </div>
+          <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
+            {isFree ? 'Upgrade for more capacity' : 'Current subscription'}
+          </p>
+        </div>
+
+        {/* Usage bars */}
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* Meetings */}
+          <div>
+            <div className="flex items-end justify-between mb-1.5">
+              <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Meetings this month</span>
+              <span className="text-xs tabular-nums font-bold" style={{ color: 'var(--text-1)' }}>
+                {meetingsUsed}{meetingsLimit !== null ? ` / ${meetingsLimit}` : ''}
+              </span>
+            </div>
+            <UsageBar used={meetingsUsed} limit={meetingsLimit} color="#7c3aed" />
+            {meetingsLimit !== null && (
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>
+                {Math.max(meetingsLimit - meetingsUsed, 0)} remaining
+              </p>
+            )}
+          </div>
+
+          {/* Hours */}
+          <div>
+            <div className="flex items-end justify-between mb-1.5">
+              <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Audio hours used</span>
+              <span className="text-xs tabular-nums font-bold" style={{ color: 'var(--text-1)' }}>
+                {hoursUsed}h{hoursLimit !== null ? ` / ${hoursLimit}h` : ''}
+              </span>
+            </div>
+            <UsageBar used={hoursUsed} limit={hoursLimit} color="#0ea5e9" />
+            {hoursLimit !== null && (
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>
+                {Math.max(hoursLimit - hoursUsed, 0)}h remaining
+              </p>
+            )}
+          </div>
+
+        </div>
+
+        {/* CTA */}
+        {isFree && (
+          <div className="shrink-0 self-center">
+            <button
+              className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #6366f1)', borderRadius: 8 }}
+              onClick={() => window.location.href = '/settings?tab=billing'}
+            >
+              <Sparkles size={12} />
+              Upgrade
+              <ArrowUpRight size={11} />
+            </button>
+          </div>
+        )}
+
+      </div>
+    </motion.div>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Analytics() {
@@ -268,7 +388,7 @@ export default function Analytics() {
       <Sidebar active="analytics" />
 
       <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto px-4 py-7 sm:px-6 lg:px-8">
+        <div className="px-4 py-7 sm:px-6 lg:px-8">
 
           {/* Header */}
           <div className="flex flex-col gap-3 mb-7 sm:flex-row sm:items-center sm:justify-between">
@@ -287,6 +407,11 @@ export default function Analytics() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* ── Usage / subscription ── */}
+          <div className="mb-4">
+            <UsagePanel />
           </div>
 
           {loading ? (

@@ -339,3 +339,7 @@ export function getMeetingAnalytics(days = 84, workspaceId?: string) {
   if (workspaceId) params.set('workspace_id', workspaceId)
   return api.get(`/meetings/analytics?${params}`)
 }
+
+export function getUserUsage() {
+  return api.get('/users/me/usage')
+}
