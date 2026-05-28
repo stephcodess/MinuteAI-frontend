@@ -2519,9 +2519,9 @@ export default function Results() {
           </div>
 
           {/* title + compact actions — collapsible on mobile */}
-          <div className={`${headerExpanded ? 'flex' : 'hidden'} sm:flex items-start gap-3 px-4 py-3 sm:px-6`}>
+          <div className={`${headerExpanded ? 'flex' : 'hidden'} sm:flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 px-4 py-3 sm:px-6`}>
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-bold leading-tight sm:text-xl" style={{ color: 'var(--text-1)' }}>
+              <h1 className="truncate text-base font-bold leading-tight sm:text-xl" style={{ color: 'var(--text-1)' }}>
                 {minutes?.title ?? 'Meeting Minutes'}
               </h1>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -2544,12 +2544,12 @@ export default function Results() {
               </div>
             </div>
 
-            {/* icon action buttons */}
-            <div className="flex shrink-0 items-center gap-0.5">
+            {/* icon action buttons — scrollable row on mobile, shrink-0 on sm+ */}
+            <div className="flex items-center gap-0.5 sm:shrink-0 overflow-x-auto pb-0.5 sm:pb-0 scrollbar-none">
               <button
                 onClick={copyText}
                 title={copied ? 'Copied!' : 'Copy minutes text'}
-                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
                 style={{ color: copied ? 'rgb(52,211,153)' : 'var(--text-3)' }}
               >
                 {copied ? <CheckCheck size={15} /> : <Copy size={15} />}
@@ -2557,7 +2557,7 @@ export default function Results() {
               <button
                 onClick={() => setSpeakerModal(true)}
                 title="Name speakers"
-                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
                 style={{ color: 'var(--text-3)' }}
               >
                 <Users size={15} />
@@ -2565,7 +2565,7 @@ export default function Results() {
               <button
                 onClick={() => setShareModal(true)}
                 title="Share"
-                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
                 style={{ color: 'var(--text-3)' }}
               >
                 <Share2 size={15} />
@@ -2573,7 +2573,7 @@ export default function Results() {
               <button
                 onClick={() => setTemplateModal('pdf')}
                 title="Export PDF"
-                className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
                 style={{ color: 'var(--text-3)' }}
               >
                 <FileDown size={15} />
@@ -2582,7 +2582,7 @@ export default function Results() {
                 <button
                   onClick={downloadAudio}
                   title="Download recording"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-white/[0.06]"
                   style={{ color: 'var(--text-3)' }}
                 >
                   <Headphones size={15} />
@@ -2590,7 +2590,7 @@ export default function Results() {
               )}
               <button
                 onClick={() => setTemplateModal('docx')}
-                className="ml-1 flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:from-violet-500 hover:to-indigo-500"
+                className="ml-1 flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:from-violet-500 hover:to-indigo-500"
               >
                 <Download size={12} /> .docx
               </button>
