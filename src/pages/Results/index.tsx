@@ -2602,13 +2602,13 @@ export default function Results() {
         {/* ── mobile tab bar — sticks when header scrolls away ── */}
         <div className="sticky top-0 z-10 border-b xl:hidden"
           style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
-          <div className="flex overflow-x-auto px-2" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex w-full">
             {MOBILE_TABS.map(tab => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveMobileTab(tab.key)}
-                className={`shrink-0 -mb-px whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
+                className={`-mb-px flex-1 whitespace-nowrap rounded-none border-b-2 py-3 text-sm font-medium transition-colors ${
                   activeMobileTab === tab.key
                     ? 'border-violet-500 text-violet-500'
                     : 'border-transparent'
