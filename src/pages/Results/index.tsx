@@ -1019,8 +1019,8 @@ function StephTab({ transcript }: { transcript?: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+    <div className="flex flex-col xl:h-full">
+      <div className="min-h-[52vh] overflow-y-auto px-4 py-5 space-y-4 xl:min-h-0 xl:flex-1">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center py-10">
             <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center mb-3">
@@ -2492,9 +2492,10 @@ export default function Results() {
       <Sidebar active={null} />
 
       <main className="min-w-0 flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
 
         {/* ── header ── */}
-        <div className="shrink-0 border-b" style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
+        <div className="border-b" style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
           {/* breadcrumb row — always visible, chevron collapses details on mobile */}
           <div className="flex items-center gap-1.5 border-b px-4 py-2 sm:px-6" style={{ borderColor: 'var(--divider)' }}>
             <Link
@@ -2598,8 +2599,8 @@ export default function Results() {
           </div>
         </div>
 
-        {/* ── mobile tab bar (sticky below header, hidden on xl) ── */}
-        <div className="shrink-0 border-b px-4 py-2 xl:hidden"
+        {/* ── mobile tab bar — sticks when header scrolls away ── */}
+        <div className="sticky top-0 z-10 border-b px-4 py-2 xl:hidden"
           style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
           <div className="grid grid-cols-4 gap-1 rounded-xl p-1"
             style={{ background: 'var(--input-bg)', border: '1px solid var(--card-border)' }}>
@@ -2624,8 +2625,6 @@ export default function Results() {
           </div>
         </div>
 
-        {/* ── scrollable content ── */}
-        <div className="flex-1 overflow-y-auto">
           <div className="px-3 sm:px-5 lg:px-6 xl:px-8">
 
             {/* thread banner */}
