@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Bot, CalendarPlus, Clock3, ExternalLink,
   Loader2, Plus, ShieldAlert, Square, StopCircle,
-  Activity, Radio, CheckCircle2, Timer,
+  Activity, Radio, CheckCircle2, Timer, RefreshCw,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import {
@@ -159,45 +159,42 @@ export default function MeetingBots() {
   const location  = useLocation()
   const { activeWorkspace } = useWorkspace()
 
-  const [sessions, setSessions]                 = useState([])
-  const [upcoming, setUpcoming]                 = useState([])
-  const [tab, setTab]                           = useState('all')
-  const [loading, setLoading]                   = useState(true)
-  const [pendingCancel, setPendingCancel]       = useState(null)
-  const [pendingEnd, setPendingEnd]             = useState(null)
-  const [recordOpen, setRecordOpen]             = useState(false)
+  const [sessions, setSessions]           = useState([])
+  const [upcoming, setUpcoming]           = useState([])
+  const [tab, setTab]                     = useState('all')
+  const [loading, setLoading]             = useState(true)
+  const [refreshing, setRefreshing]       = useState(false)
+  const [pendingCancel, setPendingCancel] = useState(null)
+  const [pendingEnd, setPendingEnd]       = useState(null)
+  const [recordOpen, setRecordOpen]       = useState(false)
 
   const TERMINAL = new Set(['completed', 'failed', 'cancelled'])
 
+  const load = async () => {
+    try {
+      const [all, up] = await Promise.all([
+        listMeetingBotSessions(activeWorkspace?.id),
+        activeWorkspace?.id ? listUpcomingMeetingBotSessions(activeWorkspace.id, 50) : Promise.resolve([]),
+      ])
+      setSessions(all)
+      setUpcoming(up)
+    } catch { setSessions([]); setUpcoming([]) }
+    finally { setLoading(false) }
+  }
+
+  // Load once on mount and whenever the tab regains focus
   useEffect(() => {
-    let alive = true
-    let intervalId: ReturnType<typeof setInterval> | null = null
-
-    async function load() {
-      try {
-        const [all, up] = await Promise.all([
-          listMeetingBotSessions(activeWorkspace?.id),
-          activeWorkspace?.id ? listUpcomingMeetingBotSessions(activeWorkspace.id, 50) : Promise.resolve([]),
-        ])
-        if (!alive) return
-        setSessions(all)
-        setUpcoming(up)
-        const hasActive = all.some(s => !TERMINAL.has(s.status))
-        if (hasActive && intervalId === null) {
-          // Active sessions found — start polling at 10s
-          intervalId = setInterval(load, 10000)
-        } else if (!hasActive && intervalId !== null) {
-          // All settled — stop polling
-          clearInterval(intervalId)
-          intervalId = null
-        }
-      } catch { if (alive) { setSessions([]); setUpcoming([]) } }
-      finally   { if (alive) setLoading(false) }
-    }
-
     load()
-    return () => { alive = false; if (intervalId !== null) clearInterval(intervalId) }
+    const onVisible = () => { if (!document.hidden) load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [activeWorkspace?.id])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
+  }
 
   const highlighted = useMemo(() => new URLSearchParams(location.search).get('session'), [location.search])
 
@@ -253,12 +250,22 @@ export default function MeetingBots() {
                   Deploy AI recorders into any Google Meet or Zoom call
                 </p>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                onClick={() => setRecordOpen(true)}
-                className="flex items-center gap-2 sm:gap-2.5 px-3 sm:px-6 py-2.5 sm:py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-sm shadow-xl shadow-violet-500/30 hover:from-violet-500 hover:to-indigo-500 transition-all shrink-0">
-                <Plus size={16} /><span className="hidden sm:inline">Deploy Bot</span>
-              </motion.button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="p-2.5 rounded-full transition-colors disabled:opacity-40"
+                  style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+                  title="Refresh">
+                  <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} style={{ color: 'var(--text-2)' }} />
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => setRecordOpen(true)}
+                  className="flex items-center gap-2 sm:gap-2.5 px-3 sm:px-6 py-2.5 sm:py-3 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-sm shadow-xl shadow-violet-500/30 hover:from-violet-500 hover:to-indigo-500 transition-all">
+                  <Plus size={16} /><span className="hidden sm:inline">Deploy Bot</span>
+                </motion.button>
+              </div>
             </div>
           </motion.div>
 

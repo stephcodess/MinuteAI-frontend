@@ -54,9 +54,8 @@ export default function HostControlPanel() {
   const [voiceEnabled, setVoiceEnabled] = useState(true)
   const wsRef = useRef<WebSocket | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Poll for active session
+  // Check for active session once on mount and whenever the tab regains focus
   useEffect(() => {
     if (!isSignedIn) return
     const check = async () => {
@@ -66,8 +65,9 @@ export default function HostControlPanel() {
       } catch {}
     }
     check()
-    pollRef.current = setInterval(check, 30000)
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+    const onVisible = () => { if (!document.hidden) check() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [isSignedIn])
 
   // Connect WebSocket when session active
@@ -84,7 +84,17 @@ export default function HostControlPanel() {
     )
 
     ws.onopen = () => setWsReady(true)
-    ws.onclose = () => setWsReady(false)
+    ws.onclose = () => {
+      setWsReady(false)
+      // Re-check after a short delay — if the session ended, panel will hide;
+      // if it was a network blip the visibility handler will reconnect on refocus
+      setTimeout(async () => {
+        try {
+          const data = await api.get('/steph/active-session')
+          setSessionId(data.session_id || null)
+        } catch {}
+      }, 3000)
+    }
 
     ws.onmessage = (e) => {
       try {
