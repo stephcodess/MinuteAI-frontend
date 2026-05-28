@@ -2429,6 +2429,21 @@ export default function Results() {
       .catch(() => {})
   }, [jobId])
 
+  // Auto-open speaker assignment modal when there are unassigned speakers
+  useEffect(() => {
+    if (loading || !minutes) return
+    const m = minutes as any
+    const speakerMap: Record<string, string> = m.speaker_map || {}
+    const transcript: string = m.transcript || ''
+    if (!transcript) return
+    const labels = [...new Set(
+      [...transcript.matchAll(/^(Speaker [^:]+):/gm)].map((match: RegExpMatchArray) => match[1].trim())
+    )]
+    if (labels.length > 0 && labels.some(lbl => !speakerMap[lbl])) {
+      setSpeakerModal(true)
+    }
+  }, [loading, jobId])
+
   async function copyText() {
     if (!minutes?.plainText) return
     await navigator.clipboard.writeText(minutes.plainText)

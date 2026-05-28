@@ -261,7 +261,7 @@ function MeetingRow({ meeting, delay, onStar, onDelete, snippet = null }) {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-white/[0.06] z-20 py-1"
+                  className="absolute right-0 top-full mt-1 w-44 rounded-xl shadow-xl border z-20 py-1" style={{ background: 'var(--dropdown-bg)', borderColor: 'var(--dropdown-border)' }}
                 >
                   <button
                     onClick={() => { onStar?.(meeting.id); setMenuOpen(false) }}
@@ -317,7 +317,7 @@ function MeetingRow({ meeting, delay, onStar, onDelete, snippet = null }) {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-white/[0.06] z-20 py-1"
+                  className="absolute right-0 top-full mt-1 w-44 rounded-xl shadow-xl border z-20 py-1" style={{ background: 'var(--dropdown-bg)', borderColor: 'var(--dropdown-border)' }}
                 >
                   <button
                     onClick={() => { onStar?.(meeting.id); setMenuOpen(false) }}

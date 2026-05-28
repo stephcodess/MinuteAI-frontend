@@ -69,7 +69,8 @@ export default function ContactSupportModal({ open, onClose }: Props) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.96 }}
           transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed bottom-24 right-6 z-[91] flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.18)] ring-1 ring-slate-200"
+          className="fixed bottom-24 right-6 z-[91] flex flex-col overflow-hidden rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.35)] border"
+          style={{ background: 'var(--modal-bg)', borderColor: 'var(--modal-border)' }}
           style={{ width: 360, maxWidth: 'calc(100vw - 3rem)', height: stage === 'success' ? 'auto' : 520 }}
         >
           {/* Header */}
@@ -91,14 +92,14 @@ export default function ContactSupportModal({ open, onClose }: Props) {
 
           {stage === 'success' ? (
             <div className="flex flex-col items-center gap-4 px-6 py-10 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-50 text-teal-500">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-500/10 text-teal-400">
                 <CheckCircle2 size={28} />
               </div>
               <div>
-                <p className="text-base font-semibold text-slate-800">Message sent!</p>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="text-base font-semibold" style={{ color: 'var(--text-1)' }}>Message sent!</p>
+                <p className="mt-1 text-sm" style={{ color: 'var(--text-3)' }}>
                   We've received your message and will get back to you at{' '}
-                  <span className="font-medium text-slate-700">{form.email}</span>.
+                  <span className="font-medium" style={{ color: 'var(--text-2)' }}>{form.email}</span>.
                 </p>
               </div>
               <button
@@ -113,54 +114,58 @@ export default function ContactSupportModal({ open, onClose }: Props) {
               <div className="flex-1 space-y-3 px-4 py-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-slate-500">Name</label>
+                    <label className="mb-1 block text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>Name</label>
                     <input
                       value={form.name}
                       onChange={set('name')}
                       placeholder="Your name"
-                      className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-teal-400"
+                      className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400"
+                      style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--input-text)' }}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium text-slate-500">Email</label>
+                    <label className="mb-1 block text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>Email</label>
                     <input
                       type="email"
                       value={form.email}
                       onChange={set('email')}
                       placeholder="you@example.com"
-                      className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-teal-400"
+                      className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400"
+                      style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--input-text)' }}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-slate-500">Subject</label>
+                  <label className="mb-1 block text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>Subject</label>
                   <input
                     ref={subjectRef}
                     value={form.subject}
                     onChange={set('subject')}
                     placeholder="What's this about?"
-                    className="w-full rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-teal-400"
+                    className="w-full rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400"
+                    style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--input-text)' }}
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-slate-500">Message</label>
+                  <label className="mb-1 block text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>Message</label>
                   <textarea
                     value={form.message}
                     onChange={set('message')}
                     placeholder="Describe your issue or question…"
                     rows={6}
-                    className="w-full resize-none rounded-xl bg-slate-100 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-teal-400"
+                    className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-400"
+                    style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--input-text)' }}
                   />
                 </div>
 
                 {error && (
-                  <p className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
+                  <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-400">{error}</p>
                 )}
               </div>
 
-              <div className="shrink-0 border-t border-slate-200 px-4 py-3">
+              <div className="shrink-0 border-t px-4 py-3" style={{ borderColor: 'var(--divider)' }}>
                 <button
                   type="submit"
                   disabled={loading}

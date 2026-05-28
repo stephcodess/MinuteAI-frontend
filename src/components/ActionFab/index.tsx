@@ -61,7 +61,8 @@ function StephPanel({ onClose }: { onClose: () => void }) {
       exit={{ opacity: 0, y: 10, scale: 0.96 }}
       transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       // Fixed position independent of the FAB button
-      className="fixed bottom-24 right-6 z-[91] flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.18)] ring-1 ring-slate-200"
+      className="fixed bottom-24 right-6 z-[91] flex flex-col overflow-hidden rounded-2xl border shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+      style={{ background: 'var(--modal-bg)', borderColor: 'var(--modal-border)' }}
       style={{ width: 360, maxWidth: 'calc(100vw - 3rem)', height: 480 }}
     >
       {/* Header */}
@@ -85,18 +86,17 @@ function StephPanel({ onClose }: { onClose: () => void }) {
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-              msg.role === 'user'
-                ? 'bg-violet-600 text-white'
-                : 'bg-slate-100 text-slate-800'
-            }`}>
+            <div
+              className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-violet-600 text-white' : ''}`}
+              style={msg.role === 'assistant' ? { background: 'var(--input-bg)', color: 'var(--text-1)' } : undefined}
+            >
               {msg.content}
             </div>
           </div>
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="flex items-center gap-1 rounded-2xl bg-slate-100 px-4 py-3">
+            <div className="flex items-center gap-1 rounded-2xl px-4 py-3" style={{ background: 'var(--input-bg)' }}>
               {[0, 120, 240].map(d => (
                 <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
                   style={{ animationDelay: `${d}ms` }} />
@@ -108,14 +108,15 @@ function StephPanel({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Input */}
-      <div className="flex shrink-0 items-center gap-2 border-t border-slate-200 px-3 py-3">
+      <div className="flex shrink-0 items-center gap-2 border-t px-3 py-3" style={{ borderColor: 'var(--divider)' }}>
         <input
           ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
           placeholder="Ask Steph anything…"
-          className="flex-1 rounded-full bg-slate-100 px-4 py-2 text-sm outline-none placeholder:text-slate-400"
+          className="flex-1 rounded-full border px-4 py-2 text-sm outline-none glass-input"
+          style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)' }}
         />
         <button
           onClick={send}

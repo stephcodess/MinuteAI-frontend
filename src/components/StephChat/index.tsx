@@ -94,7 +94,8 @@ export default function StephChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="fixed bottom-[5.5rem] left-6 z-[90] flex w-[360px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.18)] ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700"
+            className="fixed bottom-[5.5rem] left-6 z-[90] flex w-[360px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+            style={{ background: 'var(--modal-bg)', borderColor: 'var(--modal-border)' }}
             style={{ height: 480 }}
           >
             {/* Header */}
@@ -125,8 +126,9 @@ export default function StephChat() {
                     className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
                       msg.role === 'user'
                         ? 'bg-violet-600 text-white'
-                        : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100'
+                        : ''
                     }`}
+                    style={msg.role === 'assistant' ? { background: 'var(--input-bg)', color: 'var(--text-1)' } : undefined}
                   >
                     {msg.content}
                   </div>
@@ -135,7 +137,7 @@ export default function StephChat() {
 
               {loading && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-1 rounded-2xl bg-slate-100 px-4 py-3 dark:bg-slate-800">
+                  <div className="flex items-center gap-1 rounded-2xl px-4 py-3" style={{ background: 'var(--input-bg)' }}>
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0ms]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:120ms]" />
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:240ms]" />
@@ -147,14 +149,15 @@ export default function StephChat() {
             </div>
 
             {/* Input */}
-            <div className="flex items-center gap-2 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
+            <div className="flex items-center gap-2 border-t px-3 py-3" style={{ borderColor: 'var(--divider)' }}>
               <input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
                 placeholder="Ask Steph anything…"
-                className="flex-1 rounded-full bg-slate-100 px-4 py-2 text-sm outline-none placeholder:text-slate-400 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                className="flex-1 rounded-full border px-4 py-2 text-sm outline-none glass-input"
+                style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)' }}
               />
               <button
                 onClick={send}
