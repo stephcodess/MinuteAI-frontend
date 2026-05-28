@@ -2600,24 +2600,20 @@ export default function Results() {
         </div>
 
         {/* ── mobile tab bar — sticks when header scrolls away ── */}
-        <div className="sticky top-0 z-10 border-b px-4 py-2 xl:hidden"
+        <div className="sticky top-0 z-10 border-b xl:hidden"
           style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
-          <div className="grid grid-cols-4 gap-1 rounded-xl p-1"
-            style={{ background: 'var(--input-bg)', border: '1px solid var(--card-border)' }}>
+          <div className="flex overflow-x-auto px-2" style={{ scrollbarWidth: 'none' }}>
             {MOBILE_TABS.map(tab => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveMobileTab(tab.key)}
-                className={`px-2 py-2 text-xs font-semibold transition-all ${
+                className={`shrink-0 -mb-px whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors ${
                   activeMobileTab === tab.key
-                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
-                    : ''
+                    ? 'border-violet-500 text-violet-500'
+                    : 'border-transparent'
                 }`}
-                style={{
-                  borderRadius: 8,
-                  color: activeMobileTab === tab.key ? undefined : 'var(--text-3)',
-                }}
+                style={{ color: activeMobileTab === tab.key ? undefined : 'var(--text-3)' }}
               >
                 {tab.label}
               </button>
