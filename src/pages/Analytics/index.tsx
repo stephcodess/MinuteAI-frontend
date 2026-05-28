@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   CalendarDays, Clock, Zap, CheckCircle2,
-  Users, Bot, Upload, Target, TrendingUp, AlertCircle,
+  Users, TrendingUp, AlertCircle, Radio, ArrowUpRight,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -15,29 +15,27 @@ const RANGE_OPTIONS = [
   { label: '1 year',   days: 365 },
 ]
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-
 function fmtDuration(mins: number | null): string {
-  if (mins === null || mins === undefined) return '—'
+  if (!mins) return '—'
   const h = Math.floor(mins / 60)
   const m = Math.round(mins % 60)
   if (h === 0) return `${m}m`
   return m === 0 ? `${h}h` : `${h}h ${m}m`
 }
 
-// ── SVG area chart ────────────────────────────────────────────────────────────
+// ── Smooth SVG area chart ────────────────────────────────────────────────────
 
-function AreaChart({ series, color = '#7c3aed' }: {
+function AreaChart({ series, color = '#7c3aed', height = 140 }: {
   series: { label: string; value: number }[]
   color?: string
+  height?: number
 }) {
   if (!series.length) return null
-  const W = 560, H = 130
+  const W = 560, H = height
   const max = Math.max(...series.map(d => d.value), 1)
-  const pad = 2
   const pts = series.map((d, i) => ({
-    x: pad + (i / Math.max(series.length - 1, 1)) * (W - pad * 2),
-    y: H - (d.value / max) * H * 0.85,
+    x: (i / Math.max(series.length - 1, 1)) * W,
+    y: 8 + (1 - d.value / max) * (H - 16),
   }))
 
   function smooth() {
@@ -51,38 +49,34 @@ function AreaChart({ series, color = '#7c3aed' }: {
   }
 
   const line = smooth()
-  const area = `${line} L ${pts[pts.length - 1].x} ${H} L ${pts[0].x} ${H} Z`
-  const id = `grad-${color.replace('#', '')}`
+  const area = `${line} L ${W} ${H} L 0 ${H} Z`
+  const gid = `ag${color.replace(/[^a-z0-9]/gi, '')}`
 
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${W} ${H + 22}`} className="w-full" style={{ minWidth: 260 }}>
+    <div className="overflow-x-auto -mx-1">
+      <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full" style={{ minWidth: 240 }}>
         <defs>
-          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.01" />
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={color} stopOpacity="0.20" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.00" />
           </linearGradient>
         </defs>
-        {[0.25, 0.5, 0.75, 1].map(t => (
-          <line key={t}
-            x1={0} y1={H - t * H * 0.85}
-            x2={W} y2={H - t * H * 0.85}
-            stroke="currentColor" strokeWidth={0.5} opacity={0.08}
-          />
+        {[0, 0.33, 0.66, 1].map(t => (
+          <line key={t} x1={0} y1={8 + t * (H - 16)} x2={W} y2={8 + t * (H - 16)}
+            stroke="currentColor" strokeWidth={0.4} opacity={0.07} />
         ))}
-        <path d={area} fill={`url(#${id})`} />
-        <path d={line} fill="none" stroke={color} strokeWidth={1.8} />
+        <path d={area} fill={`url(#${gid})`} />
+        <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
         {pts.map((p, i) => series[i].value > 0 && (
-          <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={color}>
+          <circle key={i} cx={p.x} cy={p.y} r={2.5} fill={color} opacity={0.9}>
             <title>{series[i].label}: {series[i].value}</title>
           </circle>
         ))}
         {series.map((d, i) => {
           if (i % Math.ceil(series.length / 7) !== 0 && i !== series.length - 1) return null
           return (
-            <text key={i} x={pts[i].x} y={H + 15}
-              textAnchor="middle" fontSize={7.5}
-              fill="currentColor" opacity={0.45}>
+            <text key={i} x={pts[i].x} y={H + 14} textAnchor="middle"
+              fontSize={7} fill="currentColor" opacity={0.38}>
               {d.label.replace(/^\d{4}-W/, 'W')}
             </text>
           )
@@ -92,29 +86,43 @@ function AreaChart({ series, color = '#7c3aed' }: {
   )
 }
 
-// ── Day-of-week bars ──────────────────────────────────────────────────────────
+// ── Mini sparkline (for stat cards) ─────────────────────────────────────────
+
+function Spark({ series, color }: { series: number[]; color: string }) {
+  if (series.every(v => v === 0)) return null
+  const W = 80, H = 28
+  const max = Math.max(...series, 1)
+  const pts = series.map((v, i) => ({
+    x: (i / (series.length - 1)) * W,
+    y: H - (v / max) * H * 0.9,
+  }))
+  let d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ display: 'block' }}>
+      <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" opacity={0.7} />
+    </svg>
+  )
+}
+
+// ── Day-of-week bars ─────────────────────────────────────────────────────────
 
 function DayBars({ series }: { series: { day: string; count: number }[] }) {
   const max = Math.max(...series.map(d => d.count), 1)
   return (
-    <div className="flex items-end gap-1.5 h-28 mt-2">
+    <div className="flex items-end gap-1 mt-1" style={{ height: 72 }}>
       {series.map(({ day, count }) => {
         const pct = count / max
         const weekend = day === 'Sat' || day === 'Sun'
         return (
-          <div key={day} className="flex flex-1 flex-col items-center gap-1">
-            {count > 0 && (
-              <span className="text-[9px] font-semibold tabular-nums" style={{ color: 'var(--text-3)' }}>{count}</span>
-            )}
-            <div
-              className="w-full rounded-sm transition-all duration-500"
-              style={{
-                height: `${Math.max(pct * 80, count > 0 ? 4 : 2)}px`,
-                background: weekend ? 'var(--card-border)' : '#7c3aed',
-                opacity: weekend ? 0.5 : 0.5 + pct * 0.5,
-              }}
-            />
-            <span className="text-[9px] font-medium" style={{ color: 'var(--text-3)' }}>{day}</span>
+          <div key={day} className="flex flex-1 flex-col items-center gap-0.5">
+            <div className="w-full rounded-sm" style={{
+              height: `${Math.max(pct * 52, count > 0 ? 3 : 2)}px`,
+              background: weekend ? 'var(--card-border)' : '#7c3aed',
+              opacity: weekend ? 0.45 : Math.max(0.35, pct),
+              marginTop: `${52 - Math.max(pct * 52, count > 0 ? 3 : 2)}px`,
+              transition: 'height 0.5s',
+            }} />
+            <span className="text-[9px]" style={{ color: 'var(--text-3)' }}>{day.slice(0, 2)}</span>
           </div>
         )
       })}
@@ -122,81 +130,85 @@ function DayBars({ series }: { series: { day: string; count: number }[] }) {
   )
 }
 
-// ── Donut ─────────────────────────────────────────────────────────────────────
+// ── Donut ────────────────────────────────────────────────────────────────────
 
-function Donut({ segments, size = 88 }: {
+function Donut({ segments, size = 72 }: {
   segments: { label: string; value: number; color: string }[]
   size?: number
 }) {
   const total = segments.reduce((s, d) => s + d.value, 0) || 1
-  const R = 28, cx = 40, cy = 40, sw = 11
+  const R = 26, cx = 36, cy = 36, sw = 10
   const circ = 2 * Math.PI * R
   let cum = 0
   return (
-    <svg width={size} height={size} viewBox="0 0 80 80">
+    <svg width={size} height={size} viewBox="0 0 72 72" className="shrink-0">
       <circle cx={cx} cy={cy} r={R} fill="none"
         stroke="currentColor" strokeWidth={sw} opacity={0.07} />
       {segments.filter(s => s.value > 0).map((seg, i) => {
         const pct = seg.value / total
-        const da = `${pct * circ} ${circ}`
         const off = -(cum * circ)
         cum += pct
         return (
           <circle key={i} cx={cx} cy={cy} r={R} fill="none"
             stroke={seg.color} strokeWidth={sw}
-            strokeDasharray={da} strokeDashoffset={off}
-            strokeLinecap="butt"
-            style={{ transform: 'rotate(-90deg)', transformOrigin: '40px 40px' }}>
+            strokeDasharray={`${pct * circ} ${circ}`}
+            strokeDashoffset={off}
+            style={{ transform: 'rotate(-90deg)', transformOrigin: '36px 36px' }}>
             <title>{seg.label}: {seg.value}</title>
           </circle>
         )
       })}
+      <text x={cx} y={cy + 4} textAnchor="middle" fontSize={10} fontWeight="700"
+        fill="currentColor" opacity={0.7}>{total}</text>
     </svg>
   )
 }
 
-// ── Stat hero card ────────────────────────────────────────────────────────────
+// ── Stat card ────────────────────────────────────────────────────────────────
 
-function HeroCard({ icon: Icon, label, value, sub, color, delay = 0 }: {
+function StatCard({ icon: Icon, label, value, sub, accent, spark, delay = 0 }: {
   icon: any; label: string; value: string | number
-  sub?: string; color: string; delay?: number
+  sub?: string; accent: string; spark?: number[]; delay?: number
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="rounded-2xl border p-5 flex flex-col gap-3"
+      className="rounded-2xl border p-4 flex flex-col gap-2 relative overflow-hidden"
       style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
     >
-      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${color}`}>
-        <Icon size={16} />
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${accent}`}>
+        <Icon size={15} />
       </div>
-      <div>
-        <p className="text-2xl font-black leading-none" style={{ color: 'var(--text-1)' }}>{value}</p>
-        <p className="text-xs font-semibold mt-1" style={{ color: 'var(--text-2)' }}>{label}</p>
-        {sub && <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-3)' }}>{sub}</p>}
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <p className="text-2xl font-black leading-none" style={{ color: 'var(--text-1)' }}>{value}</p>
+          <p className="text-xs font-medium mt-1" style={{ color: 'var(--text-3)' }}>{label}</p>
+          {sub && <p className="text-[11px] mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>{sub}</p>}
+        </div>
+        {spark && <Spark series={spark} color={accent.includes('violet') ? '#7c3aed' : accent.includes('sky') ? '#0ea5e9' : accent.includes('amber') ? '#f59e0b' : '#10b981'} />}
       </div>
     </motion.div>
   )
 }
 
-// ── Section card ──────────────────────────────────────────────────────────────
+// ── Section wrapper ──────────────────────────────────────────────────────────
 
-function Card({ title, icon: Icon, iconColor, children, delay = 0, className = '' }: {
-  title: string; icon: any; iconColor: string
+function Panel({ title, icon: Icon, accent, children, delay = 0, className = '' }: {
+  title: string; icon: any; accent: string
   children: React.ReactNode; delay?: number; className?: string
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className={`rounded-2xl border p-5 ${className}`}
+      className={`rounded-2xl border p-5 flex flex-col ${className}`}
       style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <Icon size={14} className={iconColor} />
+      <div className="flex items-center gap-2 mb-4 shrink-0">
+        <Icon size={13} className={accent} />
         <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>{title}</p>
       </div>
       {children}
@@ -204,21 +216,16 @@ function Card({ title, icon: Icon, iconColor, children, delay = 0, className = '
   )
 }
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function Skeleton({ className = '' }: { className?: string }) {
-  return (
-    <div className={`animate-pulse rounded-xl ${className}`}
-      style={{ background: 'var(--card-border)' }} />
-  )
+function Skeleton({ h = 'h-40' }: { h?: string }) {
+  return <div className={`rounded-2xl animate-pulse ${h}`} style={{ background: 'var(--card-border)' }} />
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Analytics() {
   const { activeWorkspace } = useWorkspace()
-  const [range, setRange] = useState(84)
-  const [data, setData]   = useState<any>(null)
+  const [range, setRange]   = useState(84)
+  const [data, setData]     = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -230,22 +237,31 @@ export default function Analytics() {
       .finally(() => setLoading(false))
   }, [range, activeWorkspace?.id])
 
-  const meetingSeries = (data?.weekly_series || []).map((w: any) => ({ label: w.week, value: w.meetings }))
-  const actionSeries  = (data?.weekly_series || []).map((w: any) => ({ label: w.week, value: w.actions  }))
-
-  const totalMeetings  = data?.total_meetings  ?? 0
-  const totalActions   = data?.total_actions   ?? 0
-  const totalDecisions = data?.total_decisions ?? 0
-  const totalHours     = data?.total_hours     ?? 0
-  const avgDur         = data?.avg_duration_min ?? null
-  const botCount       = data?.bot_count       ?? 0
-  const uploadCount    = data?.upload_count    ?? 0
-  const completionRate = data?.completion_rate ?? null
-  const noActions      = data?.meetings_no_actions ?? 0
-  const participants   = data?.top_participants ?? []
+  const weekly         = data?.weekly_series ?? []
+  const meetingSeries  = weekly.map((w: any) => ({ label: w.week, value: w.meetings }))
+  const actionSeries   = weekly.map((w: any) => ({ label: w.week, value: w.actions  }))
+  const meetingSpark   = weekly.slice(-12).map((w: any) => w.meetings)
+  const actionSpark    = weekly.slice(-12).map((w: any) => w.actions)
   const daysSeries     = data?.busiest_day_series ?? []
+  const participants   = data?.top_participants   ?? []
+
+  const totalMeetings  = data?.total_meetings    ?? 0
+  const totalHours     = data?.total_hours       ?? 0
+  const avgDur         = data?.avg_duration_min  ?? null
+  const totalActions   = data?.total_actions     ?? 0
+  const totalDecisions = data?.total_decisions   ?? 0
+  const botCount       = data?.bot_count         ?? 0
+  const uploadCount    = data?.upload_count      ?? 0
+  const completionRate = data?.completion_rate   ?? null
+  const noActions      = data?.meetings_no_actions ?? 0
+  const errorCount     = data?.by_status?.error  ?? 0
   const processingCount = data?.by_status?.processing ?? 0
-  const errorCount      = data?.by_status?.error      ?? 0
+
+  const busiestDay = daysSeries.length
+    ? [...daysSeries].sort((a: any, b: any) => b.count - a.count)[0]
+    : null
+  const hasDay = daysSeries.some((d: any) => d.count > 0)
+  const hasSource = botCount + uploadCount > 0
 
   return (
     <div className="flex h-screen app-bg app-grid overflow-hidden">
@@ -254,25 +270,19 @@ export default function Analytics() {
       <main className="min-w-0 flex-1 overflow-y-auto">
         <div className="max-w-6xl mx-auto px-4 py-7 sm:px-6 lg:px-8">
 
-          {/* ── Header ── */}
+          {/* Header */}
           <div className="flex flex-col gap-3 mb-7 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-xl font-black" style={{ color: 'var(--text-1)' }}>Meeting Analytics</h1>
               <p className="text-sm mt-0.5" style={{ color: 'var(--text-3)' }}>
-                Activity across {activeWorkspace?.name || 'your workspace'}
+                {activeWorkspace?.name || 'Your workspace'} · last {range === 28 ? '4 weeks' : range === 84 ? '12 weeks' : range === 180 ? '6 months' : '1 year'}
               </p>
             </div>
-            {/* Range tabs — underline style */}
             <div className="flex border-b self-start sm:self-auto" style={{ borderColor: 'var(--divider)' }}>
               {RANGE_OPTIONS.map(o => (
-                <button
-                  key={o.days}
-                  onClick={() => setRange(o.days)}
-                  className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-                    range === o.days ? 'border-violet-500 text-violet-500' : 'border-transparent'
-                  }`}
-                  style={{ color: range === o.days ? undefined : 'var(--text-3)', borderRadius: 0 }}
-                >
+                <button key={o.days} onClick={() => setRange(o.days)}
+                  className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${range === o.days ? 'border-violet-500 text-violet-500' : 'border-transparent'}`}
+                  style={{ color: range === o.days ? undefined : 'var(--text-3)', borderRadius: 0 }}>
                   {o.label}
                 </button>
               ))}
@@ -281,188 +291,162 @@ export default function Analytics() {
 
           {loading ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[1,2,3,4].map(i => <Skeleton key={i} className="h-32" />)}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[1,2,3,4].map(i => <Skeleton key={i} h="h-28" />)}
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <Skeleton className="lg:col-span-2 h-52" />
-                <Skeleton className="h-52" />
+              <Skeleton h="h-56" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[1,2,3].map(i => <Skeleton key={i} h="h-44" />)}
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <Skeleton className="lg:col-span-2 h-52" />
-                <Skeleton className="h-52" />
-              </div>
+              <Skeleton h="h-44" />
             </div>
           ) : (
-            <>
-              {/* ── Hero stats ── */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-                <HeroCard
-                  icon={CalendarDays} delay={0}
-                  label="Meetings completed"
-                  value={totalMeetings}
-                  sub={processingCount > 0 ? `${processingCount} still processing` : undefined}
-                  color="bg-violet-500/15 text-violet-400"
-                />
-                <HeroCard
-                  icon={Clock} delay={0.04}
-                  label="Hours recorded"
-                  value={`${totalHours}h`}
-                  sub={avgDur !== null ? `avg ${fmtDuration(avgDur)} / meeting` : undefined}
-                  color="bg-sky-500/15 text-sky-400"
-                />
-                <HeroCard
-                  icon={Zap} delay={0.08}
-                  label="Action items captured"
-                  value={totalActions}
+            <div className="space-y-4">
+
+              {/* ── Stat row ── */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatCard icon={CalendarDays} label="Meetings completed" value={totalMeetings}
+                  sub={processingCount > 0 ? `${processingCount} processing` : undefined}
+                  accent="bg-violet-500/15 text-violet-400" spark={meetingSpark} delay={0} />
+                <StatCard icon={Clock} label="Hours recorded" value={`${totalHours}h`}
+                  sub={avgDur !== null ? `avg ${fmtDuration(avgDur)}` : undefined}
+                  accent="bg-sky-500/15 text-sky-400" delay={0.04} />
+                <StatCard icon={Zap} label="Action items" value={totalActions}
                   sub={totalMeetings > 0 ? `${(totalActions / totalMeetings).toFixed(1)} per meeting` : undefined}
-                  color="bg-amber-500/15 text-amber-400"
-                />
-                <HeroCard
-                  icon={CheckCircle2} delay={0.12}
-                  label="Decisions recorded"
-                  value={totalDecisions}
+                  accent="bg-amber-500/15 text-amber-400" spark={actionSpark} delay={0.08} />
+                <StatCard icon={CheckCircle2} label="Decisions recorded" value={totalDecisions}
                   sub={totalMeetings > 0 ? `${(totalDecisions / totalMeetings).toFixed(1)} per meeting` : undefined}
-                  color="bg-emerald-500/15 text-emerald-400"
-                />
+                  accent="bg-emerald-500/15 text-emerald-400" delay={0.12} />
               </div>
 
-              {/* ── Charts row 1 ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                <Card title="Meetings over time" icon={TrendingUp} iconColor="text-violet-400"
-                  delay={0.1} className="lg:col-span-2">
-                  {meetingSeries.every((d: any) => d.value === 0)
-                    ? <p className="text-sm py-10 text-center" style={{ color: 'var(--text-3)' }}>No meetings in this period.</p>
-                    : <AreaChart series={meetingSeries} color="#7c3aed" />}
-                </Card>
+              {/* ── Meetings chart ── */}
+              <Panel title="Meetings over time" icon={TrendingUp} accent="text-violet-400" delay={0.1}>
+                {meetingSeries.every((d: any) => d.value === 0)
+                  ? <p className="text-sm py-8 text-center" style={{ color: 'var(--text-3)' }}>No completed meetings yet.</p>
+                  : <AreaChart series={meetingSeries} color="#7c3aed" height={150} />}
+              </Panel>
 
-                <Card title="Busiest days" icon={CalendarDays} iconColor="text-sky-400" delay={0.14}>
-                  {daysSeries.every((d: any) => d.count === 0)
-                    ? <p className="text-sm py-6 text-center" style={{ color: 'var(--text-3)' }}>No data yet.</p>
-                    : <DayBars series={daysSeries} />}
-                  {daysSeries.length > 0 && (() => {
-                    const busiest = [...daysSeries].sort((a: any, b: any) => b.count - a.count)[0]
-                    return busiest.count > 0
-                      ? <p className="mt-3 text-xs" style={{ color: 'var(--text-3)' }}>
-                          Most active on <span className="font-semibold" style={{ color: 'var(--text-2)' }}>{busiest.day}</span>
+              {/* ── Middle row: day heatmap + action items + source ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+                {/* Busiest days */}
+                <Panel title="Busiest days" icon={CalendarDays} accent="text-sky-400" delay={0.14}>
+                  {hasDay ? (
+                    <>
+                      <DayBars series={daysSeries} />
+                      {busiestDay?.count > 0 && (
+                        <p className="mt-3 text-xs" style={{ color: 'var(--text-3)' }}>
+                          Peak day: <span className="font-semibold" style={{ color: 'var(--text-2)' }}>{busiestDay.day}</span>
+                          <span className="ml-1">({busiestDay.count} meetings)</span>
                         </p>
-                      : null
-                  })()}
-                </Card>
-              </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-xs text-center" style={{ color: 'var(--text-3)' }}>
+                        Days data will appear once meetings are recorded.
+                      </p>
+                    </div>
+                  )}
+                </Panel>
 
-              {/* ── Charts row 2 ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                <Card title="Action items over time" icon={Zap} iconColor="text-amber-400"
-                  delay={0.18} className="lg:col-span-2">
+                {/* Action items chart */}
+                <Panel title="Action items over time" icon={Zap} accent="text-amber-400" delay={0.17}>
                   {actionSeries.every((d: any) => d.value === 0)
-                    ? <p className="text-sm py-10 text-center" style={{ color: 'var(--text-3)' }}>No action items in this period.</p>
-                    : <AreaChart series={actionSeries} color="#f59e0b" />}
-                </Card>
+                    ? <p className="text-xs text-center py-6" style={{ color: 'var(--text-3)' }}>No action items yet.</p>
+                    : <AreaChart series={actionSeries} color="#f59e0b" height={100} />}
+                  <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-3" style={{ borderColor: 'var(--divider)' }}>
+                    {[
+                      { label: 'Total actions', value: totalActions, color: '#f59e0b' },
+                      { label: 'No-action mtgs', value: noActions,   color: '#f87171' },
+                    ].map(s => (
+                      <div key={s.label}>
+                        <p className="text-lg font-black leading-none" style={{ color: 'var(--text-1)' }}>{s.value}</p>
+                        <p className="text-[10px] mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Panel>
 
-                <Card title="Source breakdown" icon={Bot} iconColor="text-indigo-400" delay={0.22}>
-                  <div className="flex items-center gap-4">
-                    <Donut
-                      segments={[
+                {/* Source + completion */}
+                <Panel title="Source & tasks" icon={Radio} accent="text-indigo-400" delay={0.2}>
+                  {hasSource ? (
+                    <div className="flex items-center gap-3 mb-4">
+                      <Donut segments={[
                         { label: 'Bot',    value: botCount,    color: '#7c3aed' },
                         { label: 'Upload', value: uploadCount, color: '#06b6d4' },
-                      ]}
-                    />
-                    <div className="space-y-2.5">
-                      {[
-                        { label: 'Bot recorded',  value: botCount,    color: 'bg-violet-500' },
-                        { label: 'Manual upload', value: uploadCount, color: 'bg-cyan-500'   },
-                      ].map(s => (
-                        <div key={s.label} className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${s.color}`} />
-                          <div>
-                            <p className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>{s.value}</p>
-                            <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>{s.label}</p>
+                      ]} />
+                      <div className="space-y-2">
+                        {[
+                          { label: 'Bot recorded',  value: botCount,    color: 'bg-violet-500' },
+                          { label: 'Manual upload', value: uploadCount, color: 'bg-cyan-400'   },
+                        ].map(s => (
+                          <div key={s.label} className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full shrink-0 ${s.color}`} />
+                            <div>
+                              <p className="text-sm font-bold leading-none" style={{ color: 'var(--text-1)' }}>{s.value}</p>
+                              <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>{s.label}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  {completionRate !== null && (
-                    <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--divider)' }}>
-                      <div className="flex items-center justify-between mb-1.5">
+                  ) : (
+                    <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>
+                      {totalMeetings} meeting{totalMeetings !== 1 ? 's' : ''} recorded
+                    </p>
+                  )}
+                  {completionRate !== null ? (
+                    <div className="mt-auto">
+                      <div className="flex justify-between mb-1">
                         <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Task completion</span>
                         <span className="text-xs font-bold" style={{ color: 'var(--text-1)' }}>{completionRate}%</span>
                       </div>
                       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--input-bg)' }}>
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700"
-                          style={{ width: `${completionRate}%` }}
-                        />
+                        <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"
+                          style={{ width: `${completionRate}%` }} />
                       </div>
                     </div>
+                  ) : (
+                    <p className="text-xs mt-auto" style={{ color: 'var(--text-3)' }}>No task data available.</p>
                   )}
-                  {noActions > 0 && (
-                    <div className="mt-3 flex items-center gap-1.5">
-                      <AlertCircle size={12} className="text-amber-400 shrink-0" />
+                  {errorCount > 0 && (
+                    <div className="mt-3 flex items-center gap-1.5 pt-3 border-t" style={{ borderColor: 'var(--divider)' }}>
+                      <AlertCircle size={11} className="text-rose-400 shrink-0" />
                       <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>
-                        <span className="font-semibold" style={{ color: 'var(--text-2)' }}>{noActions}</span> meetings with no action items
+                        <span className="font-semibold text-rose-400">{errorCount}</span> failed this period
                       </p>
                     </div>
                   )}
-                </Card>
+                </Panel>
               </div>
 
               {/* ── Top participants ── */}
               {participants.length > 0 && (
-                <Card title="Top participants" icon={Users} iconColor="text-violet-400" delay={0.26}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-                    {participants.map((p: any, i: number) => {
-                      const max = participants[0].count
-                      return (
-                        <div key={p.name} className="flex items-center gap-3">
-                          <span className="w-5 text-[11px] font-bold tabular-nums shrink-0 text-right"
-                            style={{ color: 'var(--text-3)' }}>{i + 1}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-sm truncate font-medium" style={{ color: 'var(--text-1)' }}>{p.name}</span>
-                              <span className="text-xs tabular-nums shrink-0" style={{ color: 'var(--text-3)' }}>{p.count}</span>
-                            </div>
-                            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--input-bg)' }}>
-                              <div
-                                className="h-full rounded-full bg-violet-500 transition-all duration-700"
-                                style={{ width: `${(p.count / max) * 100}%`, opacity: 0.6 + (p.count / max) * 0.4 }}
-                              />
-                            </div>
+                <Panel title="Top participants" icon={Users} accent="text-violet-400" delay={0.24}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
+                    {participants.map((p: any, i: number) => (
+                      <div key={p.name} className="flex items-center gap-3">
+                        <span className="w-4 text-[11px] font-bold tabular-nums text-right shrink-0"
+                          style={{ color: 'var(--text-3)' }}>{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="text-sm font-medium truncate" style={{ color: 'var(--text-1)' }}>{p.name}</span>
+                            <span className="text-xs tabular-nums shrink-0 font-semibold"
+                              style={{ color: 'var(--text-3)' }}>{p.count}</span>
+                          </div>
+                          <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--input-bg)' }}>
+                            <div className="h-full rounded-full bg-violet-500"
+                              style={{ width: `${(p.count / participants[0].count) * 100}%`, opacity: 0.55 + (p.count / participants[0].count) * 0.45 }} />
                           </div>
                         </div>
-                      )
-                    })}
+                      </div>
+                    ))}
                   </div>
-                </Card>
+                </Panel>
               )}
 
-              {/* ── Health strip ── */}
-              {(processingCount > 0 || errorCount > 0) && (
-                <motion.div
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                  className="mt-4 rounded-2xl border px-5 py-4 flex flex-wrap gap-6"
-                  style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}
-                >
-                  {processingCount > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                      <span className="text-sm" style={{ color: 'var(--text-2)' }}>
-                        <strong>{processingCount}</strong> still processing
-                      </span>
-                    </div>
-                  )}
-                  {errorCount > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-rose-400" />
-                      <span className="text-sm" style={{ color: 'var(--text-2)' }}>
-                        <strong>{errorCount}</strong> failed in this period
-                      </span>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </>
+            </div>
           )}
         </div>
       </main>
