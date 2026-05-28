@@ -484,12 +484,12 @@ export default function Sidebar({ active }) {
       {/* Mobile backdrop */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.button type="button"
+          <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.16 }}
             onClick={closeMobileSidebar}
             className="fixed inset-0 z-[85] bg-black/60 backdrop-blur-sm md:hidden"
-            aria-label="Close sidebar backdrop" />
+            aria-label="Close sidebar" />
         )}
       </AnimatePresence>
 

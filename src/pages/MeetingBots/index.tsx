@@ -294,21 +294,16 @@ export default function MeetingBots() {
         {/* ── Session feed ── */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-4 sm:px-8 pb-6 sm:pb-8">
           {/* Tab bar */}
-          <div className="shrink-0 flex items-center gap-2 mb-4">
-            <div className="flex p-1 rounded-2xl gap-1" style={{ background: 'var(--input-bg)' }}>
-              {TABS.map(({ key, label, Icon }) => (
-                <button key={key} onClick={() => setTab(key)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                    tab === key
-                      ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
-                      : ''
-                  }`}
-                  style={{ color: tab === key ? undefined : 'var(--text-3)' }}>
-                  <Icon size={14} /><span className="hidden xs:inline sm:inline">{label}</span>
-                  <span className="inline xs:hidden sm:hidden">{key === 'all' ? `All (${sessions.length})` : `Soon (${upcoming.length})`}</span>
-                </button>
-              ))}
-            </div>
+          <div className="shrink-0 flex items-center border-b mb-4" style={{ borderColor: 'var(--divider)' }}>
+            {TABS.map(({ key, label, Icon }) => (
+              <button key={key} onClick={() => setTab(key)}
+                className={`-mb-px flex items-center gap-1.5 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
+                  tab === key ? 'border-violet-500 text-violet-500' : 'border-transparent'
+                }`}
+                style={{ color: tab === key ? undefined : 'var(--text-3)', borderRadius: 0 }}>
+                <Icon size={14} />{label}
+              </button>
+            ))}
             <div className="flex-1" />
             {live.length > 0 && (
               <motion.div animate={{ opacity: [1, 0.5, 1] }} transition={{ duration: 1.5, repeat: Infinity }}

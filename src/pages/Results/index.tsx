@@ -2613,7 +2613,7 @@ export default function Results() {
                     ? 'border-violet-500 text-violet-500'
                     : 'border-transparent'
                 }`}
-                style={{ color: activeMobileTab === tab.key ? undefined : 'var(--text-3)' }}
+                style={{ color: activeMobileTab === tab.key ? undefined : 'var(--text-3)', borderRadius: 0 }}
               >
                 {tab.label}
               </button>
@@ -2659,18 +2659,18 @@ export default function Results() {
               <aside className={`${activeMobileTab === 'minutes' ? 'hidden' : 'flex flex-col'} min-w-0 overflow-hidden xl:flex xl:flex-col xl:sticky xl:top-5 xl:max-h-[calc(100vh-220px)] xl:rounded-lg xl:border xl:shadow-sm`}
                 style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
                 {/* tab strip */}
-                <div className="hidden border-b px-4 pt-3 xl:block" style={{ borderColor: 'var(--divider)' }}>
-                  <div className="grid w-full grid-cols-4 gap-1 rounded-xl p-1 sm:w-fit" style={{ background: 'var(--input-bg)' }}>
+                <div className="hidden border-b xl:block" style={{ borderColor: 'var(--divider)' }}>
+                  <div className="flex px-2">
                     {TABS.map(tab => (
                       <button
                         key={tab.key}
                         onClick={() => setActiveTab(tab.key)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                        className={`-mb-px whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
                           activeTab === tab.key
-                            ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm'
-                            : ''
+                            ? 'border-violet-500 text-violet-500'
+                            : 'border-transparent'
                         }`}
-                        style={{ color: activeTab === tab.key ? undefined : 'var(--text-3)' }}
+                        style={{ color: activeTab === tab.key ? undefined : 'var(--text-3)', borderRadius: 0 }}
                       >
                         {tab.label}
                       </button>

@@ -505,15 +505,15 @@ export default function PdfToAudio() {
           <div className="mx-auto w-full max-w-2xl">
 
             {/* Tabs */}
-            <div className="mb-6 grid w-fit grid-cols-2 gap-1 rounded-xl p-1" style={{ background: 'var(--input-bg)' }}>
+            <div className="mb-6 flex border-b" style={{ borderColor: 'var(--divider)' }}>
               {(['generate', 'audios'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer ${
-                    activeTab === tab ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm' : ''
+                  className={`-mb-px whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium transition-colors cursor-pointer ${
+                    activeTab === tab ? 'border-violet-500 text-violet-500' : 'border-transparent'
                   }`}
-                  style={activeTab === tab ? {} : { color: 'var(--text-3)' }}
+                  style={{ color: activeTab === tab ? undefined : 'var(--text-3)', borderRadius: 0 }}
                 >
                   {tab === 'generate' ? 'Generate' : 'Generated Audios'}
                 </button>
@@ -884,15 +884,15 @@ export default function PdfToAudio() {
 
                 {/* Result tabs */}
                 {resultTabs.length > 1 && (
-                  <div className="mb-4 flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--input-bg)' }}>
+                  <div className="mb-4 flex border-b" style={{ borderColor: 'var(--divider)' }}>
                     {resultTabs.map(t => (
                       <button
                         key={t.id}
                         onClick={() => setResultTab(t.id)}
-                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          resultTab === t.id ? 'bg-violet-600 text-white' : ''
+                        className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-xs font-semibold transition-colors ${
+                          resultTab === t.id ? 'border-violet-500 text-violet-500' : 'border-transparent'
                         }`}
-                        style={resultTab === t.id ? {} : { color: 'var(--text-3)' }}
+                        style={{ color: resultTab === t.id ? undefined : 'var(--text-3)', borderRadius: 0 }}
                       >
                         {t.label}
                       </button>
