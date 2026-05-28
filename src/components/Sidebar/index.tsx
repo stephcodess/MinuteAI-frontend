@@ -310,7 +310,12 @@ function NotificationBell() {
 
   function load() { api.get('/notifications').then(setNotifications).catch(() => { }) }
 
-  useEffect(() => { load(); const id = setInterval(load, 30000); return () => clearInterval(id) }, [])
+  useEffect(() => {
+    load()
+    const onVisible = () => { if (!document.hidden) load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   useEffect(() => {
     if (!open) return
