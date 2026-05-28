@@ -156,7 +156,7 @@ function MemberCard({ member, onRoleChange, onRemove, index, isMe, canManage }) 
         <MemberAvatar member={member} size={12} />
         <div className="flex-1 min-w-0 pt-0.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-bold text-white truncate">{member.name}</p>
+            <p className="text-sm font-bold t1 truncate">{member.name}</p>
             {isMe && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-white/[0.06] text-slate-500">You</span>}
           </div>
           <p className="text-xs text-slate-500 truncate">{member.email}</p>
@@ -170,7 +170,7 @@ function MemberCard({ member, onRoleChange, onRemove, index, isMe, canManage }) 
           { label: 'Joined', value: member.joinedAgo },
         ].map(({ label, value }) => (
           <div key={label} className="bg-white/[0.04] rounded-xl py-2 px-1">
-            <p className="text-xs font-bold text-white">{value}</p>
+            <p className="text-xs font-bold t1">{value}</p>
             <p className="text-[10px] text-slate-500 mt-0.5">{label}</p>
           </div>
         ))}
@@ -660,7 +660,7 @@ export default function Team() {
                 {meetings.length === 0 ? (
                   <div className="py-16 text-center">
                     <FileText size={28} className="text-gray-200 mx-auto mb-3" />
-                    <p className="text-sm font-semibold text-white mb-1">No meetings yet</p>
+                    <p className="text-sm font-semibold t1 mb-1">No meetings yet</p>
                     <p className="text-xs text-slate-500">Upload a recording to get started.</p>
                   </div>
                 ) : (
@@ -676,7 +676,7 @@ export default function Team() {
                                 : <AlertCircle size={16} className="text-red-400" />}
                           </div>
                           <div className="min-w-0 flex-1 self-stretch sm:self-auto">
-                            <p className="text-sm font-semibold text-white truncate">{m.title || 'Untitled meeting'}</p>
+                            <p className="text-sm font-semibold t1 truncate">{m.title || 'Untitled meeting'}</p>
                             <div className="mt-0.5 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                               <span className="flex items-center gap-1"><Calendar size={10} />{fmtDate(m.date)}</span>
                               {m.duration && <span>{m.duration}</span>}
@@ -729,7 +729,7 @@ export default function Team() {
             <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.18 }}
               className="glass-card border rounded-2xl p-5"
             >
-              <p className="text-sm font-bold text-white mb-4">Workspace overview</p>
+              <p className="text-sm font-bold t1 mb-4">Workspace overview</p>
               <div className="space-y-3">
                 {[
                   { label: 'Total members', value: members.length, icon: Users, color: 'text-violet-600', bg: 'bg-violet-50' },
@@ -742,7 +742,7 @@ export default function Team() {
                       <Icon size={14} className={color} />
                     </div>
                     <div className="flex-1"><p className="text-xs text-slate-500">{label}</p></div>
-                    <p className="text-sm font-bold text-white">{value}</p>
+                    <p className="text-sm font-bold t1">{value}</p>
                   </div>
                 ))}
               </div>

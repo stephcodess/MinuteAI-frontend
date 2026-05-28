@@ -11,6 +11,7 @@ import {
   GitBranch, AlertCircle, Share2, Search, Headphones,
   Play, Pause, RotateCcw, RotateCw, Volume2,
   Link2, Code2, Globe2, UserPlus, PencilLine, Save,
+  Mail, Wand2,
 } from 'lucide-react'
 import { useResults } from '../../hooks/useResults'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -1273,17 +1274,35 @@ function RecordingDock({ hasAudio, audioUrl, onDownload, onTimeUpdate }: {
 }
 
 function SpeakerNamesModal({ jobId, onClose, onApplied }) {
-  const [speakers, setSpeakers] = useState<Array<{ label: string; samples: string[] }>>([])
-  const [nameMap,  setNameMap]  = useState<Record<string, string>>({})
-  const [loading,  setLoading]  = useState(true)
-  const [saving,   setSaving]   = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [speakers,      setSpeakers]      = useState<Array<{ label: string; samples: string[] }>>([])
+  const [nameMap,       setNameMap]       = useState<Record<string, string>>({})
+  const [suggestions,   setSuggestions]   = useState<Record<string, { name: string; confidence: number; source: string }>>({})
+  const [attendees,     setAttendees]     = useState<string[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [saving,        setSaving]        = useState(false)
+  const [error,         setError]         = useState<string | null>(null)
 
   useEffect(() => {
-    api.get(`/results/${jobId}/speakers`)
-      .then(data => { setSpeakers(data.speakers || []); setNameMap(data.speaker_map || {}) })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
+    Promise.all([
+      api.get(`/results/${jobId}/speakers`),
+      api.get(`/results/${jobId}/speaker-suggestions`).catch(() => ({ suggestions: {}, attendees: [] })),
+    ]).then(([spkData, suggestData]) => {
+      const spks = spkData.speakers || []
+      setSpeakers(spks)
+      setAttendees(suggestData.attendees || [])
+      const suggs: Record<string, { name: string; confidence: number; source: string }> = suggestData.suggestions || {}
+      setSuggestions(suggs)
+      // Pre-fill nameMap: existing speaker_map takes priority, then suggestions with confidence >= 0.50
+      const base: Record<string, string> = { ...(spkData.speaker_map || {}) }
+      for (const [label, sugg] of Object.entries(suggs)) {
+        if (!base[label] && sugg.confidence >= 0.50) {
+          base[label] = sugg.name
+        }
+      }
+      setNameMap(base)
+    })
+    .catch(err => setError(err.message))
+    .finally(() => setLoading(false))
   }, [jobId])
 
   async function handleApply() {
@@ -1291,6 +1310,16 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
     try { await api.post(`/results/${jobId}/speakers/apply`, { speaker_map: nameMap }); await onApplied(); onClose() }
     catch (err: any) { setError(err.message) }
     finally { setSaving(false) }
+  }
+
+  // Attendee pills — exclude anyone already assigned to a different speaker
+  function attendeePillsFor(label: string) {
+    const usedElsewhere = new Set(
+      Object.entries(nameMap)
+        .filter(([k, v]) => k !== label && v)
+        .map(([, v]) => v)
+    )
+    return attendees.filter(a => !usedElsewhere.has(a))
   }
 
   return (
@@ -1307,14 +1336,18 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
           <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: 'var(--card-border)' }}>
             <div>
               <h2 className="text-base font-bold" style={{ color: 'var(--text-1)' }}>Name Speakers</h2>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Assign real names — minutes and transcript update instantly.</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+                {attendees.length > 0
+                  ? 'Select from attendees or type a name — Steph will remember for next time.'
+                  : 'Assign real names — Steph will remember for next time.'}
+              </p>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-white/[0.06]" style={{ color: 'var(--text-3)' }}>
               <X size={14} />
             </button>
           </div>
 
-          <div className="px-6 py-5 max-h-[58vh] overflow-y-auto">
+          <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-12 gap-2 text-sm" style={{ color: 'var(--text-3)' }}>
                 <Loader2 size={15} className="animate-spin" /> Loading speakers…
@@ -1323,33 +1356,74 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
               <p className="text-sm text-center py-10" style={{ color: 'var(--text-3)' }}>No speakers detected in this transcript.</p>
             ) : (
               <div className="space-y-4">
-                {speakers.map(spk => (
-                  <div key={spk.label} className="rounded-2xl border p-4" style={{ background: 'var(--input-bg)', borderColor: 'var(--card-border)' }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                        {spk.label.replace('Speaker ', '').trim().charAt(0)}
+                {speakers.map(spk => {
+                  const sugg = suggestions[spk.label]
+                  const isRemembered = sugg?.source === 'voice_profile'
+                  const isProfileMatch = sugg?.source === 'attendee_profile'
+                  const pills = attendeePillsFor(spk.label)
+                  return (
+                    <div key={spk.label} className="rounded-2xl border p-4" style={{ background: 'var(--input-bg)', borderColor: 'var(--card-border)' }}>
+                      {/* Speaker header */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                          {spk.label.replace('Speaker ', '').trim().charAt(0)}
+                        </div>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>{spk.label}</span>
+                        {isRemembered && (
+                          <span className="ml-auto text-[9px] font-bold text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                            ◉ Remembered
+                          </span>
+                        )}
+                        {isProfileMatch && !isRemembered && (
+                          <span className="ml-auto text-[9px] font-bold text-sky-400 bg-sky-400/10 px-2 py-0.5 rounded-full">
+                            Known attendee
+                          </span>
+                        )}
                       </div>
-                      <span className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>{spk.label}</span>
+
+                      {/* Sample quotes */}
+                      {spk.samples.length > 0 && (
+                        <div className="mb-3 space-y-1.5">
+                          {spk.samples.map((s, i) => (
+                            <p key={i} className="text-[11px] italic leading-relaxed pl-2 border-l-2 border-violet-500/30" style={{ color: 'var(--text-3)' }}>
+                              "{s}"
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Attendee quick-select pills */}
+                      {pills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-2">
+                          {pills.map(a => (
+                            <button
+                              key={a}
+                              onClick={() => setNameMap(m => ({ ...m, [spk.label]: a }))}
+                              className={`text-[11px] px-2.5 py-1 rounded-full border font-medium transition-all ${
+                                nameMap[spk.label] === a
+                                  ? 'bg-violet-600/25 border-violet-500/50 text-violet-300'
+                                  : 'border-white/10 hover:border-violet-500/30 hover:bg-violet-600/10'
+                              }`}
+                              style={{ color: nameMap[spk.label] === a ? undefined : 'var(--text-2)' }}
+                            >
+                              {a}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Free-text input */}
+                      <input
+                        type="text"
+                        placeholder={`Type a name for ${spk.label}…`}
+                        value={nameMap[spk.label] || ''}
+                        onChange={e => setNameMap(m => ({ ...m, [spk.label]: e.target.value }))}
+                        className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 transition"
+                        style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+                      />
                     </div>
-                    {spk.samples.length > 0 && (
-                      <div className="mb-3 space-y-1.5">
-                        {spk.samples.map((s, i) => (
-                          <p key={i} className="text-[11px] italic leading-relaxed pl-2 border-l-2 border-violet-500/30" style={{ color: 'var(--text-3)' }}>
-                            "{s}"
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    <input
-                      type="text"
-                      placeholder={`Real name for ${spk.label} (optional)`}
-                      value={nameMap[spk.label] || ''}
-                      onChange={e => setNameMap(m => ({ ...m, [spk.label]: e.target.value }))}
-                      className="w-full rounded-xl border px-3 py-2 text-sm placeholder-opacity-30 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 transition"
-                      style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
-                    />
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
             {error && <p className="text-xs text-red-400 mt-3">{error}</p>}
@@ -1366,7 +1440,7 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
                 className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold rounded-xl shadow-sm transition-all disabled:opacity-50"
               >
                 {saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCheck size={13} />}
-                Apply Names
+                Save & Remember
               </motion.button>
             </div>
           </div>
@@ -2116,12 +2190,205 @@ function ContinuityPanel({ data }: { data: any }) {
   )
 }
 
+// ── Follow-up Email tab ───────────────────────────────────────────────────────
+
+const TONES = [
+  { id: 'professional', label: 'Professional', desc: 'Formal and structured' },
+  { id: 'friendly',     label: 'Friendly',     desc: 'Warm and conversational' },
+  { id: 'concise',      label: 'Concise',      desc: 'Short and bullet-driven' },
+]
+
+function FollowUpTab({ jobId }: { jobId: string }) {
+  const [tone, setTone]                   = useState('professional')
+  const [recipientName, setRecipientName] = useState('')
+  const [context, setContext]             = useState('')
+  const [generating, setGenerating]       = useState(false)
+  const [subject, setSubject]             = useState('')
+  const [body, setBody]                   = useState('')
+  const [error, setError]                 = useState('')
+  const [copied, setCopied]               = useState<'subject' | 'body' | 'all' | null>(null)
+
+  async function generate() {
+    setGenerating(true)
+    setError('')
+    setSubject('')
+    setBody('')
+    try {
+      const res = await api.post(`/results/${jobId}/follow-up-email`, {
+        tone,
+        recipient_name: recipientName.trim() || undefined,
+        context: context.trim() || undefined,
+      })
+      setSubject(res.subject || '')
+      setBody(res.body || '')
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate email.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function copyText(type: 'subject' | 'body' | 'all') {
+    const text = type === 'subject' ? subject
+      : type === 'body' ? body
+      : `Subject: ${subject}\n\n${body}`
+    await navigator.clipboard.writeText(text)
+    setCopied(type)
+    setTimeout(() => setCopied(null), 1800)
+  }
+
+  const hasResult = subject || body
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="shrink-0 border-b px-4 py-3" style={{ borderColor: 'var(--divider)' }}>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-violet-500/15 flex items-center justify-center">
+            <Mail size={13} className="text-violet-400" />
+          </div>
+          <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>Follow-up Email</p>
+        </div>
+        <p className="text-[11px] mt-1" style={{ color: 'var(--text-3)' }}>
+          Draft a follow-up email from this meeting's key points
+        </p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {/* Tone */}
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-2)' }}>Tone</p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {TONES.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTone(t.id)}
+                className={`flex flex-col gap-0.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                  tone === t.id ? 'border-violet-500/50 bg-violet-500/10' : 'hover:bg-white/[0.04]'
+                }`}
+                style={{ borderColor: tone === t.id ? undefined : 'var(--card-border)', background: tone === t.id ? undefined : 'var(--card-bg)' }}
+              >
+                <span className={`text-[11px] font-bold ${tone === t.id ? 'text-violet-300' : ''}`}
+                  style={tone === t.id ? {} : { color: 'var(--text-2)' }}>
+                  {t.label}
+                </span>
+                <span className="text-[10px] leading-snug" style={{ color: 'var(--text-3)' }}>{t.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Recipient */}
+        <div>
+          <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-2)' }}>
+            Recipient name <span className="font-normal opacity-50">(optional)</span>
+          </label>
+          <input
+            value={recipientName}
+            onChange={e => setRecipientName(e.target.value)}
+            placeholder="e.g. Sarah, the Acme team…"
+            className="w-full rounded-xl border px-3 py-2 text-sm outline-none transition focus:ring-1 focus:ring-violet-500/40"
+            style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+          />
+        </div>
+
+        {/* Extra context */}
+        <div>
+          <label className="block text-xs font-semibold mb-1.5" style={{ color: 'var(--text-2)' }}>
+            Additional context <span className="font-normal opacity-50">(optional)</span>
+          </label>
+          <textarea
+            value={context}
+            onChange={e => setContext(e.target.value)}
+            rows={2}
+            placeholder="e.g. Focus on the pricing discussion, include the demo link…"
+            className="w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none transition focus:ring-1 focus:ring-violet-500/40"
+            style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+          />
+        </div>
+
+        {error && (
+          <p className="text-xs text-red-400 px-3 py-2 rounded-xl bg-red-500/8 border border-red-500/20">{error}</p>
+        )}
+
+        <button
+          onClick={generate}
+          disabled={generating}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 cursor-pointer"
+          style={{
+            background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+            color: 'white',
+            boxShadow: '0 3px 14px rgba(124,58,237,0.3)',
+          }}
+        >
+          {generating ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+          {generating ? 'Generating…' : hasResult ? 'Regenerate' : 'Generate email'}
+        </button>
+
+        {/* Result */}
+        {hasResult && (
+          <div className="space-y-3">
+            {/* Copy all */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Generated email</p>
+              <button
+                onClick={() => copyText('all')}
+                className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+                style={{ color: copied === 'all' ? 'rgb(52,211,153)' : 'var(--text-3)' }}
+              >
+                {copied === 'all' ? <CheckCheck size={11} /> : <Copy size={11} />}
+                {copied === 'all' ? 'Copied' : 'Copy all'}
+              </button>
+            </div>
+
+            {/* Subject */}
+            {subject && (
+              <div className="rounded-xl border p-3" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Subject</span>
+                  <button
+                    onClick={() => copyText('subject')}
+                    className="flex items-center gap-1 text-[11px]"
+                    style={{ color: copied === 'subject' ? 'rgb(52,211,153)' : 'var(--text-3)' }}
+                  >
+                    {copied === 'subject' ? <CheckCheck size={10} /> : <Copy size={10} />}
+                    {copied === 'subject' ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{subject}</p>
+              </div>
+            )}
+
+            {/* Body */}
+            {body && (
+              <div className="rounded-xl border p-3" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-3)' }}>Body</span>
+                  <button
+                    onClick={() => copyText('body')}
+                    className="flex items-center gap-1 text-[11px]"
+                    style={{ color: copied === 'body' ? 'rgb(52,211,153)' : 'var(--text-3)' }}
+                  >
+                    {copied === 'body' ? <CheckCheck size={10} /> : <Copy size={10} />}
+                    {copied === 'body' ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-2)' }}>{body}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Results page ──────────────────────────────────────────────────────────────
 
 const TABS = [
   { key: 'transcript', label: 'Transcript' },
   { key: 'ask_ai',    label: 'Steph'      },
   { key: 'tasks',     label: 'Tasks'      },
+  { key: 'follow_up', label: 'Follow-up'  },
 ]
 
 const MOBILE_TABS = [
@@ -2129,6 +2396,7 @@ const MOBILE_TABS = [
   { key: 'transcript', label: 'Transcript' },
   { key: 'ask_ai',    label: 'Steph'      },
   { key: 'tasks',     label: 'Tasks'      },
+  { key: 'follow_up', label: 'Follow-up'  },
 ]
 
 export default function Results() {
@@ -2200,7 +2468,9 @@ export default function Results() {
       ? 'transcript'
       : activeMobileTab === 'ask_ai'
         ? 'ask_ai'
-        : activeTab
+        : activeMobileTab === 'follow_up'
+          ? 'follow_up'
+          : activeTab
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--page-bg)' }}>
@@ -2380,7 +2650,7 @@ export default function Results() {
                 style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--divider)' }}>
                 {/* tab strip */}
                 <div className="hidden border-b px-4 pt-3 xl:block" style={{ borderColor: 'var(--divider)' }}>
-                  <div className="grid w-full grid-cols-3 gap-1 rounded-xl p-1 sm:w-fit" style={{ background: 'var(--input-bg)' }}>
+                  <div className="grid w-full grid-cols-4 gap-1 rounded-xl p-1 sm:w-fit" style={{ background: 'var(--input-bg)' }}>
                     {TABS.map(tab => (
                       <button
                         key={tab.key}
@@ -2409,6 +2679,8 @@ export default function Results() {
                     />
                   ) : sideTab === 'ask_ai' ? (
                     <StephTab transcript={minutes?.transcript} />
+                  ) : sideTab === 'follow_up' ? (
+                    <FollowUpTab jobId={jobId} />
                   ) : (
                     <div className="h-full overflow-y-auto px-4">
                       <TasksTab jobId={jobId} canManage={true} meetingTitle={minutes?.title} />

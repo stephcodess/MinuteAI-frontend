@@ -29,9 +29,11 @@ import Integrations from './pages/Integrations'
 import PdfToAudio from './pages/PdfToAudio'
 import ConnectCard from './pages/ConnectCard'
 import Threads from './pages/Threads'
+import Analytics from './pages/Analytics'
 import ActionFab from './components/ActionFab'
 import UpdateNotifier from './components/UpdateNotifier'
 import ProductTour from './components/ProductTour'
+import HostControlPanel from './components/HostControlPanel'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
@@ -117,11 +119,13 @@ function AppRoutes() {
           <Route path="/pdf-to-audio" element={<RequireAuth><PdfToAudio /></RequireAuth>} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/connect-card" element={<ConnectCard />} />
+          <Route path="/analytics" element={<RequireAuth><Analytics /></RequireAuth>} />
           <Route path="/privacy" element={<Navigate to="/login" replace />} />
           <Route path="/terms" element={<Navigate to="/login" replace />} />
           <Route path="/contact" element={<Navigate to="/login" replace />} />
         </Routes>
       <ActionFab />
+      <HostControlPanel />
       <ProductTour />
       <UpdateNotifier />
     </div>

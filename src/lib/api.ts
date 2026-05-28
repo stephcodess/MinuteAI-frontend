@@ -267,6 +267,14 @@ export function connectWebhook(url: string) {
   return api.post('/integrations/webhook/connect', { url })
 }
 
+export function connectTeams(webhookUrl: string) {
+  return api.post('/integrations/teams/connect', { webhook_url: webhookUrl })
+}
+
+export function disconnectTeams() {
+  return api.delete('/integrations/teams/disconnect')
+}
+
 export function updateRoutingDestinations(provider: string, destinations: any[]) {
   return api.put(`/integrations/${provider}/routing`, { destinations })
 }
@@ -310,4 +318,24 @@ export function updateThread(threadId: string, body: { name?: string; is_locked?
 
 export function deleteThread(threadId: string) {
   return api.delete(`/threads/${threadId}`)
+}
+
+// ── Meeting search ────────────────────────────────────────────────────────────
+
+export function searchMeetings(q: string, workspaceId?: string) {
+  const params = new URLSearchParams({ q })
+  if (workspaceId) params.set('workspace_id', workspaceId)
+  return api.get(`/meetings/search?${params}`)
+}
+
+export function getPreMeetingBrief(title: string, attendees: string[] = []) {
+  const params = new URLSearchParams({ title })
+  if (attendees.length) params.set('attendees', attendees.join(','))
+  return api.get(`/chief-of-staff/pre-meeting?${params}`)
+}
+
+export function getMeetingAnalytics(days = 84, workspaceId?: string) {
+  const params = new URLSearchParams({ days: String(days) })
+  if (workspaceId) params.set('workspace_id', workspaceId)
+  return api.get(`/meetings/analytics?${params}`)
 }

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, LayoutDashboard, Upload, CreditCard, Settings, LogOut,
   Zap, Plus, Users, ChevronsUpDown, Check, Pencil, Trash2, X, Loader2, CheckSquare,
-  Bell, CheckCircle2, ClipboardList, Bot, Menu, Languages, Sun, Moon, ChevronDown, Disc, Plug, Headphones, GitBranch,
+  Bell, CheckCircle2, ClipboardList, Bot, Menu, Languages, Sun, Moon, ChevronDown, Disc, Plug, Headphones, GitBranch, BarChart2,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
@@ -38,6 +38,7 @@ const NAV_GROUPS = [
     items: [
       { key: 'tasks', icon: CheckSquare, label: 'My Tasks', to: '/tasks' },
       { key: 'threads', icon: GitBranch, label: 'Meeting Threads', to: '/threads' },
+      { key: 'analytics', icon: BarChart2, label: 'Analytics', to: '/analytics' },
       { key: 'team', icon: Users, label: 'Team', to: '/team' },
       { key: 'integrations', icon: Plug, label: 'Integrations', to: '/integrations' },
     ],

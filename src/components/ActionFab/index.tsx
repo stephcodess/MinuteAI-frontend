@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, Radio, Send, Sparkles, X } from 'lucide-react'
+import { HeadphonesIcon, Plus, Radio, Send, Sparkles, X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { api } from '../../lib/api'
 import RecordMeetingModal from '../RecordMeetingModal'
+import ContactSupportModal from '../ContactSupportModal'
 
 const DASHBOARD_PREFIXES = [
   '/dashboard', '/billing', '/settings', '/team', '/upload',
@@ -163,9 +164,10 @@ export default function ActionFab() {
   const { pathname } = useLocation()
   const { isSignedIn } = useAuth()
 
-  const [menuOpen, setMenuOpen]     = useState(false)
-  const [stephOpen, setStephOpen]   = useState(false)
-  const [recordOpen, setRecordOpen] = useState(false)
+  const [menuOpen, setMenuOpen]         = useState(false)
+  const [stephOpen, setStephOpen]       = useState(false)
+  const [recordOpen, setRecordOpen]     = useState(false)
+  const [supportOpen, setSupportOpen]   = useState(false)
 
   const shouldShow = useMemo(
     () => isSignedIn && DASHBOARD_PREFIXES.some(p => pathname.startsWith(p)),
@@ -191,12 +193,13 @@ export default function ActionFab() {
 
   function handleFabClick() {
     if (stephOpen) { setStephOpen(false); setMenuOpen(false); return }
+    if (supportOpen) { setSupportOpen(false); setMenuOpen(false); return }
     setMenuOpen(v => !v)
   }
 
   if (!shouldShow) return null
 
-  const isOpen = menuOpen || stephOpen
+  const isOpen = menuOpen || stephOpen || supportOpen
 
   return (
     <>
@@ -204,6 +207,9 @@ export default function ActionFab() {
       <AnimatePresence>
         {stephOpen && <StephPanel onClose={() => setStephOpen(false)} />}
       </AnimatePresence>
+
+      {/* ── Contact Support modal ── */}
+      <ContactSupportModal open={supportOpen} onClose={() => setSupportOpen(false)} />
 
       {/* ── Speed-dial items (fixed, stacked above FAB) ── */}
       <AnimatePresence>
@@ -213,11 +219,18 @@ export default function ActionFab() {
             className="fixed bottom-24 right-6 z-[91] flex flex-col items-end gap-3"
           >
             <DialItem
-              index={1}
+              index={2}
               icon={<Sparkles size={18} className="text-white" />}
               label="Talk to Steph"
               accent="bg-gradient-to-br from-violet-600 to-indigo-600"
               onClick={() => { setMenuOpen(false); setStephOpen(true) }}
+            />
+            <DialItem
+              index={1}
+              icon={<HeadphonesIcon size={18} className="text-white" />}
+              label="Contact support"
+              accent="bg-gradient-to-br from-teal-500 to-cyan-600"
+              onClick={() => { setMenuOpen(false); setSupportOpen(true) }}
             />
             <DialItem
               index={0}

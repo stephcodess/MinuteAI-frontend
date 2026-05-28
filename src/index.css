@@ -183,6 +183,10 @@ button { border-radius: 9999px; }
   background-size: 20px 20px;
 }
 
+/* ── Drop zone (theme-aware dashed border) ───────────────────── */
+.dz-border { border-color: var(--input-border); }
+.dz-border:hover { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.05); }
+
 /* ── Dashboard hero banner ───────────────────────────────────── */
 .dashboard-hero {
   background: linear-gradient(to bottom right, #2b1f87, #4b38d4, #6d28d9);

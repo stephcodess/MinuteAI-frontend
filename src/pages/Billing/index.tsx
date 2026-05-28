@@ -522,7 +522,7 @@ export default function Billing() {
                   key={key}
                   onClick={() => setTab(key)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    tab === key ? 'bg-white/10 text-white shadow-sm' : 't3 hover:text-white'
+                    tab === key ? 'bg-violet-500/10 text-violet-600 dark:text-violet-300 shadow-sm' : 't3'
                   }`}
                 >
                   {label}
@@ -539,7 +539,7 @@ export default function Billing() {
                   {(['month', 'year'] as const).map(b => (
                     <button key={b} onClick={() => setBilling(b)}
                       className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-                        billing === b ? 'bg-violet-600 text-white shadow-md shadow-violet-500/30' : 't3 hover:text-white'
+                        billing === b ? 'bg-violet-600 text-white shadow-md shadow-violet-500/30' : 't3'
                       }`}>
                       {b === 'month' ? 'Monthly' : 'Yearly'}
                       {b === 'year' && (
@@ -985,7 +985,7 @@ export default function Billing() {
               <div className="flex items-start justify-between gap-3 px-6 py-5 border-b" style={{ borderColor: 'var(--card-border)' }}>
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-violet-400 mb-0.5">Subscribe</p>
-                  <h2 className="text-lg font-bold text-white">{upgradeModal.plan.name}</h2>
+                  <h2 className="text-lg font-bold t1">{upgradeModal.plan.name}</h2>
                   <p className="text-sm text-slate-400 mt-0.5">
                     {upgradeModal.plan.price}
                     {upgradeModal.plan.period && <span className="text-slate-500">{upgradeModal.plan.period}</span>}
@@ -1022,7 +1022,7 @@ export default function Billing() {
                         <CreditCard size={15} className="text-violet-400" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-white">
+                        <p className="text-sm font-semibold t1">
                           {paymentMethod.brand ? `${paymentMethod.brand.toUpperCase()} ` : ''}ending in {paymentMethod.last4}
                         </p>
                         <p className="text-xs text-slate-500">Expires {paymentMethod.exp_month}/{paymentMethod.exp_year}</p>

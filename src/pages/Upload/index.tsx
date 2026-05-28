@@ -1,13 +1,13 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, FileAudio, X, AlertCircle, Lock, Zap, Trash2,
   ArrowRight, CheckCircle, Languages, ChevronDown,
   FileText, BarChart2, AlignLeft, Minimize2, SlidersHorizontal,
-  ShieldCheck, Crown,
+  ShieldCheck, Crown, Send, Users, Mail, Plus,
 } from 'lucide-react'
-import { formRequest } from '../../lib/api'
+import { formRequest, apiFetch } from '../../lib/api'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { useAuth } from '../../context/AuthContext'
 import Sidebar from '../../components/Sidebar'
@@ -268,7 +268,144 @@ function SelectField({ label, value, onChange, options }) {
   )
 }
 
-function ConfigFields({ meetingType, setMeetingType, audioLanguage, setAudioLanguage, outputLanguage, setOutputLanguage, meetingTitle, setMeetingTitle, attendees, setAttendees, customInstructions, setCustomInstructions, template, setTemplate }) {
+function ShareSection({ shareEnabled, setShareEnabled, shareMode, setShareMode, teamMembers, selectedMemberIds, toggleMember, manualEmails, setManualEmails, emailInput, setEmailInput }) {
+  function addEmail() {
+    const e = emailInput.trim().toLowerCase()
+    if (!e || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return
+    if (!manualEmails.includes(e)) setManualEmails(prev => [...prev, e])
+    setEmailInput('')
+  }
+  function removeEmail(email: string) {
+    setManualEmails(prev => prev.filter(e => e !== email))
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Toggle row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Send size={13} style={{ color: 'var(--text-3)' }} />
+          <span className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>Share minutes after processing</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShareEnabled(v => !v)}
+          className={`relative w-9 h-5 rounded-full transition-colors duration-200 ${shareEnabled ? 'bg-violet-600' : ''}`}
+          style={{ background: shareEnabled ? undefined : 'var(--input-bg)', border: '1px solid var(--input-border)' }}
+        >
+          <motion.span
+            layout
+            className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
+            animate={{ left: shareEnabled ? '18px' : '2px' }}
+            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+          />
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {shareEnabled && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-1 space-y-3">
+              {/* Mode tabs */}
+              <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid var(--input-border)' }}>
+                {[
+                  { id: 'team', label: 'Team members', icon: Users },
+                  { id: 'manual', label: 'Enter emails', icon: Mail },
+                ].map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setShareMode(id)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-colors ${shareMode === id ? 'bg-violet-600 text-white' : ''}`}
+                    style={{ color: shareMode === id ? undefined : 'var(--text-3)', background: shareMode === id ? undefined : 'var(--input-bg)' }}
+                  >
+                    <Icon size={12} />{label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Team members list */}
+              {shareMode === 'team' && (
+                <div className="space-y-1.5">
+                  {teamMembers.length === 0 ? (
+                    <p className="text-xs py-2 text-center" style={{ color: 'var(--text-3)' }}>
+                      No team members yet — <Link to="/team" className="text-violet-400 underline underline-offset-2">invite someone</Link>
+                    </p>
+                  ) : (
+                    teamMembers.map(m => {
+                      const checked = selectedMemberIds.has(m.id)
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => toggleMember(m.id)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors"
+                          style={{ background: checked ? 'rgba(139,92,246,0.08)' : 'var(--input-bg)', border: `1px solid ${checked ? 'rgba(139,92,246,0.35)' : 'var(--input-border)'}` }}
+                        >
+                          <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-violet-600' : ''}`}
+                            style={{ border: checked ? undefined : '1.5px solid var(--input-border)' }}>
+                            {checked && <CheckCircle size={10} className="text-white" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-1)' }}>{m.name}</p>
+                            <p className="text-[11px] truncate" style={{ color: 'var(--text-3)' }}>{m.email}</p>
+                          </div>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+
+              {/* Manual emails */}
+              {shareMode === 'manual' && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={emailInput}
+                      onChange={e => setEmailInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addEmail() } }}
+                      placeholder="colleague@company.com"
+                      className="flex-1 px-3 py-2 rounded-xl text-xs transition-all focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input"
+                      style={{ border: '1px solid var(--input-border)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addEmail}
+                      className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center shrink-0 hover:bg-violet-500 transition-colors"
+                    >
+                      <Plus size={14} className="text-white" />
+                    </button>
+                  </div>
+                  {manualEmails.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {manualEmails.map(email => (
+                        <span key={email} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium"
+                          style={{ background: 'rgba(139,92,246,0.12)', color: 'var(--text-1)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                          {email}
+                          <button type="button" onClick={() => removeEmail(email)} className="ml-0.5 opacity-60 hover:opacity-100">
+                            <X size={10} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function ConfigFields({ meetingType, setMeetingType, audioLanguage, setAudioLanguage, outputLanguage, setOutputLanguage, meetingTitle, setMeetingTitle, attendees, setAttendees, customInstructions, setCustomInstructions, template, setTemplate, shareProps }) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3">
@@ -291,7 +428,7 @@ function ConfigFields({ meetingType, setMeetingType, audioLanguage, setAudioLang
 
       <div className="space-y-1.5">
         <label className="block text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
-          Attendees <span className="font-normal opacity-60">(comma-separated)</span>
+          Attendees <span className="font-normal opacity-60">(comma-separated, for AI context)</span>
         </label>
         <input type="text" value={attendees} onChange={e => setAttendees(e.target.value)}
           placeholder="Alice (PM), Bob (Eng)…"
@@ -318,6 +455,11 @@ function ConfigFields({ meetingType, setMeetingType, audioLanguage, setAudioLang
           ))}
         </div>
       </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: 'var(--divider)' }} />
+
+      <ShareSection {...shareProps} />
     </div>
   )
 }
@@ -551,11 +693,49 @@ export default function Upload() {
   const [customInstructions, setCustomInstructions] = useState('')
   const [template, setTemplate] = useState('standard')
 
+  // Share state
+  const [shareEnabled, setShareEnabled] = useState(false)
+  const [shareMode, setShareMode] = useState<'team' | 'manual'>('team')
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set())
+  const [manualEmails, setManualEmails] = useState<string[]>([])
+  const [emailInput, setEmailInput] = useState('')
+
   const inputRef = useRef(null)
   const navigate = useNavigate()
   const { activeWorkspace } = useWorkspace()
 
+  useEffect(() => {
+    if (!user) return
+    apiFetch('/team').then(data => setTeamMembers(Array.isArray(data) ? data : [])).catch(() => {})
+  }, [user])
+
+  function toggleMember(id: string) {
+    setSelectedMemberIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function buildRecipients(): string[] {
+    if (!shareEnabled) return []
+    if (shareMode === 'team') {
+      return teamMembers.filter(m => selectedMemberIds.has(m.id)).map(m => m.email)
+    }
+    return [...manualEmails]
+  }
+
   const step = uploading ? 2 : file ? 1 : 0
+
+  const shareProps = {
+    shareEnabled, setShareEnabled,
+    shareMode, setShareMode,
+    teamMembers,
+    selectedMemberIds, toggleMember,
+    manualEmails, setManualEmails,
+    emailInput, setEmailInput,
+  }
 
   const configProps = {
     meetingType, setMeetingType,
@@ -565,6 +745,7 @@ export default function Upload() {
     attendees, setAttendees,
     customInstructions, setCustomInstructions,
     template, setTemplate,
+    shareProps,
   }
 
   function validateFile(f) {
@@ -632,6 +813,8 @@ export default function Upload() {
       initForm.append('template', template)
       initForm.append('output_language', outputLanguage)
       initForm.append('consent_acknowledged', 'true')
+      const recipients = buildRecipients()
+      if (recipients.length > 0) initForm.append('recipients', JSON.stringify(recipients))
 
       const { jobId } = await formRequest('/upload/init', { method: 'POST', body: initForm })
 
@@ -722,7 +905,7 @@ export default function Upload() {
                     ? 'border-violet-500 bg-violet-500/10 shadow-2xl shadow-violet-500/20 scale-[1.01]'
                     : file
                       ? 'border-violet-500/40 bg-violet-500/5 cursor-default'
-                      : 'border-white/10 hover:border-violet-500/40 hover:bg-violet-500/5 bg-white/[0.03]'
+                      : 'dz-border bg-white/[0.03]'
                   }`}
               >
                 <input ref={inputRef} type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/webm,video/mp4,video/webm,.mp3,.mp4,.m4a,.wav,.webm" className="hidden"

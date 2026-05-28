@@ -7,12 +7,12 @@ import {
   Plus, Star, UserPlus, Bell, Loader2,
   CheckSquare, TrendingUp, ChevronLeft, ChevronRight,
   Bot, Copy, CalendarClock, ExternalLink,
-  X, PlayCircle, Compass, ArrowRight,
+  X, PlayCircle, Compass, ArrowRight, Briefcase, ChevronDown, Sparkles,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import Sidebar from '../../components/Sidebar'
-import { api, getWorkspaceBotAccount, listUpcomingMeetingBotSessions, getUpcomingCalendarEvents } from '../../lib/api'
+import { api, getWorkspaceBotAccount, listUpcomingMeetingBotSessions, getUpcomingCalendarEvents, searchMeetings, getPreMeetingBrief } from '../../lib/api'
 
 const PAGE_SIZE = 8
 
@@ -159,7 +159,7 @@ function StatCard({ label, value, delta, icon: Icon, gradient, index }) {
 
 // ── Meeting row ───────────────────────────────────────────────────────────────
 
-function MeetingRow({ meeting, delay, onStar, onDelete }) {
+function MeetingRow({ meeting, delay, onStar, onDelete, snippet = null }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()
   const grad = meetingGradient(meeting.title)
@@ -226,6 +226,11 @@ function MeetingRow({ meeting, delay, onStar, onDelete }) {
             </span>
           )}
         </div>
+        {snippet && (
+          <p className="mt-1 text-[11px] italic line-clamp-1" style={{ color: 'var(--text-3)' }}>
+            {snippet}
+          </p>
+        )}
       </div>
 
       {/* Status */}
@@ -630,6 +635,152 @@ function recordingBadge(status: string | null, auto_join: boolean) {
   return null
 }
 
+function CalendarEventList({ events, autoJoin }) {
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [briefs, setBriefs] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState<Record<string, boolean>>({})
+
+  function handleBrief(event) {
+    if (openId === event.id) { setOpenId(null); return }
+    setOpenId(event.id)
+    if (briefs[event.id]) return
+    setLoading(prev => ({ ...prev, [event.id]: true }))
+    getPreMeetingBrief(event.title, event.attendees || [])
+      .then(data => setBriefs(prev => ({ ...prev, [event.id]: data })))
+      .catch(() => setBriefs(prev => ({ ...prev, [event.id]: { error: true } })))
+      .finally(() => setLoading(prev => ({ ...prev, [event.id]: false })))
+  }
+
+  return (
+    <div className="divide-y divide-[var(--divider)]">
+      {events.map((event, index) => (
+        <motion.div
+          key={event.id}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.3 + index * 0.04 }}
+        >
+          <div className="px-5 py-3.5">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+                <Calendar size={14} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                  <p className="truncate text-xs font-bold" style={{ color: 'var(--text-1)' }}>{event.title}</p>
+                  {recordingBadge(event.recording_status, autoJoin)}
+                </div>
+                <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>{fmtCalStart(event.start)}</p>
+                <div className="mt-1 flex items-center gap-3">
+                  <a href={event.meet_url} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300">
+                    Join Meet <ExternalLink size={10} />
+                  </a>
+                  <button
+                    onClick={() => handleBrief(event)}
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold transition-colors ${openId === event.id ? 'text-violet-400' : 'text-violet-500/60 hover:text-violet-400'}`}
+                  >
+                    <Sparkles size={10} />
+                    {openId === event.id ? 'Hide brief' : 'Get brief'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Inline brief panel */}
+          <AnimatePresence>
+            {openId === event.id && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="mx-5 mb-3 rounded-xl border px-4 py-3 text-xs" style={{ background: 'var(--input-bg)', borderColor: 'var(--card-border)' }}>
+                  {loading[event.id] ? (
+                    <div className="flex items-center gap-2" style={{ color: 'var(--text-3)' }}>
+                      <Loader2 size={12} className="animate-spin" /> Preparing brief…
+                    </div>
+                  ) : briefs[event.id]?.error ? (
+                    <p style={{ color: 'var(--text-3)' }}>Could not load brief. Try again.</p>
+                  ) : briefs[event.id] ? (
+                    <PreMeetingBriefPanel brief={briefs[event.id]} />
+                  ) : null}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+function PreMeetingBriefPanel({ brief }) {
+  return (
+    <div className="space-y-3">
+      {brief.has_history && brief.thread_name && (
+        <p className="text-[10px] font-semibold text-violet-400">
+          Thread: {brief.thread_name}
+        </p>
+      )}
+
+      {brief.last_meeting_overview && (
+        <div>
+          <p className="font-semibold mb-1" style={{ color: 'var(--text-2)' }}>Last session</p>
+          <p className="leading-relaxed" style={{ color: 'var(--text-3)' }}>{brief.last_meeting_overview}</p>
+        </div>
+      )}
+
+      {brief.last_decisions?.length > 0 && (
+        <div>
+          <p className="font-semibold mb-1" style={{ color: 'var(--text-2)' }}>Previous decisions</p>
+          <ul className="space-y-0.5">
+            {brief.last_decisions.map((d, i) => (
+              <li key={i} className="flex gap-1.5" style={{ color: 'var(--text-3)' }}>
+                <span className="text-violet-400 shrink-0">·</span>{d}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {brief.open_tasks?.length > 0 && (
+        <div>
+          <p className="font-semibold mb-1" style={{ color: 'var(--text-2)' }}>Open tasks</p>
+          <ul className="space-y-0.5">
+            {brief.open_tasks.map((t, i) => (
+              <li key={i} className="flex gap-1.5" style={{ color: 'var(--text-3)' }}>
+                <span className="text-amber-400 shrink-0">·</span>{t.title}
+                {t.deadline && <span className="text-[10px] text-amber-400/70 ml-1">due {t.deadline}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {brief.talking_points?.length > 0 && (
+        <div>
+          <p className="font-semibold mb-1" style={{ color: 'var(--text-2)' }}>Talking points</p>
+          <ul className="space-y-0.5">
+            {brief.talking_points.map((p, i) => (
+              <li key={i} className="flex gap-1.5" style={{ color: 'var(--text-3)' }}>
+                <span className="text-emerald-400 shrink-0">→</span>{p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!brief.has_history && (
+        <p style={{ color: 'var(--text-3)' }}>No previous sessions found for this meeting. Talking points generated from context.</p>
+      )}
+    </div>
+  )
+}
+
 function UpcomingMeetings({ sessions, calendarData }) {
   const { connected, auto_join, events = [] } = calendarData || {}
   const liveSessions = sessions.filter(s => LIVE_STATUSES.has(s.status) && !s.scheduled_for)
@@ -696,34 +847,7 @@ function UpcomingMeetings({ sessions, calendarData }) {
 
       {/* Calendar events */}
       {events.length > 0 && (
-        <div className="divide-y divide-[var(--divider)]">
-          {events.map((event, index) => (
-            <motion.div
-              key={event.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.3 + index * 0.04 }}
-              className="px-5 py-3.5"
-            >
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
-                  <Calendar size={14} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <p className="truncate text-xs font-bold" style={{ color: 'var(--text-1)' }}>{event.title}</p>
-                    {recordingBadge(event.recording_status, auto_join)}
-                  </div>
-                  <p className="text-[11px]" style={{ color: 'var(--text-3)' }}>{fmtCalStart(event.start)}</p>
-                  <a href={event.meet_url} target="_blank" rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300">
-                    Join Meet <ExternalLink size={10} />
-                  </a>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        <CalendarEventList events={events} autoJoin={auto_join} />
       )}
 
       {/* Empty state */}
@@ -747,6 +871,141 @@ function UpcomingMeetings({ sessions, calendarData }) {
           )}
         </div>
       )}
+    </motion.div>
+  )
+}
+
+// ── Chief of Staff card ───────────────────────────────────────────────────────
+
+function ChiefOfStaffCard() {
+  const [briefing, setBriefing] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    api.get('/chief-of-staff/briefing')
+      .then(data => setBriefing(data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4, delay: 0.28 }}
+      className="glass-card border rounded-2xl overflow-hidden"
+    >
+      <button
+        className="w-full px-5 py-4 flex items-center justify-between"
+        style={{ borderBottom: expanded ? '1px solid var(--divider)' : 'none' }}
+        onClick={() => setExpanded(v => !v)}
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+            <Briefcase size={12} className="text-indigo-400" />
+          </div>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-1)' }}>Morning Briefing</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {briefing && (
+            <span className="text-[11px] font-medium" style={{ color: 'var(--text-3)' }}>
+              {briefing.todays_meetings?.length ?? 0} meetings · {briefing.open_task_count ?? 0} tasks
+            </span>
+          )}
+          <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+            <ChevronDown size={14} style={{ color: 'var(--text-3)' }} />
+          </motion.div>
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className="px-5 py-4 space-y-4">
+              {loading ? (
+                <div className="space-y-2 animate-pulse">
+                  {[1, 2].map(i => (
+                    <div key={i} className="h-3 rounded-full w-4/5" style={{ background: 'var(--input-bg)' }} />
+                  ))}
+                </div>
+              ) : briefing ? (
+                <>
+                  {/* AI insight */}
+                  {briefing.ai_insight && (
+                    <div
+                      className="rounded-xl px-4 py-3"
+                      style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-indigo-400">✦ Today's insight</p>
+                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                        {briefing.ai_insight}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Overdue alert */}
+                  {briefing.overdue_count > 0 && (
+                    <div
+                      className="rounded-xl px-4 py-3"
+                      style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}
+                    >
+                      <p className="text-xs font-semibold text-rose-400">
+                        ⚠ {briefing.overdue_count} overdue task{briefing.overdue_count !== 1 ? 's' : ''}
+                      </p>
+                      {briefing.overdue_tasks?.slice(0, 2).map((t: any) => (
+                        <p key={t.title} className="text-[11px] mt-1 truncate" style={{ color: 'var(--text-3)' }}>
+                          {t.title}
+                          {t.days_overdue ? <span className="text-rose-400"> · {t.days_overdue}d overdue</span> : ''}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Today's meetings */}
+                  {briefing.todays_meetings?.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-3)' }}>
+                        Today's meetings
+                      </p>
+                      {briefing.todays_meetings.map((m: any) => (
+                        <div key={m.title} className="flex items-center justify-between py-1.5">
+                          <p className="text-xs font-medium truncate" style={{ color: 'var(--text-1)' }}>{m.title}</p>
+                          {m.scheduled_for && (
+                            <span className="text-[11px] shrink-0 ml-2" style={{ color: 'var(--text-3)' }}>{m.scheduled_for}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Link
+                    to="/tasks"
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold transition-colors"
+                    style={{
+                      background: 'var(--input-bg)',
+                      border: '1px solid var(--input-border)',
+                      color: 'var(--text-2)',
+                    }}
+                  >
+                    <CheckSquare size={11} /> View all tasks
+                  </Link>
+                </>
+              ) : (
+                <p className="text-xs text-center py-4" style={{ color: 'var(--text-3)' }}>
+                  No briefing data available
+                </p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
@@ -951,6 +1210,8 @@ export default function Dashboard() {
   const [calendarData, setCalendarData] = useState(null)
   const [botAccount, setBotAccount] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [searchResults, setSearchResults] = useState<any[] | null>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
 
   useEffect(() => {
     if (!activeWorkspace) return
@@ -988,19 +1249,31 @@ export default function Dashboard() {
     ).catch(() => { })
   }
 
+  // Debounced full-content search
+  useEffect(() => {
+    if (!search.trim()) { setSearchResults(null); return }
+    setSearchLoading(true)
+    const timer = setTimeout(() => {
+      searchMeetings(search.trim(), activeWorkspace?.id)
+        .then(r => setSearchResults(r))
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearchLoading(false))
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [search, activeWorkspace?.id])
+
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const remaining = usage ? Math.max((usage.meetings_limit ?? 3) - (usage.meetings_used ?? 0), 0) : null
   const doneMeetings = meetings.filter(m => m.status === 'done').length
 
-  const filtered = meetings.filter(m => {
-    const matchSearch = (m.title || '').toLowerCase().includes(search.toLowerCase())
-    const matchFilter =
-      filter === 'starred' ? m.starred :
-        filter === 'month' ? new Date(m.date) > new Date(Date.now() - 30 * 86400000) :
-          true
-    return matchSearch && matchFilter
-  })
+  const filtered = searchResults !== null
+    ? searchResults
+    : meetings.filter(m => {
+        return filter === 'starred' ? m.starred :
+          filter === 'month' ? new Date(m.date) > new Date(Date.now() - 30 * 86400000) :
+            true
+      })
 
   // Reset to page 1 whenever filter or search changes
   useEffect(() => { setPage(1) }, [filter, search])
@@ -1163,7 +1436,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* list body */}
-                {loading ? (
+                {loading || searchLoading ? (
                   <div className="divide-y divide-[var(--divider)]">
                     {[1, 2, 3, 4].map(i => (
                       <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
@@ -1179,7 +1452,7 @@ export default function Dashboard() {
                 ) : filtered.length > 0 ? (
                   <>
                     {paginated.map((m, i) => (
-                      <MeetingRow key={m.id} meeting={m} delay={i * 0.03} onStar={handleStar} onDelete={handleDelete} />
+                      <MeetingRow key={m.id} meeting={m} delay={i * 0.03} onStar={handleStar} onDelete={handleDelete} snippet={m.snippet} />
                     ))}
                     <Pagination
                       page={page}
@@ -1225,6 +1498,7 @@ export default function Dashboard() {
               <div data-tour="recorder">
                 <RecorderInviteCard botAccount={botAccount} />
               </div>
+              <ChiefOfStaffCard />
               <TeamPreview />
             </div>
 

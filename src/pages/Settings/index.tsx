@@ -5,9 +5,10 @@ import {
   User, Lock, Bell, Trash2, CheckCircle, Eye, EyeOff,
   AlertTriangle, Save, Zap, Globe, Moon, Sun, Monitor,
   Download, Shield, Camera, Loader2, Link2, Settings as SettingsIcon,
-  ArrowRight, Bot,
+  ArrowRight, Bot, Sparkles,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { useWorkspace } from '../../context/WorkspaceContext'
 import Sidebar from '../../components/Sidebar'
 import { api, formRequest } from '../../lib/api'
 
@@ -130,6 +131,7 @@ function SaveBtn({ saved, onClick = undefined, label = 'Save changes', icon: Ico
 
 export default function Settings() {
   const { user, updateUser, signOut } = useAuth()
+  const { activeWorkspace } = useWorkspace()
 
   // avatar
   const fileInputRef = useRef(null)
@@ -232,6 +234,12 @@ export default function Settings() {
   const [meetingJoin, setMeetingJoin] = useState<string | null>(null)
   const [recapTo, setRecapTo]         = useState<string | null>(null)
 
+  // steph / bot settings (workspace-level)
+  const [botName, setBotName]                   = useState('Steph')
+  const [botPersonality, setBotPersonality]     = useState('balanced')
+  const [botTriggerAccess, setBotTriggerAccess] = useState('host')
+  const [botSaved, setBotSaved]                 = useState(false)
+
   // danger zone
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [showDelete, setShowDelete]       = useState(false)
@@ -256,6 +264,29 @@ export default function Settings() {
       if (p.recap_to) setRecapTo(p.recap_to)
     }).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!activeWorkspace?.id) return
+    api.get(`/workspaces/${activeWorkspace.id}/bot-settings`).then(s => {
+      setBotName(s.bot_name || 'Steph')
+      setBotPersonality(s.bot_personality || 'balanced')
+      setBotTriggerAccess(s.bot_trigger_access || 'host')
+    }).catch(() => {})
+  }, [activeWorkspace?.id])
+
+  async function saveBotSettings(e) {
+    e.preventDefault()
+    if (!activeWorkspace?.id) return
+    try {
+      await api.patch(`/workspaces/${activeWorkspace.id}/bot-settings`, {
+        bot_name: botName.trim() || 'Steph',
+        bot_personality: botPersonality,
+        bot_trigger_access: botTriggerAccess,
+      })
+      setBotSaved(true)
+      setTimeout(() => setBotSaved(false), 2500)
+    } catch {}
+  }
 
   async function saveProfile(e) {
     e.preventDefault()
@@ -428,7 +459,7 @@ export default function Settings() {
                     <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white">{user?.name}</p>
+                    <p className="text-sm font-semibold t1">{user?.name}</p>
                     <p className="truncate text-xs text-slate-500">{user?.email}</p>
                     <p className="text-xs text-slate-500 mt-1">JPG, PNG or WebP · max 5 MB</p>
                   </div>
@@ -488,7 +519,7 @@ export default function Settings() {
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.04] p-4">
                   <div>
-                    <p className="text-sm font-semibold text-white">Email security code</p>
+                    <p className="text-sm font-semibold t1">Email security code</p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {twoFactorEnabled
                         ? 'Enabled. Sign-ins require a code sent to your email.'
@@ -599,7 +630,7 @@ export default function Settings() {
                 {NOTIF_OPTIONS.map(({ key, label, desc }) => (
                   <div key={key} className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-white">{label}</p>
+                      <p className="text-sm font-semibold t1">{label}</p>
                       <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
                     </div>
                     <Toggle checked={notifs[key]} onChange={v => setNotif(key, v)} />
@@ -617,7 +648,7 @@ export default function Settings() {
                     <select
                       value={language}
                       onChange={e => setLanguage(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/[0.06] hover:border-gray-300 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/20 text-sm text-white bg-white transition-all"
+                      className="glass-input w-full px-4 py-2.5 rounded-xl border hover:border-gray-300 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/20 text-sm transition-all"
                     >
                       <option value="en">English</option>
                       <option value="fr">Français</option>
@@ -630,7 +661,7 @@ export default function Settings() {
                     <select
                       value={timezone}
                       onChange={e => setTimezone(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl border border-white/10 bg-white/[0.06] hover:border-gray-300 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/20 text-sm text-white bg-white transition-all"
+                      className="glass-input w-full px-4 py-2.5 rounded-xl border hover:border-gray-300 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/20 text-sm transition-all"
                     >
                       <option value="Europe/London">London (GMT+0)</option>
                       <option value="Europe/Paris">Paris (GMT+1)</option>
@@ -671,7 +702,7 @@ export default function Settings() {
             <Section icon={Bot} title="Meeting preferences" desc="Control how the bot joins meetings and who gets the recap" index={5}>
               <form onSubmit={savePrefs} className="space-y-6">
                 <div>
-                  <p className="text-sm font-semibold text-white mb-3">When should the bot join?</p>
+                  <p className="text-sm font-semibold t1 mb-3">When should the bot join?</p>
                   <div className="space-y-2">
                     {[
                       { value: 'all',       label: 'All meetings',          desc: 'Join every meeting on my calendar' },
@@ -691,7 +722,7 @@ export default function Settings() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">{opt.label}</p>
+                            <p className="text-sm font-semibold t1">{opt.label}</p>
                             <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
                           </div>
                           {meetingJoin === opt.value && (
@@ -706,7 +737,7 @@ export default function Settings() {
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-white mb-3">Who gets the recap?</p>
+                  <p className="text-sm font-semibold t1 mb-3">Who gets the recap?</p>
                   <div className="space-y-2">
                     {[
                       { value: 'everyone', label: 'All attendees', desc: 'Send notes to everyone in the invite' },
@@ -725,7 +756,7 @@ export default function Settings() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-white">{opt.label}</p>
+                            <p className="text-sm font-semibold t1">{opt.label}</p>
                             <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
                           </div>
                           {recapTo === opt.value && (
@@ -743,12 +774,104 @@ export default function Settings() {
               </form>
             </Section>
 
+            {/* Steph / Bot personalisation */}
+            <Section icon={Sparkles} title="Steph settings" desc="Personalise your AI meeting assistant for this workspace" index={6}>
+              <form onSubmit={saveBotSettings} className="space-y-6">
+                {/* Bot name */}
+                <div>
+                  <p className="text-sm font-semibold t1 mb-2">Bot name</p>
+                  <input
+                    value={botName}
+                    onChange={e => setBotName(e.target.value)}
+                    placeholder="Steph"
+                    maxLength={32}
+                    className="w-full px-4 py-2.5 rounded-xl border text-sm bg-transparent focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+                    style={{ borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+                  />
+                  <p className="text-xs mt-1.5" style={{ color: 'var(--text-3)' }}>
+                    This is the name Steph will respond to during live sessions.
+                  </p>
+                </div>
+
+                {/* Personality */}
+                <div>
+                  <p className="text-sm font-semibold t1 mb-3">Personality</p>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'balanced', label: 'Balanced', desc: 'Professional but approachable — the default' },
+                      { value: 'direct',   label: 'Direct & Concise', desc: 'Short answers, no filler, straight to the point' },
+                      { value: 'warm',     label: 'Warm & Conversational', desc: 'Friendly tone, more context, conversational flow' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setBotPersonality(opt.value)}
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                          botPersonality === opt.value
+                            ? 'border-violet-400/60 bg-violet-500/10'
+                            : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold t1">{opt.label}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                          </div>
+                          {botPersonality === opt.value && (
+                            <div className="w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
+                              <CheckCircle size={10} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Trigger access */}
+                <div>
+                  <p className="text-sm font-semibold t1 mb-3">Who can trigger Steph?</p>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'host', label: 'Host only', desc: 'Only the session host can call Steph by name' },
+                      { value: 'all',  label: 'All participants', desc: 'Any participant can say the wake word' },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setBotTriggerAccess(opt.value)}
+                        className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                          botTriggerAccess === opt.value
+                            ? 'border-violet-400/60 bg-violet-500/10'
+                            : 'border-white/[0.08] bg-white/[0.03] hover:border-white/15'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold t1">{opt.label}</p>
+                            <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                          </div>
+                          {botTriggerAccess === opt.value && (
+                            <div className="w-4 h-4 rounded-full bg-violet-500 flex items-center justify-center shrink-0">
+                              <CheckCircle size={10} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <SaveBtn saved={botSaved} label="Save Steph settings" />
+              </form>
+            </Section>
+
             {/* Integrations */}
-            <Section icon={Link2} title="Integrations" desc="Connect your tools — notes auto-sync after every meeting" index={6}>
+            <Section icon={Link2} title="Integrations" desc="Connect your tools — notes auto-sync after every meeting" index={7}>
               <Link to="/integrations"
                 className="flex items-center justify-between gap-4 rounded-xl border border-white/[0.06] bg-white/[0.04] px-5 py-4 hover:bg-violet-500/5 hover:border-violet-500/20 transition-all group">
                 <div>
-                  <p className="text-sm font-semibold text-white">Manage integrations</p>
+                  <p className="text-sm font-semibold t1">Manage integrations</p>
                   <p className="text-xs text-slate-500 mt-0.5">Google Calendar, Slack, Notion, Linear, HubSpot, Zapier and more</p>
                 </div>
                 <ArrowRight size={16} className="text-slate-500 group-hover:text-violet-400 transition-colors shrink-0" />
@@ -756,10 +879,10 @@ export default function Settings() {
             </Section>
 
             {/* Privacy & data */}
-            <Section icon={Shield} title="Privacy & data" desc="How your recordings and transcripts are processed" index={7}>
+            <Section icon={Shield} title="Privacy & data" desc="How your recordings and transcripts are processed" index={8}>
               <div className="space-y-5">
                 <div>
-                  <p className="text-sm font-semibold text-white mb-2">Third-party AI processors</p>
+                  <p className="text-sm font-semibold t1 mb-2">Third-party AI processors</p>
                   <p className="text-xs text-slate-500 leading-relaxed mb-3">
                     Your audio and transcripts are sent to these services to generate your minutes. MinuteAI does not train any AI models on your data.
                   </p>
@@ -771,7 +894,7 @@ export default function Settings() {
                       <div key={p.name} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
                         <Shield size={14} className="mt-0.5 shrink-0 text-violet-400" />
                         <div>
-                          <p className="text-xs font-semibold text-white">{p.name}</p>
+                          <p className="text-xs font-semibold t1">{p.name}</p>
                           <p className="text-xs text-slate-500 mt-0.5">{p.desc}</p>
                         </div>
                       </div>
@@ -779,7 +902,7 @@ export default function Settings() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white mb-2">Data retention</p>
+                  <p className="text-sm font-semibold t1 mb-2">Data retention</p>
                   <ul className="text-xs text-slate-500 leading-relaxed space-y-1.5">
                     <li>• Audio and video recordings are kept so you can re-download them anytime.</li>
                     <li>• Transcripts and minutes are kept until you delete your account.</li>
@@ -791,11 +914,11 @@ export default function Settings() {
             </Section>
 
             {/* Danger zone */}
-            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={8} danger>
+            <Section icon={AlertTriangle} title="Danger zone" desc="Irreversible actions — proceed with caution" index={9} danger>
               {!showDelete ? (
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white">Delete account</p>
+                    <p className="text-sm font-semibold t1">Delete account</p>
                     <p className="text-xs text-slate-500 mt-0.5">Permanently delete your account and all data. This cannot be undone.</p>
                   </div>
                   <button
@@ -808,14 +931,14 @@ export default function Settings() {
                 </div>
               ) : (
                 <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-                  <p className="text-sm text-slate-300 mb-3">
+                  <p className="text-sm t2 mb-3">
                     Type <span className="font-mono font-bold text-red-400">delete my account</span> to confirm.
                   </p>
                   <input
                     value={deleteConfirm}
                     onChange={e => setDeleteConfirm(e.target.value)}
                     placeholder="delete my account"
-                    className="w-full px-4 py-2.5 rounded-xl border border-red-500/30 text-sm text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-red-300 mb-3"
+                    className="glass-input w-full px-4 py-2.5 rounded-xl border border-red-500/30 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 mb-3"
                   />
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
@@ -849,14 +972,14 @@ export default function Settings() {
               className="glass-card border rounded-2xl p-5"
             >
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-white">Your plan</p>
+                <p className="text-sm font-bold t1">Your plan</p>
                 {usage && (
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500/100/10 text-green-700 border border-green-500/20">Active</span>
                 )}
               </div>
               {usage ? (
                 <>
-                  <p className="text-xl font-bold text-white mb-0.5 capitalize">
+                  <p className="text-xl font-bold t1 mb-0.5 capitalize">
                     {usage.plan === 'free' ? 'Starter' : usage.plan}
                     {usage.plan === 'free' && <span className="text-slate-500 font-normal text-sm"> — Free</span>}
                   </p>
@@ -912,7 +1035,7 @@ export default function Settings() {
             >
               <div className="flex items-center gap-2 mb-3">
                 <Shield size={15} className="text-violet-600" />
-                <p className="text-sm font-bold text-white">Security</p>
+                <p className="text-sm font-bold t1">Security</p>
               </div>
               <div className="space-y-2.5 text-xs text-slate-500">
                 <div className="flex items-center justify-between">
@@ -927,7 +1050,7 @@ export default function Settings() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Last sign-in</span>
-                  <span className="text-slate-300">
+                  <span className="t2">
                     {user?.last_login_at
                       ? (() => {
                           const d = new Date(user.last_login_at)
@@ -954,7 +1077,7 @@ export default function Settings() {
             >
               <div className="flex items-center gap-2 mb-2">
                 <Download size={15} className="text-violet-600" />
-                <p className="text-sm font-bold text-white">Export your data</p>
+                <p className="text-sm font-bold t1">Export your data</p>
               </div>
               <p className="text-xs text-slate-500 mb-4 leading-relaxed">
                 Download all your meeting minutes as a ZIP archive.

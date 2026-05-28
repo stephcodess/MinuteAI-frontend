@@ -8,7 +8,7 @@ import {
   CalendarDays, ExternalLink, Plus, Trash2, GitBranch, Tag,
 } from 'lucide-react'
 import Sidebar from '../../components/Sidebar'
-import { getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration, updateIntegrationSettings, connectWebhook, getUpcomingCalendarEvents, getUpcomingZoomMeetings, updateRoutingDestinations } from '../../lib/api'
+import { getIntegrations, getIntegrationConnectUrl, disconnectIntegration, updateIntegration, updateIntegrationSettings, connectWebhook, connectTeams, getUpcomingCalendarEvents, getUpcomingZoomMeetings, updateRoutingDestinations } from '../../lib/api'
 import { CATEGORIES } from '../Threads'
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: 'Google Calendar', zoom: 'Zoom', outlook: 'Outlook Calendar',
-  slack: 'Slack', hubspot: 'HubSpot', notion: 'Notion',
+  slack: 'Slack', teams: 'Microsoft Teams', hubspot: 'HubSpot', notion: 'Notion',
   linear: 'Linear', webhook: 'Webhook / Zapier',
   google_drive: 'Google Drive', salesforce: 'Salesforce',
   asana: 'Asana', jira: 'Jira', pipedrive: 'Pipedrive',
@@ -61,6 +61,7 @@ const GROUPS = [
     bg: 'bg-green-500/10',
     items: [
       { provider: 'slack', icon: '💬', desc: 'Post meeting recap to Slack — route to different channels by meeting category', routing: true },
+      { provider: 'teams', icon: '🟦', desc: 'Post meeting recap to a Microsoft Teams channel via incoming webhook', webhookConnect: true },
     ],
   },
   {
@@ -626,14 +627,15 @@ function SetupModal({
 // ── Integration card ──────────────────────────────────────────────────────────
 
 function IntegrationCard({
-  provider, icon, desc, autoJoin, comingSoon, config, routing,
+  provider, icon, desc, autoJoin, comingSoon, config, routing, webhookConnect,
   info, connecting, disconnecting, configuring, configInputs, configSaving, webhookUrl,
   meetingsOpen, onToggleMeetings,
   onConnect, onDisconnect, onToggleConfig, onSaveConfig, onConfigInput,
-  onWebhookUrl, onConnectWebhook, onRoutingSaved,
+  onWebhookUrl, onConnectWebhook, onConnectTeams, onRoutingSaved,
 }: any) {
-  const isConfiguring    = configuring === provider && provider !== 'webhook'
+  const isConfiguring    = configuring === provider && provider !== 'webhook' && provider !== 'teams'
   const isWebhookForm    = configuring === 'webhook' && provider === 'webhook'
+  const isTeamsForm      = configuring === 'teams' && provider === 'teams'
   const isRoutingPanel   = routing && configuring === `routing:${provider}`
   const needsConfig      = config && info.connected && !info.settings?.[config.key]
   const hasMeetingsPanel = (provider === 'google' || provider === 'zoom') && info.connected
@@ -808,7 +810,7 @@ function IntegrationCard({
 
       {/* Inline config panel */}
       <AnimatePresence>
-        {(isConfiguring || isWebhookForm || isRoutingPanel) && (
+        {(isConfiguring || isWebhookForm || isTeamsForm || isRoutingPanel) && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -839,6 +841,32 @@ function IntegrationCard({
                     />
                     <div className="flex gap-2 mt-2">
                       <button onClick={onConnectWebhook} disabled={configSaving || !webhookUrl.trim()}
+                        className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
+                        {configSaving ? <Loader2 size={11} className="animate-spin" /> : null} Save
+                      </button>
+                      <button onClick={() => onToggleConfig(null)}
+                        className="rounded-lg border px-3 py-1.5 text-xs transition-colors"
+                        style={{ borderColor: 'var(--card-border)', color: 'var(--text-3)' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : isTeamsForm ? (
+                  <>
+                    <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-2)' }}>Teams Incoming Webhook URL</p>
+                    <p className="text-xs mb-2" style={{ color: 'var(--text-3)' }}>
+                      In Teams: channel → ••• → Connectors → Incoming Webhook → Copy URL.
+                    </p>
+                    <input
+                      type="url"
+                      value={webhookUrl}
+                      onChange={e => onWebhookUrl(e.target.value)}
+                      placeholder="https://xxx.webhook.office.com/webhookb2/..."
+                      className="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none"
+                      style={{ background: 'var(--input-bg)', borderColor: 'var(--input-border)', color: 'var(--text-1)' }}
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={onConnectTeams} disabled={configSaving || !webhookUrl.trim()}
                         className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50">
                         {configSaving ? <Loader2 size={11} className="animate-spin" /> : null} Save
                       </button>
@@ -943,6 +971,7 @@ export default function Integrations() {
       return
     }
     if (provider === 'webhook') { setConfiguring('webhook'); return }
+    if (provider === 'teams') { setConfiguring('teams'); return }
     setConnecting(provider)
     try {
       const { url } = await getIntegrationConnectUrl(provider)
@@ -993,6 +1022,22 @@ export default function Integrations() {
     }
   }
 
+  async function handleConnectTeams() {
+    if (!webhookUrl.trim()) return
+    setConfigSaving(true)
+    try {
+      await connectTeams(webhookUrl.trim())
+      setConfiguring(null)
+      setWebhookUrl('')
+      await loadIntegrations()
+      setBanner({ type: 'success', msg: 'Microsoft Teams connected! Meeting recaps will be posted after each session.' })
+    } catch {
+      setBanner({ type: 'error', msg: 'Invalid Teams webhook URL.' })
+    } finally {
+      setConfigSaving(false)
+    }
+  }
+
   // Stats
   const allItems = GROUPS.flatMap(g => g.items)
   const connectedCount = allItems.filter(i => integrations[i.provider]?.connected).length
@@ -1020,34 +1065,37 @@ export default function Integrations() {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
         {/* Header */}
-        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#4f35d2] via-[#5b45e8] to-[#7c3aed] px-6 py-6 pl-16 sm:px-8">
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#4f35d2] via-[#5b45e8] to-[#7c3aed] px-6 py-5 pl-6 sm:pl-16 sm:px-8">
           <div className="pointer-events-none absolute -top-6 -right-6 w-40 h-40 rounded-full bg-white/5 blur-2xl" />
           <div className="pointer-events-none absolute bottom-0 left-1/4 w-28 h-28 rounded-full bg-fuchsia-400/10 blur-xl" />
-          <div className="relative flex items-center gap-4">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}
-              className="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
-            >
-              <Plug size={20} className="text-white" />
-            </motion.div>
-            <div>
-              <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                className="text-[10px] font-bold uppercase tracking-widest text-violet-200/80 mb-0.5">
-                Workspace
-              </motion.p>
-              <motion.h1 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="text-xl font-black text-white tracking-tight">
-                Integrations
-              </motion.h1>
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}
-                className="text-sm text-violet-200/80 mt-0.5">
-                Connect your tools — notes sync automatically after every meeting
-              </motion.p>
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4">
+            {/* Icon + text */}
+            <div className="flex items-center gap-4 min-w-0">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}
+                className="w-11 h-11 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
+              >
+                <Plug size={20} className="text-white" />
+              </motion.div>
+              <div className="min-w-0">
+                <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+                  className="text-[10px] font-bold uppercase tracking-widest text-violet-200/80 mb-0.5">
+                  Workspace
+                </motion.p>
+                <motion.h1 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                  className="text-xl font-black text-white tracking-tight">
+                  Integrations
+                </motion.h1>
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}
+                  className="text-sm text-violet-200/80 mt-0.5">
+                  Connect your tools — notes sync automatically after every meeting
+                </motion.p>
+              </div>
             </div>
             {/* Stats */}
             {!loading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
-                className="ml-auto flex items-center gap-3 shrink-0">
+                className="flex items-center gap-3 shrink-0 sm:ml-auto">
                 <div className="text-center">
                   <p className="text-2xl font-black text-white leading-none">{connectedCount}</p>
                   <p className="text-[10px] font-semibold text-violet-200/70 uppercase tracking-wide mt-0.5">Connected</p>
@@ -1135,6 +1183,7 @@ export default function Integrations() {
                       onConfigInput={(key: string, val: string) => setConfigInputs(prev => ({ ...prev, [key]: val }))}
                       onWebhookUrl={setWebhookUrl}
                       onConnectWebhook={handleConnectWebhook}
+                      onConnectTeams={handleConnectTeams}
                       onRoutingSaved={(provider: string, dests: any[]) => {
                         setIntegrations(prev => ({
                           ...prev,
