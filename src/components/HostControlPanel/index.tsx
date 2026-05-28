@@ -66,7 +66,7 @@ export default function HostControlPanel() {
       } catch {}
     }
     check()
-    pollRef.current = setInterval(check, 5000)
+    pollRef.current = setInterval(check, 30000)
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
   }, [isSignedIn])
 
