@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mic, Crown, Shield, Eye, ArrowRight, Users, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
@@ -74,7 +74,7 @@ export default function AcceptInvite() {
       <Orb className="top-[-15%] left-[-5%] w-[600px] h-[600px] bg-violet-700/18" />
       <Orb className="bottom-[-10%] right-[-5%] w-[500px] h-[500px] bg-indigo-700/14" />
       <Orb className="top-[40%] left-[50%] w-[350px] h-[350px] bg-fuchsia-700/10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(124,58,237,0.07)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(var(--brand-rgb),0.07)_0%,transparent_70%)] pointer-events-none" />
 
       {/* ── Logo ── */}
       <motion.div
@@ -179,7 +179,7 @@ export default function AcceptInvite() {
                   </div>
                   <button
                     onClick={goToWorkspace}
-                    className="group relative flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold transition-all shadow-[0_4px_24px_rgba(124,58,237,0.4)] hover:shadow-[0_6px_32px_rgba(124,58,237,0.55)] overflow-hidden"
+                    className="group relative flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold transition-all shadow-[0_4px_24px_rgba(var(--brand-rgb),0.4)] hover:shadow-[0_6px_32px_rgba(var(--brand-rgb),0.55)] overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
                     <span className="relative flex items-center gap-2">Open workspace <ArrowRight size={15} /></span>
@@ -195,7 +195,7 @@ export default function AcceptInvite() {
                   </p>
                   <Link
                     to={`/signup${emailParam}`}
-                    className="group relative flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold transition-all shadow-[0_4px_24px_rgba(124,58,237,0.4)] hover:shadow-[0_6px_32px_rgba(124,58,237,0.55)] overflow-hidden"
+                    className="group relative flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold transition-all shadow-[0_4px_24px_rgba(var(--brand-rgb),0.4)] hover:shadow-[0_6px_32px_rgba(var(--brand-rgb),0.55)] overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
                     <span className="relative flex items-center gap-2">Create your account <ArrowRight size={15} /></span>
@@ -217,7 +217,7 @@ export default function AcceptInvite() {
                   </p>
                   <Link
                     to={`/login${emailParam}`}
-                    className="group relative flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold transition-all shadow-[0_4px_24px_rgba(124,58,237,0.4)] hover:shadow-[0_6px_32px_rgba(124,58,237,0.55)] overflow-hidden"
+                    className="group relative flex items-center justify-center gap-2 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold transition-all shadow-[0_4px_24px_rgba(var(--brand-rgb),0.4)] hover:shadow-[0_6px_32px_rgba(var(--brand-rgb),0.55)] overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
                     <span className="relative flex items-center gap-2">Sign in to MinuteAI <ArrowRight size={15} /></span>

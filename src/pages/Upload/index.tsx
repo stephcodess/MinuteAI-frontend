@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -201,7 +201,7 @@ function TemplateCard({ tpl, selected, onClick }) {
       className={`relative flex flex-col items-start gap-2 p-3.5 text-left transition-all duration-200 ${selected ? `ring-2 ${tpl.ring}` : ''
         }`}
       style={{
-        background: selected ? 'rgba(139,92,246,0.08)' : 'var(--input-bg)',
+        background: selected ? 'rgba(var(--brand-rgb),0.08)' : 'var(--input-bg)',
         border: selected ? undefined : '1px solid var(--card-border)',
         borderRadius: 8,
       }}
@@ -344,7 +344,7 @@ function ShareSection({ shareEnabled, setShareEnabled, shareMode, setShareMode, 
                           type="button"
                           onClick={() => toggleMember(m.id)}
                           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-colors"
-                          style={{ background: checked ? 'rgba(139,92,246,0.08)' : 'var(--input-bg)', border: `1px solid ${checked ? 'rgba(139,92,246,0.35)' : 'var(--input-border)'}` }}
+                          style={{ background: checked ? 'rgba(var(--brand-rgb),0.08)' : 'var(--input-bg)', border: `1px solid ${checked ? 'rgba(var(--brand-rgb),0.35)' : 'var(--input-border)'}` }}
                         >
                           <div className={`w-4 h-4 rounded flex items-center justify-center shrink-0 transition-colors ${checked ? 'bg-violet-600' : ''}`}
                             style={{ border: checked ? undefined : '1.5px solid var(--input-border)' }}>
@@ -386,7 +386,7 @@ function ShareSection({ shareEnabled, setShareEnabled, shareMode, setShareMode, 
                     <div className="flex flex-wrap gap-1.5">
                       {manualEmails.map(email => (
                         <span key={email} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium"
-                          style={{ background: 'rgba(139,92,246,0.12)', color: 'var(--text-1)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                          style={{ background: 'rgba(var(--brand-rgb),0.12)', color: 'var(--text-1)', border: '1px solid rgba(var(--brand-rgb),0.25)' }}>
                           {email}
                           <button type="button" onClick={() => removeEmail(email)} className="ml-0.5 opacity-60 hover:opacity-100">
                             <X size={10} />
@@ -489,14 +489,14 @@ function LimitModal({ onClose, onUpgrade }: { onClose: () => void; onUpgrade: ()
         exit={{ opacity: 0, y: 30, scale: 0.95 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26 }}
         className="relative w-full max-w-[400px] rounded-3xl overflow-hidden shadow-2xl"
-        style={{ background: '#0c0c1d', border: '1px solid rgba(124,58,237,0.3)' }}
+        style={{ background: '#0c0c1d', border: '1px solid rgba(var(--brand-rgb),0.3)' }}
       >
         {/* Top gradient bar */}
         <div className="h-1 w-full bg-gradient-to-r from-violet-600 via-fuchsia-500 to-indigo-500" />
 
         {/* Background radial glow */}
         <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #7c3aed, transparent 60%)' }} />
+          style={{ background: 'radial-gradient(circle, var(--brand-700), transparent 60%)' }} />
 
         <div className="relative px-7 pb-7 pt-8">
           {/* Close */}
@@ -509,15 +509,15 @@ function LimitModal({ onClose, onUpgrade }: { onClose: () => void; onUpgrade: ()
           <div className="flex justify-center mb-7">
             <div className="relative flex items-center justify-center">
               <motion.div className="absolute w-24 h-24 rounded-full"
-                style={{ border: '1px solid rgba(124,58,237,0.35)' }}
+                style={{ border: '1px solid rgba(var(--brand-rgb),0.35)' }}
                 animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
                 transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }} />
               <motion.div className="absolute w-16 h-16 rounded-full"
-                style={{ background: 'rgba(124,58,237,0.15)' }}
+                style={{ background: 'rgba(var(--brand-rgb),0.15)' }}
                 animate={{ scale: [1, 1.2, 1], opacity: [0.7, 0, 0.7] }}
                 transition={{ duration: 2.8, repeat: Infinity, delay: 0.4, ease: 'easeInOut' }} />
               <div className="relative w-[72px] h-[72px] rounded-full flex items-center justify-center shadow-2xl"
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #4338ca)', boxShadow: '0 0 48px rgba(124,58,237,0.55)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--brand-700), var(--brand-800))', boxShadow: '0 0 48px rgba(var(--brand-rgb),0.55)' }}>
                 <Crown size={28} className="text-white" />
               </div>
             </div>
@@ -559,7 +559,7 @@ function LimitModal({ onClose, onUpgrade }: { onClose: () => void; onUpgrade: ()
                 transition={{ delay: 0.18 + i * 0.07, ease: 'easeOut' }}
                 className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(124,58,237,0.22)' }}>
+                  style={{ background: 'rgba(var(--brand-rgb),0.22)' }}>
                   <CheckCircle size={11} className="text-violet-400" />
                 </div>
                 <span className="text-sm text-slate-300">{perk}</span>
@@ -573,7 +573,7 @@ function LimitModal({ onClose, onUpgrade }: { onClose: () => void; onUpgrade: ()
               onClick={onUpgrade}
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
               className="relative w-full overflow-hidden rounded-full py-3.5 text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #4338ca)', boxShadow: '0 8px 32px rgba(124,58,237,0.45)' }}
+              style={{ background: 'linear-gradient(135deg, var(--brand-700), var(--brand-800))', boxShadow: '0 8px 32px rgba(var(--brand-rgb),0.45)' }}
             >
               <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"

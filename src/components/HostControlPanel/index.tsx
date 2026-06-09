@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, Send, X, ChevronDown, Sparkles, User,
@@ -159,7 +159,7 @@ export default function HostControlPanel() {
             exit={{ opacity: 0, scale: 0.85 }}
             onClick={() => setOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-full shadow-lg text-sm font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)' }}
+            style={{ background: 'linear-gradient(135deg,var(--brand-700),var(--brand-800))' }}
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -193,7 +193,7 @@ export default function HostControlPanel() {
             {/* Header */}
             <div
               className="flex items-center justify-between px-4 py-3 shrink-0"
-              style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)' }}
+              style={{ background: 'linear-gradient(135deg,var(--brand-700),var(--brand-800))' }}
             >
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2 w-2">
@@ -278,7 +278,7 @@ export default function HostControlPanel() {
                     }`}
                     style={
                       msg.role === 'user'
-                        ? { background: 'rgba(124,58,237,0.15)', color: 'var(--text-1)' }
+                        ? { background: 'rgba(var(--brand-rgb),0.15)', color: 'var(--text-1)' }
                         : { background: 'var(--input-bg)', color: 'var(--text-1)' }
                     }
                   >
@@ -358,7 +358,7 @@ export default function HostControlPanel() {
                 onClick={sendMessage}
                 disabled={!input.trim() || !wsReady}
                 className="w-8 h-8 rounded-xl flex items-center justify-center transition-all disabled:opacity-40 shrink-0"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#4f46e5)' }}
+                style={{ background: 'linear-gradient(135deg,var(--brand-700),var(--brand-800))' }}
               >
                 <Send size={13} className="text-white" />
               </motion.button>

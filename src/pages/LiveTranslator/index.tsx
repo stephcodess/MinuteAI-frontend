@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Mic, MicOff, Square, ChevronDown, Copy, Check,
@@ -154,8 +154,8 @@ function LangSelector({
                   onClick={() => { onChange('auto'); setOpen(false) }}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors"
                   style={{
-                    background: isAuto ? 'rgba(139,92,246,0.1)' : 'transparent',
-                    color: isAuto ? 'rgb(167,139,250)' : 'var(--text-3)',
+                    background: isAuto ? 'rgba(var(--brand-rgb),0.1)' : 'transparent',
+                    color: isAuto ? 'var(--brand-400)' : 'var(--text-3)',
                     borderBottom: '1px solid var(--divider)',
                   }}
                 >
@@ -170,8 +170,8 @@ function LangSelector({
                   onClick={() => { onChange(lang.code); setOpen(false) }}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-left transition-colors"
                   style={{
-                    background: lang.code === value ? 'rgba(139,92,246,0.1)' : 'transparent',
-                    color: lang.code === value ? 'rgb(167,139,250)' : 'var(--text-2)',
+                    background: lang.code === value ? 'rgba(var(--brand-rgb),0.1)' : 'transparent',
+                    color: lang.code === value ? 'var(--brand-400)' : 'var(--text-2)',
                   }}
                   onMouseEnter={e => { if (lang.code !== value) (e.currentTarget as HTMLElement).style.background = 'var(--card-hover)' }}
                   onMouseLeave={e => { if (lang.code !== value) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
@@ -587,8 +587,8 @@ export default function LiveTranslator() {
               transition={{ duration: 0.18 }}
               className="shrink-0 flex items-center gap-3 px-4 sm:px-8 py-3 border-b"
               style={{
-                background: 'linear-gradient(90deg, rgba(124,58,237,0.1), rgba(79,70,229,0.06))',
-                borderColor: 'rgba(139,92,246,0.2)',
+                background: 'linear-gradient(90deg, rgba(var(--brand-rgb),0.1), rgba(var(--brand-rgb),0.06))',
+                borderColor: 'rgba(var(--brand-rgb),0.2)',
               }}
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-400">
@@ -707,7 +707,7 @@ export default function LiveTranslator() {
 
             {(detectedLang || sourceLang !== 'auto') && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-violet-400"
-                style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}>
+                style={{ background: 'rgba(var(--brand-rgb),0.1)', border: '1px solid rgba(var(--brand-rgb),0.2)' }}>
                 <Globe size={11} />
                 {sourceLang === 'auto' ? srcLang ? `${srcLang.flag} ${srcLang.name}` : '🌐' : `${getLang(sourceLang).flag}`}
                 <ArrowRight size={10} className="text-violet-500/50" />
@@ -763,8 +763,8 @@ export default function LiveTranslator() {
                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
                       className="group px-4 py-3 rounded-xl border transition-all"
                       style={{
-                        background: seg.pending ? 'rgba(139,92,246,0.05)' : 'var(--card-bg)',
-                        borderColor: seg.pending ? 'rgba(139,92,246,0.2)' : 'var(--card-border)',
+                        background: seg.pending ? 'rgba(var(--brand-rgb),0.05)' : 'var(--card-bg)',
+                        borderColor: seg.pending ? 'rgba(var(--brand-rgb),0.2)' : 'var(--card-border)',
                       }}>
                       {seg.speakerLabel && (
                         <p className="text-[10px] font-bold mb-1 text-violet-400">{seg.speakerLabel}</p>
@@ -842,8 +842,8 @@ export default function LiveTranslator() {
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
                     className="group px-4 py-3 rounded-xl border transition-all"
                     style={{
-                      background: seg.pending ? 'rgba(139,92,246,0.05)' : 'var(--card-bg)',
-                      borderColor: seg.pending ? 'rgba(139,92,246,0.2)' : 'var(--card-border)',
+                      background: seg.pending ? 'rgba(var(--brand-rgb),0.05)' : 'var(--card-bg)',
+                      borderColor: seg.pending ? 'rgba(var(--brand-rgb),0.2)' : 'var(--card-border)',
                     }}>
                     {seg.speakerLabel && (
                       <p className="text-[10px] font-bold mb-1 text-violet-400">{seg.speakerLabel}</p>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -14,7 +14,7 @@ import { getThreads, getThread, updateThread, deleteThread } from '../../lib/api
 
 export const CATEGORIES: { value: string; label: string; color: string; bg: string }[] = [
   { value: 'engineering',  label: 'Engineering',   color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-  { value: 'product',      label: 'Product',        color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+  { value: 'product',      label: 'Product',        color: 'var(--brand-400)', bg: 'rgba(167,139,250,0.12)' },
   { value: 'design',       label: 'Design',         color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
   { value: 'sales',        label: 'Sales',          color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
   { value: 'marketing',    label: 'Marketing',      color: '#fb923c', bg: 'rgba(251,146,60,0.12)'  },

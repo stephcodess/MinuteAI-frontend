@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -491,12 +491,12 @@ function StatusBadge({ status }) {
 
 function SectionCard({ icon: Icon, title, accent = 'violet', children, delay = 0 }) {
   const colors = {
-    violet: { bg: 'rgba(139,92,246,0.12)',  text: 'text-violet-400' },
-    indigo: { bg: 'rgba(99,102,241,0.12)',  text: 'text-indigo-400' },
+    violet: { bg: 'rgba(var(--brand-rgb),0.12)',  text: 'text-violet-400' },
+    indigo: { bg: 'rgba(var(--brand-rgb),0.12)',  text: 'text-indigo-400' },
     teal:   { bg: 'rgba(20,184,166,0.12)',  text: 'text-teal-400'   },
     rose:   { bg: 'rgba(244,63,94,0.12)',   text: 'text-rose-400'   },
     amber:  { bg: 'rgba(245,158,11,0.12)',  text: 'text-amber-400'  },
-  }[accent] ?? { bg: 'rgba(139,92,246,0.12)', text: 'text-violet-400' }
+  }[accent] ?? { bg: 'rgba(var(--brand-rgb),0.12)', text: 'text-violet-400' }
 
   return (
     <motion.div
@@ -741,7 +741,7 @@ const SPEAKER_PALETTE = [
   { bg: 'rgba(251,146,60,0.15)',  text: '#fb923c' },
   { bg: 'rgba(232,121,249,0.15)', text: '#e879f9' },
   { bg: 'rgba(251,191,36,0.15)',  text: '#fbbf24' },
-  { bg: 'rgba(167,139,250,0.15)', text: '#a78bfa' },
+  { bg: 'rgba(167,139,250,0.15)', text: 'var(--brand-400)' },
   { bg: 'rgba(244,114,182,0.15)', text: '#f472b6' },
   { bg: 'rgba(56,189,248,0.15)',  text: '#38bdf8' },
 ]
@@ -1058,7 +1058,7 @@ function StephTab({ transcript }: { transcript?: string }) {
                   msg.role === 'user' ? 'rounded-tr-sm' : 'rounded-tl-sm'
                 }`}
                 style={{
-                  background: msg.role === 'user' ? 'rgba(139,92,246,0.15)' : 'var(--input-bg)',
+                  background: msg.role === 'user' ? 'rgba(var(--brand-rgb),0.15)' : 'var(--input-bg)',
                   color: 'var(--text-1)',
                 }}
               >
@@ -1453,7 +1453,7 @@ function SpeakerNamesModal({ jobId, onClose, onApplied }) {
 // ── Template Picker Modal ─────────────────────────────────────────────────────
 
 const EXPORT_TEMPLATES = [
-  { id: 'standard',  name: 'Standard',  desc: 'Classic numbered sections with action items table', icon: FileText,  gradient: 'from-violet-500 to-indigo-600', ring: 'ring-violet-400', headerBg: '#1e104f', preview: { heading: '#3c2878', tag: '#7c3aed', tagBg: '#f5f3ff' } },
+  { id: 'standard',  name: 'Standard',  desc: 'Classic numbered sections with action items table', icon: FileText,  gradient: 'from-violet-500 to-indigo-600', ring: 'ring-violet-400', headerBg: 'var(--brand-950)', preview: { heading: 'var(--brand-900)', tag: 'var(--brand-700)', tagBg: 'var(--brand-50)' } },
   { id: 'modern',    name: 'Modern',    desc: 'Clean teal design, active direct language',          icon: Zap,       gradient: 'from-teal-500 to-emerald-600',  ring: 'ring-teal-400',   headerBg: '#00695c', preview: { heading: '#00897b', tag: '#009688', tagBg: '#e6f7f5' } },
   { id: 'executive', name: 'Executive', desc: 'Action items first, concise summaries for leadership',icon: BarChart2, gradient: 'from-blue-700 to-blue-900',    ring: 'ring-blue-500',   headerBg: '#0a2463', preview: { heading: '#1e40af', tag: '#1d4ed8', tagBg: '#ebf0ff' } },
   { id: 'minimal',   name: 'Minimal',   desc: 'Understated grey layout, maximum whitespace',        icon: Minimize2, gradient: 'from-gray-500 to-gray-700',    ring: 'ring-gray-400',   headerBg: '#282828', preview: { heading: '#505050', tag: '#6b7280', tagBg: '#f5f5f5' } },
@@ -1740,7 +1740,7 @@ function ShareModal({ jobId, minutes, onClose }: { jobId: string; minutes?: any;
                   {results && (
                     <div className="mt-3 space-y-1.5">
                       {Object.entries(results).map(([provider, status]) => (
-                        <p key={provider} className="text-xs" style={{ color: status === 'ok' ? '#34d399' : '#fb7185' }}>
+                        <p key={provider} className="text-xs" style={{ color: status === 'ok' ? '#34d399' : 'var(--brand-400)' }}>
                           {SHAREABLE_PROVIDERS[provider]?.label ?? provider}: {status === 'ok' ? 'Sent' : status}
                         </p>
                       ))}
@@ -1781,7 +1781,7 @@ function ShareModal({ jobId, minutes, onClose }: { jobId: string; minutes?: any;
                     By AI-Powered MinuteAI
                   </div>
                 </div>
-                <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 45%, #7c3aed, transparent 35%)' }} />
+                <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 45%, var(--brand-700), transparent 35%)' }} />
               </div>
 
               <div className="rounded-lg p-4" style={{ background: 'var(--input-bg)' }}>
@@ -1985,7 +1985,7 @@ function LegacyShareModal({ jobId, onClose }: { jobId: string; onClose: () => vo
 
 const CATEGORIES = [
   { value: 'engineering',  label: 'Engineering',   color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
-  { value: 'product',      label: 'Product',        color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+  { value: 'product',      label: 'Product',        color: 'var(--brand-400)', bg: 'rgba(167,139,250,0.12)' },
   { value: 'design',       label: 'Design',         color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
   { value: 'sales',        label: 'Sales',          color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
   { value: 'marketing',    label: 'Marketing',      color: '#fb923c', bg: 'rgba(251,146,60,0.12)'  },
@@ -2315,9 +2315,9 @@ function FollowUpTab({ jobId }: { jobId: string }) {
           disabled={generating}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-60 cursor-pointer"
           style={{
-            background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+            background: 'linear-gradient(135deg, var(--brand-700), var(--brand-800))',
             color: 'white',
-            boxShadow: '0 3px 14px rgba(124,58,237,0.3)',
+            boxShadow: '0 3px 14px rgba(var(--brand-rgb),0.3)',
           }}
         >
           {generating ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}

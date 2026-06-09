@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, Search, Sparkles, Calendar, ArrowRight, ExternalLink, X, BookOpen } from 'lucide-react'
@@ -29,7 +29,7 @@ const SUGGESTIONS = [
 
 function ScoreBar({ score }: { score: number }) {
   const pct = Math.round(score * 100)
-  const color = score > 0.8 ? '#10b981' : score > 0.6 ? '#7c3aed' : '#6b7280'
+  const color = score > 0.8 ? '#10b981' : score > 0.6 ? 'var(--brand-700)' : '#6b7280'
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--input-bg)' }}>
@@ -194,7 +194,7 @@ export default function Memory() {
                   whileTap={query.trim() && !loading ? { scale: 0.96 } : {}}
                   className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all disabled:opacity-40"
                   style={{
-                    background: 'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                    background: 'linear-gradient(135deg,var(--brand-700),var(--brand-800))',
                     color: '#fff',
                   }}
                 >
@@ -301,10 +301,10 @@ export default function Memory() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       className="rounded-2xl overflow-hidden"
-                      style={{ border: '1px solid rgba(99,102,241,0.25)' }}
+                      style={{ border: '1px solid rgba(var(--brand-rgb),0.25)' }}
                     >
                       <div className="px-4 py-2.5 flex items-center gap-2"
-                        style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(79,70,229,0.1))' }}>
+                        style={{ background: 'linear-gradient(135deg,rgba(var(--brand-rgb),0.15),rgba(var(--brand-rgb),0.1))' }}>
                         <Sparkles size={13} className="text-violet-400" />
                         <span className="text-xs font-bold text-violet-400 uppercase tracking-wider">AI Answer</span>
                       </div>

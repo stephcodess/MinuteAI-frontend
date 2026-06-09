@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -155,7 +155,7 @@ function FreePlanView({ onUpgrade }) {
           Upgrade to unlock more meetings, longer recordings, and priority processing.
         </p>
         <button onClick={onUpgrade}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,58,237,0.35)] transition-all sm:w-auto">
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(var(--brand-rgb),0.35)] transition-all sm:w-auto">
           <Zap size={14} /> View upgrade options
         </button>
       </div>
@@ -265,13 +265,13 @@ function ActiveSubView({ sub, invoices, loadingInv, actionBusy, actionError, isC
           {sub.card?.last4 ? (
             <div className="mb-4 relative w-full aspect-[1.586] rounded-2xl p-4 overflow-hidden select-none"
               style={{
-                background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e3a5f 80%, #0f172a 100%)',
-                boxShadow: '0 16px 40px rgba(79,70,229,0.3), 0 4px 10px rgba(0,0,0,0.4)',
+                background: 'linear-gradient(135deg, #3f0010 0%, #7f0020 40%, #4c001a 80%, #1a0008 100%)',
+                boxShadow: '0 16px 40px rgba(var(--brand-rgb),0.3), 0 4px 10px rgba(0,0,0,0.4)',
               }}>
               <div className="pointer-events-none absolute -right-6 -top-6 w-32 h-32 rounded-full opacity-30"
-                style={{ background: 'radial-gradient(circle, #7c3aed, transparent 70%)' }} />
+                style={{ background: 'radial-gradient(circle, var(--brand-700), transparent 70%)' }} />
               <div className="pointer-events-none absolute -left-8 -bottom-8 w-40 h-40 rounded-full opacity-20"
-                style={{ background: 'radial-gradient(circle, #4f46e5, transparent 70%)' }} />
+                style={{ background: 'radial-gradient(circle, var(--brand-800), transparent 70%)' }} />
               <div className="flex items-center justify-between mb-4">
                 <div className="relative w-8 h-[22px] rounded-md overflow-hidden"
                   style={{ background: 'linear-gradient(145deg, #fbbf24, #d97706)', border: '1px solid rgba(255,255,255,0.15)' }}>

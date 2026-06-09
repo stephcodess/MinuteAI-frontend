@@ -1,4 +1,4 @@
-import { useState, useId } from 'react'
+﻿import { useState, useId } from 'react'
 import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Eye, EyeOff, ArrowRight, Zap } from 'lucide-react'
@@ -23,38 +23,32 @@ function GridBg() {
   )
 }
 
-/* ── Floating-label input (dark variant) ─────────────────────────────── */
-function FloatingInput({ label, type = 'text', value, onChange, right = null, autoComplete }: any) {
+/* ── Labeled input (light variant) ───────────────────────────────────── */
+function FormInput({ label, type = 'text', value, onChange, placeholder = '', right = null, autoComplete }: any) {
   const [focused, setFocused] = useState(false)
-  const raised = focused || value.length > 0
   const id = useId()
 
   return (
-    <div className={`relative border rounded-2xl transition-all duration-200 bg-white/[0.06] ${
-      focused
-        ? 'border-violet-400/70 shadow-[0_0_0_3px_rgba(139,92,246,0.15)]'
-        : 'border-white/10 hover:border-white/20'
-    }`}>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={onChange}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        autoComplete={autoComplete}
-        placeholder=""
-        className="w-full pt-7 pb-3 px-5 bg-transparent text-sm text-white focus:outline-none rounded-2xl"
-      />
-      <label
-        htmlFor={id}
-        className={`absolute left-5 pointer-events-none font-medium transition-all duration-200 ${
-          raised ? 'top-2.5 text-[10px] text-violet-400' : 'top-1/2 -translate-y-1/2 text-sm text-slate-500'
-        }`}
-      >
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">
         {label}
       </label>
-      {right && <div className="absolute right-4 top-1/2 -translate-y-1/2">{right}</div>}
+      <div className={`relative flex items-center border rounded-lg bg-white transition-all duration-200 ${
+        focused ? 'border-violet-500 ring-2 ring-violet-500/15' : 'border-gray-200 hover:border-gray-300'
+      }`}>
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          autoComplete={autoComplete}
+          placeholder={placeholder}
+          className="w-full py-3 px-4 bg-transparent text-sm text-gray-900 focus:outline-none placeholder:text-gray-400"
+        />
+        {right && <div className="pr-3 shrink-0">{right}</div>}
+      </div>
     </div>
   )
 }
@@ -202,7 +196,7 @@ export default function Login() {
       <Orb className="top-[-10%] left-[-5%] w-[600px] h-[600px] bg-violet-700/20" />
       <Orb className="bottom-[-10%] right-[-5%] w-[500px] h-[500px] bg-indigo-700/15" />
       <Orb className="top-[40%] left-[40%] w-[400px] h-[400px] bg-fuchsia-700/10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(124,58,237,0.07)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(var(--brand-rgb),0.07)_0%,transparent_70%)] pointer-events-none" />
 
       {/* ── Left brand panel ──────────────────────────────────────────── */}
       <div className="hidden lg:flex flex-col w-[44%] shrink-0 relative z-10 p-14 border-r border-white/[0.06]">
@@ -256,21 +250,21 @@ export default function Login() {
       </div>
 
       {/* ── Right form panel ──────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
+      <div className="flex-1 flex flex-col bg-white relative z-10">
 
         {/* Mobile logo */}
-        <div className="lg:hidden mb-10">
-          <Link to="/" className="flex items-center gap-2.5 text-white font-bold text-xl">
-            <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-400/30 flex items-center justify-center">
-              <Mic size={18} className="text-violet-300" />
+        <div className="lg:hidden flex justify-center pt-10">
+          <Link to="/" className="flex items-center gap-2.5 text-gray-900 font-bold text-xl">
+            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center">
+              <Mic size={18} className="text-violet-600" />
             </div>
             MinuteAI
           </Link>
         </div>
 
-        <div className="w-full max-w-md">
-          {/* Glass card */}
-          <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-3xl p-8 shadow-[0_8px_40px_rgba(0,0,0,0.4)]">
+        {/* Form area */}
+        <div className="flex-1 flex items-center justify-center px-8 py-12">
+          <div className="w-full max-w-[380px]">
             <AnimatePresence mode="wait">
               {success ? (
                 <SuccessState key="success" name={userName} />
@@ -284,84 +278,63 @@ export default function Login() {
                         initial={{ opacity: 0, y: -8, height: 0 }}
                         animate={{ opacity: 1, y: 0, height: 'auto' }}
                         exit={{ opacity: 0, y: -8, height: 0 }}
-                        className="mb-5 flex items-center gap-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3"
+                        className="mb-5 flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3"
                       >
-                        <span className="text-amber-400 text-base leading-none">⏱</span>
-                        <p className="text-amber-400 text-xs font-medium">
+                        <span className="text-amber-500 text-base leading-none">⏱</span>
+                        <p className="text-amber-700 text-xs font-medium">
                           Your session expired. Please sign in again.
                         </p>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* Badge */}
-                  <div className="mb-6 flex justify-center">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-violet-300">
-                      <Zap size={10} className="text-violet-400" fill="currentColor" />
-                      Powered by OpenAI Whisper & Claude AI
-                    </span>
-                  </div>
-
-                  <div className="mb-7">
-                    <h2 className="text-2xl font-bold text-white mb-1">
-                      {twoFactor ? 'Check your email' : 'Welcome back'}
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      {twoFactor ? 'Check your email 📬' : 'Welcome Back 👋'}
                     </h2>
-                    <p className="text-slate-500 text-sm">
-                      {twoFactor ? `Enter the security code sent to ${twoFactor.email}` : 'Sign in to your MinuteAI account'}
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                      {twoFactor
+                        ? `Enter the security code sent to ${twoFactor.email}`
+                        : "Today is a new day. It's your day. You shape it. Sign in to start managing your projects."}
                     </p>
                   </div>
-
-                  {!twoFactor && (
-                    <>
-                      <motion.button
-                        onClick={() => handleGoogle()}
-                        disabled={loading}
-                        whileHover={{ y: -1, boxShadow: '0 6px 24px rgba(0,0,0,0.3)' }}
-                        whileTap={{ scale: 0.99 }}
-                        className="w-full flex items-center justify-center gap-3 py-3.5 px-5 rounded-2xl border border-white/10 bg-white/[0.06] text-slate-200 font-semibold text-sm transition-all mb-5 hover:border-white/20 hover:bg-white/10 disabled:opacity-60"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 18 18">
-                          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
-                          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-                          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
-                          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
-                        </svg>
-                        Continue with Google
-                      </motion.button>
-
-                      <div className="relative flex items-center gap-3 mb-5">
-                        <div className="flex-1 h-px bg-white/[0.08]" />
-                        <span className="text-xs text-slate-600 font-medium px-1">or continue with email</span>
-                        <div className="flex-1 h-px bg-white/[0.08]" />
-                      </div>
-                    </>
-                  )}
 
                   {/* Form */}
                   <motion.form
                     onSubmit={twoFactor ? handleTwoFactorSubmit : handleSubmit}
                     animate={shake ? { x: [-10, 10, -8, 8, -5, 5, 0] } : {}}
                     transition={{ duration: 0.4 }}
-                    className="space-y-3"
+                    className="space-y-4"
                   >
                     {twoFactor ? (
-                      <FloatingInput label="Security code" type="text" value={twoFactorCode}
+                      <FormInput
+                        label="Security code"
+                        type="text"
+                        value={twoFactorCode}
                         onChange={(e: any) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        autoComplete="one-time-code" />
+                        placeholder="6-digit code"
+                        autoComplete="one-time-code"
+                      />
                     ) : (
                       <>
-                        <FloatingInput label="Email address" type="email" value={email}
-                          onChange={(e: any) => setEmail(e.target.value)} autoComplete="email" />
-
-                        <FloatingInput
+                        <FormInput
+                          label="Email"
+                          type="email"
+                          value={email}
+                          onChange={(e: any) => setEmail(e.target.value)}
+                          placeholder="Example@email.com"
+                          autoComplete="email"
+                        />
+                        <FormInput
                           label="Password"
                           type={showPassword ? 'text' : 'password'}
                           value={password}
                           onChange={(e: any) => setPassword(e.target.value)}
+                          placeholder="At least 8 characters"
                           autoComplete="current-password"
                           right={
                             <button type="button" onClick={() => setShowPassword(v => !v)}
-                              className="text-slate-500 hover:text-slate-300 transition p-1">
+                              className="text-gray-400 hover:text-gray-600 transition p-1">
                               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                             </button>
                           }
@@ -371,12 +344,14 @@ export default function Login() {
 
                     <div className="flex justify-end">
                       {twoFactor ? (
-                        <button type="button" onClick={resendTwoFactorCode} className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
+                        <button type="button" onClick={resendTwoFactorCode}
+                          className="text-xs text-violet-600 hover:text-violet-700 font-semibold">
                           Send a new code
                         </button>
                       ) : (
-                        <Link to="/forgot-password" className="text-xs text-violet-400 hover:text-violet-300 font-semibold">
-                          Forgot password?
+                        <Link to="/forgot-password"
+                          className="text-xs text-violet-600 hover:text-violet-700 font-semibold">
+                          Forgot Password?
                         </Link>
                       )}
                     </div>
@@ -387,7 +362,7 @@ export default function Login() {
                           initial={{ opacity: 0, y: -6, height: 0 }}
                           animate={{ opacity: 1, y: 0, height: 'auto' }}
                           exit={{ opacity: 0, y: -6, height: 0 }}
-                          className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3"
+                          className="text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg px-4 py-3"
                         >
                           {error}
                         </motion.p>
@@ -397,35 +372,56 @@ export default function Login() {
                     <motion.button
                       type="submit"
                       disabled={loading}
-                      whileHover={!loading ? { scale: 1.01, boxShadow: '0 10px 28px rgba(124,58,237,0.45)' } : {}}
                       whileTap={!loading ? { scale: 0.99 } : {}}
-                      className="group relative w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(124,58,237,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 overflow-hidden"
+                      className="w-full py-3 rounded-lg bg-[#0f172a] hover:bg-[#1e293b] text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                     >
-                      {!loading && (
-                        <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
-                      )}
-                      <span className="relative flex items-center gap-2">
-                        {loading
-                          ? <motion.div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                              animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
-                          : <>{twoFactor ? 'Verify code' : 'Sign in'} <ArrowRight size={15} /></>
-                        }
-                      </span>
+                      {loading
+                        ? <motion.div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                            animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }} />
+                        : twoFactor ? 'Verify code' : 'Sign in'
+                      }
                     </motion.button>
                   </motion.form>
+
+                  {!twoFactor && (
+                    <>
+                      {/* Divider */}
+                      <div className="relative flex items-center gap-3 my-5">
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-xs text-gray-400 font-medium">Or</span>
+                        <div className="flex-1 h-px bg-gray-200" />
+                      </div>
+
+                      {/* Google */}
+                      <motion.button
+                        onClick={() => handleGoogle()}
+                        disabled={loading}
+                        whileTap={{ scale: 0.99 }}
+                        className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold text-sm transition-colors disabled:opacity-60"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 18 18">
+                          <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                          <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+                          <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+                          <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Sign in with Google
+                      </motion.button>
+                    </>
+                  )}
 
                   {twoFactor ? (
                     <button
                       type="button"
                       onClick={() => { setTwoFactor(null); setTwoFactorCode(''); setPassword(''); setError(null) }}
-                      className="mt-5 w-full text-center text-sm text-slate-500 hover:text-slate-300"
+                      className="mt-5 w-full text-center text-sm text-gray-500 hover:text-gray-700"
                     >
                       Use a different account
                     </button>
                   ) : (
-                    <p className="text-center text-sm text-slate-500 mt-5">
-                      Don't have an account?{' '}
-                      <Link to="/signup" className="text-violet-400 hover:text-violet-300 font-semibold">Sign up free</Link>
+                    <p className="text-center text-sm text-gray-500 mt-6">
+                      Don't you have an account?{' '}
+                      <Link to="/signup" className="text-violet-600 hover:text-violet-700 font-semibold">Sign up</Link>
                     </p>
                   )}
 
@@ -433,17 +429,12 @@ export default function Login() {
               )}
             </AnimatePresence>
           </div>
-
-          {/* Trust strip */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-            className="mt-5 flex items-center justify-center gap-5 text-[11px] text-slate-700">
-            <span>No credit card required</span>
-            <span className="w-1 h-1 rounded-full bg-slate-800" />
-            <span>3 free meetings / month</span>
-            <span className="w-1 h-1 rounded-full bg-slate-800" />
-            <span>Secure & private</span>
-          </motion.div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-[11px] text-gray-400 py-5 tracking-wide uppercase">
+          © {new Date().getFullYear()} All rights reserved
+        </p>
       </div>
     </div>
   )

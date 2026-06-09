@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+﻿import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Headphones, Upload, FileText, Clock, Mic2, CheckCircle2,
@@ -232,7 +232,7 @@ function FlashcardsView({ cards }: { cards: { front: string; back: string }[] })
           key={i}
           onClick={() => setFlipped(f => ({ ...f, [i]: !f[i] }))}
           className="relative rounded-xl border p-4 text-left transition-all cursor-pointer min-h-[100px]"
-          style={{ background: flipped[i] ? 'rgba(124,58,237,0.08)' : 'var(--card-bg)', borderColor: flipped[i] ? 'rgba(124,58,237,0.3)' : 'var(--card-border)' }}
+          style={{ background: flipped[i] ? 'rgba(var(--brand-rgb),0.08)' : 'var(--card-bg)', borderColor: flipped[i] ? 'rgba(var(--brand-rgb),0.3)' : 'var(--card-border)' }}
         >
           <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-3)' }}>
             {flipped[i] ? 'Back' : 'Front'}
@@ -815,9 +815,9 @@ export default function PdfToAudio() {
                   whileTap={file ? { scale: 0.98 } : {}}
                   className="w-full flex items-center justify-center gap-2.5 py-3.5 !rounded-xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   style={{
-                    background: !file ? 'var(--input-bg)' : 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                    background: !file ? 'var(--input-bg)' : 'linear-gradient(135deg, var(--brand-700), var(--brand-800))',
                     color: !file ? 'var(--text-3)' : 'white',
-                    boxShadow: file ? '0 4px 20px rgba(124,58,237,0.35)' : 'none',
+                    boxShadow: file ? '0 4px 20px rgba(var(--brand-rgb),0.35)' : 'none',
                   }}
                 >
                   <Headphones size={17} />
@@ -831,7 +831,7 @@ export default function PdfToAudio() {
             {/* ── PROCESSING ── */}
             {phase === 'processing' && (
               <motion.div key="processing" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                <div className="!rounded-xl border p-8 flex flex-col items-center gap-8" style={{ background: 'var(--card-bg)', borderColor: 'rgba(139,92,246,0.25)' }}>
+                <div className="!rounded-xl border p-8 flex flex-col items-center gap-8" style={{ background: 'var(--card-bg)', borderColor: 'rgba(var(--brand-rgb),0.25)' }}>
                   <div className="relative w-20 h-20">
                     <div className="absolute inset-0 rounded-full bg-violet-600/20 animate-ping" />
                     <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-violet-600/30 to-indigo-600/30 flex items-center justify-center border border-violet-500/30">
@@ -902,7 +902,7 @@ export default function PdfToAudio() {
 
                 {resultTab === 'audio' && (
                   <>
-                    <div className="!rounded-xl border p-5 mb-4" style={{ background: 'var(--card-bg)', borderColor: 'rgba(139,92,246,0.25)' }}>
+                    <div className="!rounded-xl border p-5 mb-4" style={{ background: 'var(--card-bg)', borderColor: 'rgba(var(--brand-rgb),0.25)' }}>
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 shrink-0">
                           <Headphones size={16} className="text-white" />
@@ -925,7 +925,7 @@ export default function PdfToAudio() {
                           {downloading ? 'Saving…' : 'Download MP3'}
                         </button>
                       </div>
-                      <audio src={audioUrl} controls className="w-full" style={{ accentColor: '#7c3aed' }} />
+                      <audio src={audioUrl} controls className="w-full" style={{ accentColor: 'var(--brand-700)' }} />
                     </div>
 
                     <div className="!rounded-xl border overflow-hidden" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
@@ -1073,7 +1073,7 @@ export default function PdfToAudio() {
                             {isDone && (
                               <div className="mt-4">
                                 {audioUrls[item.job_id] ? (
-                                  <audio src={audioUrls[item.job_id]} controls className="w-full" style={{ accentColor: '#7c3aed' }} />
+                                  <audio src={audioUrls[item.job_id]} controls className="w-full" style={{ accentColor: 'var(--brand-700)' }} />
                                 ) : (
                                   <div className="flex flex-wrap gap-2">
                                     <button

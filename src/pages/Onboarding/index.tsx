@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Check, ChevronDown, Loader2, Mic, Users } from 'lucide-react'
@@ -285,7 +285,7 @@ export default function Onboarding() {
                   onClick={() => { if (!canNext1) { setError('Choose your role and preferred language to continue.'); return }; setError(null); setStep(2) }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
-                  className="group relative mt-8 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(124,58,237,0.4)] transition-all flex items-center justify-center gap-2 overflow-hidden"
+                  className="group relative mt-8 w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(var(--brand-rgb),0.4)] transition-all flex items-center justify-center gap-2 overflow-hidden"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
                   <span className="relative flex items-center gap-2">Continue <ArrowRight size={15} /></span>
@@ -344,7 +344,7 @@ export default function Onboarding() {
                     onClick={() => setStep(3)}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
-                    className="group relative flex-[2] py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(124,58,237,0.4)] transition-all flex items-center justify-center gap-2 overflow-hidden"
+                    className="group relative flex-[2] py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(var(--brand-rgb),0.4)] transition-all flex items-center justify-center gap-2 overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
                     <span className="relative flex items-center gap-2">Continue <ArrowRight size={15} /></span>
@@ -413,7 +413,7 @@ export default function Onboarding() {
                     disabled={saving}
                     whileHover={!saving ? { scale: 1.01 } : {}}
                     whileTap={!saving ? { scale: 0.99 } : {}}
-                    className="group relative flex-[2] py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(124,58,237,0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 overflow-hidden"
+                    className="group relative flex-[2] py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(var(--brand-rgb),0.4)] transition-all flex items-center justify-center gap-2 disabled:opacity-60 overflow-hidden"
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />
                     <span className="relative flex items-center gap-2">

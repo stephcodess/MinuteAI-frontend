@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, UserPlus, MoreHorizontal, Crown, Shield, Eye,
@@ -339,7 +339,7 @@ function InviteForm({ onInvite }) {
         type="submit" disabled={loading || !email}
         whileHover={!loading && email ? { scale: 1.01 } : {}}
         whileTap={!loading && email ? { scale: 0.98 } : {}}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-[0_4px_14px_rgba(124,58,237,0.3)] transition-all"
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-[0_4px_14px_rgba(var(--brand-rgb),0.3)] transition-all"
       >
         {loading ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />}
         {loading ? 'Sending…' : 'Send invite'}
@@ -481,7 +481,7 @@ export default function Team() {
                   autoFocus value={wsName}
                   onChange={e => { setWsName(e.target.value); setRenameErr(null) }}
                   className="w-full rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500/40 glass-input sm:w-44"
-                  style={{ border: '2px solid rgba(139,92,246,0.4)' }}
+                  style={{ border: '2px solid rgba(var(--brand-rgb),0.4)' }}
                 />
                 <button type="submit" className="rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:from-violet-500 hover:to-violet-400 transition-all">Save</button>
                 <button type="button" onClick={() => setRenaming(false)} className="flex justify-center p-1.5 transition-colors" style={{ color: 'var(--text-3)' }}><X size={14} /></button>
@@ -770,7 +770,7 @@ export default function Team() {
                     </p>
                     {isFree && (
                       <Link to="/billing"
-                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_4px_14px_rgba(124,58,237,0.3)] transition-all"
+                        className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-bold shadow-[0_4px_14px_rgba(var(--brand-rgb),0.3)] transition-all"
                       >
                         <Zap size={11} /> Upgrade plan
                       </Link>

@@ -1,6 +1,83 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════
+   BRAND PALETTE — edit ONLY this block to retheme the entire app.
+   All colors in components and the design system derive from here.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --brand-50:  #fff1f2;
+  --brand-100: #ffe4e6;
+  --brand-200: #fecdd3;
+  --brand-300: #fda4af;
+  --brand-400: #fb7185;
+  --brand-500: #f43f5e;
+  --brand-600: #e11d48;
+  --brand-700: #c3002f;
+  --brand-800: #9f1239;
+  --brand-900: #881337;
+  --brand-950: #4c0519;
+  /* RGB triplet of --brand-700, used for rgba(var(--brand-rgb), opacity) */
+  --brand-rgb: 195, 0, 47;
+}
+
+/* Remap violet-*, indigo-*, fuchsia-*, and purple-* to the brand
+   palette so every className using these scales becomes crimson. */
+@theme {
+  --color-violet-50:   var(--brand-50);
+  --color-violet-100:  var(--brand-100);
+  --color-violet-200:  var(--brand-200);
+  --color-violet-300:  var(--brand-300);
+  --color-violet-400:  var(--brand-400);
+  --color-violet-500:  var(--brand-500);
+  --color-violet-600:  var(--brand-600);
+  --color-violet-700:  var(--brand-700);
+  --color-violet-800:  var(--brand-800);
+  --color-violet-900:  var(--brand-900);
+  --color-violet-950:  var(--brand-950);
+
+  --color-indigo-50:   var(--brand-50);
+  --color-indigo-100:  var(--brand-100);
+  --color-indigo-200:  var(--brand-200);
+  --color-indigo-300:  var(--brand-300);
+  --color-indigo-400:  var(--brand-400);
+  --color-indigo-500:  var(--brand-500);
+  --color-indigo-600:  var(--brand-600);
+  --color-indigo-700:  var(--brand-700);
+  --color-indigo-800:  var(--brand-800);
+  --color-indigo-900:  var(--brand-900);
+  --color-indigo-950:  var(--brand-950);
+
+  --color-fuchsia-50:  var(--brand-50);
+  --color-fuchsia-100: var(--brand-100);
+  --color-fuchsia-200: var(--brand-200);
+  --color-fuchsia-300: var(--brand-300);
+  --color-fuchsia-400: var(--brand-400);
+  --color-fuchsia-500: var(--brand-500);
+  --color-fuchsia-600: var(--brand-600);
+  --color-fuchsia-700: var(--brand-700);
+  --color-fuchsia-800: var(--brand-800);
+  --color-fuchsia-900: var(--brand-900);
+  --color-fuchsia-950: var(--brand-950);
+
+  --color-purple-50:   var(--brand-50);
+  --color-purple-100:  var(--brand-100);
+  --color-purple-200:  var(--brand-200);
+  --color-purple-300:  var(--brand-300);
+  --color-purple-400:  var(--brand-400);
+  --color-purple-500:  var(--brand-500);
+  --color-purple-600:  var(--brand-600);
+  --color-purple-700:  var(--brand-700);
+  --color-purple-800:  var(--brand-800);
+  --color-purple-900:  var(--brand-900);
+  --color-purple-950:  var(--brand-950);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Everything below references --brand-* or --primary only.
+   Do NOT hardcode hex color values below this line.
+   ───────────────────────────────────────────────────────────────── */
+
 * { box-sizing: border-box; }
 
 body {
@@ -10,7 +87,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Theme CSS variables ─────────────────────────────────────── */
+/* ── Theme CSS variables ─────────────────────────────────── */
 
 :root, html.dark {
   --page-bg:        #080b14;
@@ -29,31 +106,30 @@ body {
   --text-2:         #94a3b8;
   --text-3:         #64748b;
   --divider:        rgba(255,255,255,0.05);
-  --nav-active-bg:  rgba(139,92,246,0.15);
-  --nav-active-txt: #c4b5fd;
+  --nav-active-bg:  rgba(var(--brand-rgb), 0.15);
+  --nav-active-txt: var(--brand-300);
   --nav-idle-txt:   #94a3b8;
   --nav-hover-bg:   rgba(255,255,255,0.05);
   --scrollbar-track:#080b14;
   --scrollbar-thumb:#2d2f3e;
-  /* Semantic extras */
   --modal-overlay:  rgba(0,0,0,0.80);
   --modal-bg:       #0c0f1a;
   --modal-border:   rgba(255,255,255,0.10);
-  --primary:        #7c3aed;
-  --primary-light:  #8b5cf6;
-  --primary-soft:   rgba(139,92,246,0.15);
-  --primary-glow:   rgba(139,92,246,0.40);
+  --primary:        var(--brand-700);
+  --primary-light:  var(--brand-600);
+  --primary-soft:   rgba(var(--brand-rgb), 0.15);
+  --primary-glow:   rgba(var(--brand-rgb), 0.40);
   --success:        #22c55e;
   --success-text:   #86efac;
   --success-soft:   rgba(34,197,94,0.15);
   --hover-overlay:  rgba(255,255,255,0.06);
   --loading-bg:     #080b14;
   --loading-text:   #ffffff;
-  --loading-dot:    #8b5cf6;
+  --loading-dot:    var(--brand-700);
 }
 
 html.light {
-  --page-bg:        #f4f2ff;
+  --page-bg:        var(--brand-50);
   --sidebar-bg:     #ffffff;
   --sidebar-border: rgba(0,0,0,0.06);
   --card-bg:        #ffffff;
@@ -61,7 +137,7 @@ html.light {
   --card-hover:     #fafafa;
   --dropdown-bg:    #ffffff;
   --dropdown-border:rgba(0,0,0,0.08);
-  --input-bg:       #f1f0f9;
+  --input-bg:       var(--brand-50);
   --input-border:   rgba(0,0,0,0.10);
   --input-text:     #111827;
   --input-ph:       #9ca3af;
@@ -69,27 +145,26 @@ html.light {
   --text-2:         #6b7280;
   --text-3:         #9ca3af;
   --divider:        rgba(0,0,0,0.06);
-  --nav-active-bg:  rgba(124,58,237,0.10);
-  --nav-active-txt: #6d28d9;
+  --nav-active-bg:  rgba(var(--brand-rgb), 0.10);
+  --nav-active-txt: var(--brand-700);
   --nav-idle-txt:   #6b7280;
   --nav-hover-bg:   rgba(0,0,0,0.04);
-  --scrollbar-track:#f4f2ff;
+  --scrollbar-track:var(--brand-50);
   --scrollbar-thumb:#d1d5db;
-  /* Semantic extras */
   --modal-overlay:  rgba(0,0,0,0.60);
   --modal-bg:       #ffffff;
   --modal-border:   rgba(0,0,0,0.08);
-  --primary:        #7c3aed;
-  --primary-light:  #7c3aed;
-  --primary-soft:   rgba(124,58,237,0.10);
-  --primary-glow:   rgba(124,58,237,0.30);
+  --primary:        var(--brand-700);
+  --primary-light:  var(--brand-700);
+  --primary-soft:   rgba(var(--brand-rgb), 0.10);
+  --primary-glow:   rgba(var(--brand-rgb), 0.30);
   --success:        #22c55e;
   --success-text:   #16a34a;
   --success-soft:   rgba(34,197,94,0.10);
   --hover-overlay:  rgba(0,0,0,0.04);
-  --loading-bg:     #f8f9fc;
+  --loading-bg:     var(--brand-50);
   --loading-text:   #0f0f1a;
-  --loading-dot:    #7c3aed;
+  --loading-dot:    var(--brand-700);
 }
 
 /* ── Scrollbar ────────────────────────────────────────────────── */
@@ -136,16 +211,16 @@ html.light {
   pointer-events: none;
   z-index: 0;
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(124,58,237,0.07) 0%, transparent 70%),
-    radial-gradient(circle 700px at -5%  -15%,    rgba(109,40,217,0.14) 0%, transparent 70%),
-    radial-gradient(circle 600px at 105% 110%,    rgba(79,70,229,0.10)  0%, transparent 70%),
-    radial-gradient(circle 450px at 60%   45%,    rgba(168,85,247,0.07) 0%, transparent 70%);
+    radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(var(--brand-rgb), 0.07) 0%, transparent 70%),
+    radial-gradient(circle 700px at -5%  -15%,    rgba(var(--brand-rgb), 0.14) 0%, transparent 70%),
+    radial-gradient(circle 600px at 105% 110%,    rgba(var(--brand-rgb), 0.10) 0%, transparent 70%),
+    radial-gradient(circle 450px at 60%   45%,    rgba(var(--brand-rgb), 0.07) 0%, transparent 70%);
 }
 html.light .app-bg::before {
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(124,58,237,0.04) 0%, transparent 70%),
-    radial-gradient(circle 700px at -5%  -15%,    rgba(109,40,217,0.06) 0%, transparent 70%),
-    radial-gradient(circle 600px at 105% 110%,    rgba(79,70,229,0.05)  0%, transparent 70%);
+    radial-gradient(ellipse 80% 60% at 50% 0%,   rgba(var(--brand-rgb), 0.04) 0%, transparent 70%),
+    radial-gradient(circle 700px at -5%  -15%,    rgba(var(--brand-rgb), 0.06) 0%, transparent 70%),
+    radial-gradient(circle 600px at 105% 110%,    rgba(var(--brand-rgb), 0.05) 0%, transparent 70%);
 }
 
 /* ── Grid background (subtle dot/line mesh) ─────────────────── */
@@ -183,11 +258,11 @@ button { border-radius: 9999px; }
 
 /* ── Drop zone (theme-aware dashed border) ───────────────────── */
 .dz-border { border-color: var(--input-border); }
-.dz-border:hover { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.05); }
+.dz-border:hover { border-color: rgba(var(--brand-rgb), 0.4); background: rgba(var(--brand-rgb), 0.05); }
 
 /* ── Dashboard hero banner ───────────────────────────────────── */
 .dashboard-hero {
-  background: linear-gradient(to bottom right, #2b1f87, #4b38d4, #6d28d9);
+  background: linear-gradient(to bottom right, var(--brand-950), var(--brand-800), var(--brand-900));
 }
 .dashboard-hero-dots {
   background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0);
@@ -204,8 +279,8 @@ button { border-radius: 9999px; }
 
 /* ── Billing credit card visual ──────────────────────────────── */
 .billing-card-bg {
-  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e3a5f 80%, #0f172a 100%);
-  box-shadow: 0 24px 48px rgba(79,70,229,0.35), 0 4px 12px rgba(0,0,0,0.5);
+  background: linear-gradient(135deg, var(--brand-950) 0%, var(--brand-900) 40%, var(--brand-950) 80%, #0f172a 100%);
+  box-shadow: 0 24px 48px rgba(var(--brand-rgb), 0.35), 0 4px 12px rgba(0,0,0,0.5);
 }
 .billing-card-chip {
   background: linear-gradient(145deg, #fbbf24, #d97706);
@@ -215,5 +290,5 @@ button { border-radius: 9999px; }
   background: radial-gradient(circle, var(--primary), transparent 70%);
 }
 .billing-card-blob-bl {
-  background: radial-gradient(circle, #4f46e5, transparent 70%);
+  background: radial-gradient(circle, var(--brand-700), transparent 70%);
 }

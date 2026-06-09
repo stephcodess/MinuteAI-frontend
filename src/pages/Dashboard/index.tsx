@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -941,7 +941,7 @@ function ChiefOfStaffCard() {
                   {briefing.ai_insight && (
                     <div
                       className="rounded-xl px-4 py-3"
-                      style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}
+                      style={{ background: 'rgba(var(--brand-rgb),0.06)', border: '1px solid rgba(var(--brand-rgb),0.15)' }}
                     >
                       <p className="text-[10px] font-bold uppercase tracking-widest mb-1.5 text-indigo-400">✦ Today's insight</p>
                       <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>

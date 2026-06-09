@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -156,7 +156,7 @@ function Column({ col, tasks, onDragStart, onDrop, draggingOver, onDragOver, onD
         className={`flex-1 min-h-[360px] rounded-b-xl border border-t-0 transition-all duration-150 sm:min-h-[520px] ${
           isOver ? `ring-2 ring-inset ${col.dropRing}` : ''
         }`}
-        style={{ borderColor: 'var(--divider)', background: isOver ? 'rgba(139,92,246,0.04)' : 'var(--input-bg)' }}
+        style={{ borderColor: 'var(--divider)', background: isOver ? 'rgba(var(--brand-rgb),0.04)' : 'var(--input-bg)' }}
       >
         <div className="p-2.5 space-y-2.5">
           <AnimatePresence mode="popLayout">

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+﻿import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, ArrowRight, RefreshCw } from 'lucide-react'
@@ -74,8 +74,8 @@ function OTPInput({ value, onChange, onComplete, disabled }: any) {
           transition={{ delay: 0.25 + i * 0.05 }}
           className={`w-12 h-14 text-center text-xl font-bold rounded-2xl border-2 transition-all duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
             value[i]
-              ? 'border-violet-500 bg-violet-500/20 text-violet-300 shadow-[0_0_0_3px_rgba(139,92,246,0.2)]'
-              : 'border-white/10 bg-white/[0.06] text-white hover:border-white/20 focus:border-violet-400/70 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.15)]'
+              ? 'border-violet-500 bg-violet-500/20 text-violet-300 shadow-[0_0_0_3px_rgba(var(--brand-rgb),0.2)]'
+              : 'border-white/10 bg-white/[0.06] text-white hover:border-white/20 focus:border-violet-400/70 focus:shadow-[0_0_0_3px_rgba(var(--brand-rgb),0.15)]'
           }`}
         />
       ))}
@@ -180,7 +180,7 @@ export default function VerifyEmail() {
       <Orb className="top-[-10%] left-[-5%] w-[600px] h-[600px] bg-violet-700/18" />
       <Orb className="bottom-[-10%] right-[-5%] w-[500px] h-[500px] bg-indigo-700/14" />
       <Orb className="top-[35%] left-[45%] w-[350px] h-[350px] bg-fuchsia-700/10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(124,58,237,0.07)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_30%,rgba(var(--brand-rgb),0.07)_0%,transparent_70%)] pointer-events-none" />
 
       {/* ── Left brand panel ──────────────────────────────────────────── */}
       <div className="hidden lg:flex flex-col w-[44%] shrink-0 relative z-10 p-14 border-r border-white/[0.06]">
@@ -290,9 +290,9 @@ export default function VerifyEmail() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6 }}
-                      whileHover={!loading && code.length === 6 ? { scale: 1.01, boxShadow: '0 8px 24px rgba(124,58,237,0.45)' } : {}}
+                      whileHover={!loading && code.length === 6 ? { scale: 1.01, boxShadow: '0 8px 24px rgba(var(--brand-rgb),0.45)' } : {}}
                       whileTap={!loading && code.length === 6 ? { scale: 0.99 } : {}}
-                      className="group relative w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(124,58,237,0.4)] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex items-center justify-center gap-2"
+                      className="group relative w-full py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold text-sm shadow-[0_4px_24px_rgba(var(--brand-rgb),0.4)] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden flex items-center justify-center gap-2"
                     >
                       {!loading && (
                         <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/12 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />

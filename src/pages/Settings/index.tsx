@@ -1,4 +1,4 @@
-import { useState, useEffect, useId, useRef } from 'react'
+﻿import { useState, useEffect, useId, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -25,7 +25,7 @@ function Field({ label, type = 'text', value, onChange = () => {}, right = null,
         disabled
           ? 'border-white/[0.06] bg-white/[0.03]'
           : focused
-          ? 'border-violet-500/60 shadow-[0_0_0_3px_rgba(139,92,246,0.12)] bg-white/[0.07]'
+          ? 'border-violet-500/60 shadow-[0_0_0_3px_rgba(var(--brand-rgb),0.12)] bg-white/[0.07]'
           : 'border-white/10 hover:border-white/20 bg-white/[0.05]'
       }`}>
         <input
@@ -107,7 +107,7 @@ function SaveBtn({ saved, onClick = undefined, label = 'Save changes', icon: Ico
         onClick={onClick}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
-        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,58,237,0.35)] transition-all hover:shadow-[0_6px_20px_rgba(124,58,237,0.45)] sm:w-auto"
+        className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(var(--brand-rgb),0.35)] transition-all hover:shadow-[0_6px_20px_rgba(var(--brand-rgb),0.45)] sm:w-auto"
       >
         <Icon size={14} />
         {label}
@@ -406,7 +406,7 @@ export default function Settings() {
 
       <main className="min-w-0 flex-1 overflow-y-auto page-content">
         {/* ── Hero banner ── */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-[#4f35d2] via-[#5b45e8] to-[#7c3aed] px-6 py-6 pl-16 sm:px-8">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[var(--brand-900)] via-[var(--brand-700)] to-[var(--brand-700)] px-6 py-6 pl-16 sm:px-8">
           <div className="pointer-events-none absolute -top-6 -right-6 w-40 h-40 rounded-full bg-white/5 blur-2xl" />
           <div className="pointer-events-none absolute bottom-0 left-1/4 w-28 h-28 rounded-full bg-fuchsia-400/10 blur-xl" />
           <div className="relative flex items-center gap-4">
@@ -579,7 +579,7 @@ export default function Settings() {
                       type="button"
                       onClick={startTwoFactor}
                       disabled={twoFactorLoading}
-                      className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,58,237,0.35)] transition-all disabled:opacity-60 sm:w-auto"
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(var(--brand-rgb),0.35)] transition-all disabled:opacity-60 sm:w-auto"
                     >
                       {twoFactorLoading ? <Loader2 size={14} className="animate-spin" /> : <Shield size={14} />}
                       Send code
@@ -590,7 +590,7 @@ export default function Settings() {
                       type="button"
                       onClick={confirmTwoFactor}
                       disabled={twoFactorLoading}
-                      className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(124,58,237,0.35)] transition-all disabled:opacity-60 sm:w-auto"
+                      className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-6 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(var(--brand-rgb),0.35)] transition-all disabled:opacity-60 sm:w-auto"
                     >
                       {twoFactorLoading ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                       Enable 2FA
@@ -1001,7 +1001,7 @@ export default function Settings() {
                   {usage.plan === 'free' && (
                     <Link
                       to="/billing"
-                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold shadow-[0_4px_14px_rgba(124,58,237,0.3)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.4)] hover:from-violet-500 hover:to-indigo-500 transition-all"
+                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-semibold shadow-[0_4px_14px_rgba(var(--brand-rgb),0.3)] hover:shadow-[0_6px_20px_rgba(var(--brand-rgb),0.4)] hover:from-violet-500 hover:to-indigo-500 transition-all"
                     >
                       <Zap size={13} />
                       Upgrade to Pro

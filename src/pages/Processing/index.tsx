@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+﻿import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Mic, Sparkles, FileText, Loader2, Upload, CheckCircle, Mail, RefreshCw } from 'lucide-react'
@@ -102,7 +102,7 @@ export default function Processing() {
         <div className="text-center mb-10">
           <motion.div
             className="w-14 h-14 rounded-2xl bg-white border border-violet-100 shadow-sm flex items-center justify-center mx-auto mb-5"
-            animate={{ boxShadow: ['0 0 0 0 rgba(124,58,237,0)', '0 0 0 8px rgba(124,58,237,0.08)', '0 0 0 0 rgba(124,58,237,0)'] }}
+            animate={{ boxShadow: ['0 0 0 0 rgba(var(--brand-rgb),0)', '0 0 0 8px rgba(var(--brand-rgb),0.08)', '0 0 0 0 rgba(var(--brand-rgb),0)'] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
             <Loader2 className="text-violet-600 animate-spin" size={26} />

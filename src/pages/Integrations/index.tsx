@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -310,7 +310,7 @@ function SlackRoutingPanel({ settings, onSaved }: { settings: any; onSaved: (des
 
       {dests.map((dest, idx) => (
         <div key={dest.id} className="rounded-xl border p-3 space-y-2.5"
-          style={{ borderColor: dest.is_default ? 'rgba(139,92,246,0.4)' : 'var(--divider)', background: dest.is_default ? 'rgba(139,92,246,0.05)' : 'var(--input-bg)' }}>
+          style={{ borderColor: dest.is_default ? 'rgba(var(--brand-rgb),0.4)' : 'var(--divider)', background: dest.is_default ? 'rgba(var(--brand-rgb),0.05)' : 'var(--input-bg)' }}>
 
           {/* Row 1: name + default badge + delete */}
           <div className="flex items-center gap-2">
@@ -613,7 +613,7 @@ function SetupModal({
             type="button"
             onClick={save}
             disabled={saving}
-            className="flex-[2] py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold shadow-[0_4px_16px_rgba(124,58,237,0.4)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.5)] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="flex-[2] py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-bold shadow-[0_4px_16px_rgba(var(--brand-rgb),0.4)] hover:shadow-[0_6px_20px_rgba(var(--brand-rgb),0.5)] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : null}
             Save preferences
@@ -644,8 +644,8 @@ function IntegrationCard({
     <div
       className="rounded-2xl border overflow-hidden transition-colors"
       style={{
-        background:   info.connected ? 'rgba(139,92,246,0.06)' : 'var(--card-bg)',
-        borderColor:  info.connected ? 'rgba(139,92,246,0.28)' : 'var(--card-border)',
+        background:   info.connected ? 'rgba(var(--brand-rgb),0.06)' : 'var(--card-bg)',
+        borderColor:  info.connected ? 'rgba(var(--brand-rgb),0.28)' : 'var(--card-border)',
       }}
     >
       {/* Connected accent strip */}
@@ -660,7 +660,7 @@ function IntegrationCard({
           {/* Icon box */}
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl leading-none"
-            style={{ background: info.connected ? 'rgba(139,92,246,0.15)' : 'var(--input-bg)' }}
+            style={{ background: info.connected ? 'rgba(var(--brand-rgb),0.15)' : 'var(--input-bg)' }}
           >
             {icon}
           </div>
@@ -1065,7 +1065,7 @@ export default function Integrations() {
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
 
         {/* Header */}
-        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[#4f35d2] via-[#5b45e8] to-[#7c3aed] px-6 py-5 pl-6 sm:pl-16 sm:px-8">
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-[var(--brand-900)] via-[var(--brand-700)] to-[var(--brand-700)] px-6 py-5 pl-6 sm:pl-16 sm:px-8">
           <div className="pointer-events-none absolute -top-6 -right-6 w-40 h-40 rounded-full bg-white/5 blur-2xl" />
           <div className="pointer-events-none absolute bottom-0 left-1/4 w-28 h-28 rounded-full bg-fuchsia-400/10 blur-xl" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-4">

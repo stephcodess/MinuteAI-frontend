@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -55,8 +55,8 @@ function SessionCard({ session, highlighted, onNavigate, onEnd, onCancel, onCale
       initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
       className="group relative rounded-2xl overflow-hidden cursor-pointer transition-all hover:scale-[1.005]"
       style={{
-        background: highlighted ? 'rgba(139,92,246,0.08)' : 'var(--card-bg)',
-        border: `1px solid ${highlighted ? 'rgba(139,92,246,0.4)' : 'var(--card-border)'}`,
+        background: highlighted ? 'rgba(var(--brand-rgb),0.08)' : 'var(--card-bg)',
+        border: `1px solid ${highlighted ? 'rgba(var(--brand-rgb),0.4)' : 'var(--card-border)'}`,
       }}
       onClick={() => onNavigate(session.id)}
     >

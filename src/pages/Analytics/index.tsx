@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   CalendarDays, Clock, Zap, CheckCircle2,
@@ -25,7 +25,7 @@ function fmtDuration(mins: number | null): string {
 
 // ── Smooth SVG area chart with y-axis ───────────────────────────────────────
 
-function AreaChart({ series, color = '#7c3aed', height = 110 }: {
+function AreaChart({ series, color = 'var(--brand-700)', height = 110 }: {
   series: { label: string; value: number }[]
   color?: string
   height?: number
@@ -125,7 +125,7 @@ function DayBars({ series }: { series: { day: string; count: number }[] }) {
           <div key={day} className="flex flex-1 flex-col items-center gap-0.5">
             <div className="w-full rounded-sm" style={{
               height: `${Math.max(pct * 52, count > 0 ? 3 : 2)}px`,
-              background: weekend ? 'var(--card-border)' : '#7c3aed',
+              background: weekend ? 'var(--card-border)' : 'var(--brand-700)',
               opacity: weekend ? 0.45 : Math.max(0.35, pct),
               marginTop: `${52 - Math.max(pct * 52, count > 0 ? 3 : 2)}px`,
               transition: 'height 0.5s',
@@ -195,7 +195,7 @@ function StatCard({ icon: Icon, label, value, sub, accent, spark, delay = 0 }: {
           <p className="text-xs font-medium mt-1" style={{ color: 'var(--text-3)' }}>{label}</p>
           {sub && <p className="text-[11px] mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>{sub}</p>}
         </div>
-        {spark && <Spark series={spark} color={accent.includes('violet') ? '#7c3aed' : accent.includes('sky') ? '#0ea5e9' : accent.includes('amber') ? '#f59e0b' : '#10b981'} />}
+        {spark && <Spark series={spark} color={accent.includes('violet') ? 'var(--brand-700)' : accent.includes('sky') ? '#0ea5e9' : accent.includes('amber') ? '#f59e0b' : '#10b981'} />}
       </div>
     </motion.div>
   )
@@ -232,7 +232,7 @@ function Skeleton({ h = 'h-40' }: { h?: string }) {
 
 const PLAN_ACCENT: Record<string, { ringColor: string; badgeBg: string; badgeText: string }> = {
   free:  { ringColor: 'var(--card-border)',  badgeBg: 'var(--input-bg)',           badgeText: 'var(--text-2)'  },
-  pro:   { ringColor: 'rgba(124,58,237,.3)', badgeBg: 'rgba(124,58,237,.12)',      badgeText: '#a78bfa'        },
+  pro:   { ringColor: 'rgba(var(--brand-rgb),.3)', badgeBg: 'rgba(var(--brand-rgb),.12)',      badgeText: 'var(--brand-400)'        },
   team:  { ringColor: 'rgba(14,165,233,.3)', badgeBg: 'rgba(14,165,233,.12)',      badgeText: '#38bdf8'        },
   admin: { ringColor: 'rgba(245,158,11,.3)', badgeBg: 'rgba(245,158,11,.12)',      badgeText: '#fbbf24'        },
 }
@@ -274,7 +274,7 @@ function UsagePanel() {
       used: usage.meetings_used ?? 0,
       limit: usage.meetings_limit ?? null,
       unit: '',
-      color: '#7c3aed',
+      color: 'var(--brand-700)',
     },
     {
       icon: Clock,
@@ -290,7 +290,7 @@ function UsagePanel() {
       used: usage.credits_used ?? 0,
       limit: usage.credits_limit ?? null,
       unit: '',
-      color: '#a855f7',
+      color: 'var(--brand-500)',
     },
     {
       icon: Building2,
@@ -341,7 +341,7 @@ function UsagePanel() {
           {isFree && (
             <button
               className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg,#7c3aed,#6366f1)', borderRadius: 8 }}
+              style={{ background: 'linear-gradient(135deg,var(--brand-700),var(--brand-800))', borderRadius: 8 }}
               onClick={() => window.location.href = '/settings?tab=billing'}
             >
               <Sparkles size={10} />
@@ -495,7 +495,7 @@ export default function Analytics() {
                 <Panel title="Meetings over time" icon={TrendingUp} accent="text-violet-500" delay={0.1}>
                   {meetingSeries.every((d: any) => d.value === 0)
                     ? <p className="text-sm py-8 text-center" style={{ color: 'var(--text-3)' }}>No completed meetings yet.</p>
-                    : <AreaChart series={meetingSeries} color="#7c3aed" height={110} />}
+                    : <AreaChart series={meetingSeries} color="var(--brand-700)" height={110} />}
                 </Panel>
 
                 <Panel title="Action items over time" icon={Zap} accent="text-amber-500" delay={0.13}>
@@ -544,7 +544,7 @@ export default function Analytics() {
                   {hasSource ? (
                     <div className="flex items-center gap-4 mb-4">
                       <Donut segments={[
-                        { label: 'Bot',    value: botCount,    color: '#7c3aed' },
+                        { label: 'Bot',    value: botCount,    color: 'var(--brand-700)' },
                         { label: 'Upload', value: uploadCount, color: '#06b6d4' },
                       ]} />
                       <div className="space-y-2">
